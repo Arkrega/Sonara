@@ -45,6 +45,10 @@ import com.metrolist.music.ui.component.IconButton
 import com.metrolist.music.ui.component.Material3SettingsGroup
 import com.metrolist.music.ui.component.Material3SettingsItem
 import com.metrolist.music.ui.utils.backToMain
+import android.content.Intent
+import android.net.Uri
+import com.metrolist.music.utils.AppUpdateDownloader
+import com.metrolist.music.utils.UpdateDownloadState
 import com.metrolist.music.utils.Updater
 import com.metrolist.music.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
@@ -216,6 +220,44 @@ fun UpdaterScreen(
 
         if (updateAvailable && latestVersion != null) {
             Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    val releaseInfo = Updater.getCachedLatestRelease()
+                    val currentAsset = releaseInfo?.let { Updater.getAssetForCurrentVariant(it) }
+                    val downloadUrl = releaseInfo?.let { Updater.getDownloadUrlForCurrentVariant(it) }
+                    if (currentAsset != null) {
+                        coroutineScope.launch {
+                            AppUpdateDownloader.downloadApk(
+                                context = context,
+                                asset = currentAsset,
+                                sha256SumsUrl = releaseInfo.sha256SumsUrl,
+                                onProgress = { state ->
+                                    if (state is UpdateDownloadState.ReadyToInstall) {
+                                        if (!AppUpdateDownloader.canInstallPackages(context)) {
+                                            AppUpdateDownloader.openInstallPermissionSettings(context)
+                                        }
+                                        AppUpdateDownloader.triggerInstall(context, state.apkFile)
+                                    }
+                                }
+                            ).onFailure {
+                                downloadUrl?.let { url ->
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                }
+                            }
+                        }
+                    } else if (downloadUrl != null) {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)))
+                    }
+                },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+            ) {
+                Text(stringResource(R.string.update_action))
+            }
+
+            Spacer(Modifier.height(8.dp))
             Button(
                 onClick = { showChangelog = !showChangelog },
                 modifier =

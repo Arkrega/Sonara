@@ -7,19 +7,75 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 
-val baseApplicationId = "com.metrolist.music"
-val applicationIdOverride = System.getenv("METROLIST_APPLICATION_ID")?.takeIf { it.isNotBlank() }
-val appNameOverride = System.getenv("METROLIST_APP_NAME")?.takeIf { it.isNotBlank() }
+val regaProperties = Properties()
+val regaPropertiesFile = rootProject.file("rega.properties")
+if (regaPropertiesFile.exists()) {
+    regaProperties.load(regaPropertiesFile.inputStream())
+}
+
+fun resolveOriginRepo(): Pair<String, String>? {
+    return runCatching {
+        val gitConfigFile = rootProject.file(".git/config")
+        if (!gitConfigFile.exists()) return@runCatching null
+        val content = gitConfigFile.readText()
+        val regex = Regex("""\[remote\s+"origin"\][^\[]*?url\s*=\s*(?:https://github\.com/|git@github\.com:)([^/\s]+)/([^/\s.]+?)(?:\.git)?""", setOf(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL))
+        val match = regex.find(content)
+        match?.let {
+            val owner = it.groupValues[1]
+            val repo = it.groupValues[2]
+            if (owner.equals("MetrolistGroup", ignoreCase = true) && repo.equals("Metrolist", ignoreCase = true)) {
+                null
+            } else {
+                owner to repo
+            }
+        }
+    }.getOrNull()
+}
+
+val detectedRepo = resolveOriginRepo()
+val regaAppId = regaProperties.getProperty("rega.applicationId") ?: "com.arkrega.regamusic"
+val regaAppName = regaProperties.getProperty("rega.applicationName") ?: "Rega Music"
+val regaVersionName = regaProperties.getProperty("rega.versionName") ?: "1.0.0"
+val regaVersionCode = regaProperties.getProperty("rega.versionCode")?.toIntOrNull() ?: 1
+val githubOwner = System.getenv("REGA_GITHUB_OWNER")
+    ?: detectedRepo?.first
+    ?: regaProperties.getProperty("rega.github.owner")
+    ?: "arkrega"
+val githubRepo = System.getenv("REGA_GITHUB_REPO")
+    ?: detectedRepo?.second
+    ?: regaProperties.getProperty("rega.github.repo")
+    ?: "regamusic"
+val websiteUrl = System.getenv("REGA_WEBSITE_URL")
+    ?: regaProperties.getProperty("rega.website.url")
+    ?: "https://$githubOwner.github.io/$githubRepo/"
+
+val baseApplicationId = regaAppId
+val baseAppName = regaAppName
+val applicationIdOverride = System.getenv("REGA_APPLICATION_ID")
+    ?: System.getenv("METROLIST_APPLICATION_ID")?.takeIf { it.isNotBlank() }
+val appNameOverride = System.getenv("REGA_APP_NAME")
+    ?: System.getenv("METROLIST_APP_NAME")?.takeIf { it.isNotBlank() }
 val buildCommit =
-    System.getenv("METROLIST_BUILD_COMMIT")
+    (System.getenv("REGA_BUILD_COMMIT") ?: System.getenv("METROLIST_BUILD_COMMIT"))
         ?.trim()
         ?.takeIf { it.matches(Regex("[0-9a-fA-F]{7,40}")) }
         ?.take(7)
         ?.lowercase()
-val debugKeystorePathOverride = System.getenv("METROLIST_DEBUG_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
-val debugKeystorePassword = System.getenv("METROLIST_DEBUG_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() } ?: "android"
-val debugKeyAlias = System.getenv("METROLIST_DEBUG_KEY_ALIAS")?.takeIf { it.isNotBlank() } ?: "androiddebugkey"
-val debugKeyPassword = System.getenv("METROLIST_DEBUG_KEY_PASSWORD")?.takeIf { it.isNotBlank() } ?: "android"
+val debugKeystorePathOverride =
+    System.getenv("REGA_DEBUG_KEYSTORE_PATH")
+        ?: System.getenv("METROLIST_DEBUG_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
+val debugKeystorePassword =
+    System.getenv("REGA_DEBUG_KEYSTORE_PASSWORD")
+        ?: System.getenv("METROLIST_DEBUG_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: "android"
+val debugKeyAlias =
+    System.getenv("REGA_DEBUG_KEY_ALIAS")
+        ?: System.getenv("METROLIST_DEBUG_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+        ?: "androiddebugkey"
+val debugKeyPassword =
+    System.getenv("REGA_DEBUG_KEY_PASSWORD")
+        ?: System.getenv("METROLIST_DEBUG_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: "android"
 val persistentDebugKeystoreFile = file("persistent-debug.keystore")
 val workflowDebugKeystoreFile = debugKeystorePathOverride?.let(::file)
 
@@ -40,12 +96,12 @@ android {
         applicationId = applicationIdOverride ?: baseApplicationId
         minSdk = 26
         targetSdk = 36
-        versionCode = 153
-        versionName = "13.7.0"
+        versionCode = regaVersionCode
+        versionName = regaVersionName
         val baseVersionName = requireNotNull(versionName)
         buildConfigField("String", "BASE_VERSION_NAME", "\"$baseVersionName\"")
         buildCommit?.let { versionName = "$baseVersionName+$it" }
-        resValue("string", "app_name", appNameOverride ?: "Metrolist")
+        resValue("string", "app_name", appNameOverride ?: baseAppName)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -54,7 +110,6 @@ android {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
         }
 
-        // LastFM API keys from GitHub Secrets
         val lastFmKey = localProperties.getProperty("LASTFM_API_KEY") ?: System.getenv("LASTFM_API_KEY") ?: ""
         val lastFmSecret = localProperties.getProperty("LASTFM_SECRET") ?: System.getenv("LASTFM_SECRET") ?: ""
 
@@ -62,11 +117,14 @@ android {
         buildConfigField("String", "LASTFM_SECRET", "\"$lastFmSecret\"")
         buildConfigField("String", "ARCHITECTURE", "\"universal\"")
         buildConfigField("Long", "DISCORD_APP_ID", "1447278780795064401L")
+        buildConfigField("String", "APP_NAME", "\"${appNameOverride ?: baseAppName}\"")
+        buildConfigField("String", "GITHUB_OWNER", "\"$githubOwner\"")
+        buildConfigField("String", "GITHUB_REPO", "\"$githubRepo\"")
+        buildConfigField("String", "WEBSITE_URL", "\"$websiteUrl\"")
     }
 
     flavorDimensions += listOf("variant")
     productFlavors {
-        // FOSS - Updater, but no gcast
         create("foss") {
             dimension = "variant"
             isDefault = true
@@ -74,14 +132,12 @@ android {
             buildConfigField("Boolean", "UPDATER_AVAILABLE", "true")
         }
 
-        // GMS - Updater and gcast
         create("gms") {
             dimension = "variant"
             buildConfigField("Boolean", "CAST_AVAILABLE", "true")
             buildConfigField("Boolean", "UPDATER_AVAILABLE", "true")
         }
 
-        // IzzyOnDroid - no gcast, no updater - the ONLY F-droid compliant build
         create("izzy") {
             dimension = "variant"
             buildConfigField("Boolean", "CAST_AVAILABLE", "false")
@@ -126,6 +182,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            val releaseKeystore = file("keystore/release.keystore")
+            if (releaseKeystore.exists() && !System.getenv("STORE_PASSWORD").isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             if (applicationIdOverride == null) {
@@ -133,7 +193,7 @@ android {
             }
             isDebuggable = true
             if (appNameOverride == null) {
-                resValue("string", "app_name", "Metrolist Debug")
+                resValue("string", "app_name", "$baseAppName Debug")
             }
             signingConfig =
                 if (workflowDebugKeystoreFile != null) {
@@ -175,9 +235,6 @@ android {
         warningsAsErrors = false
         abortOnError = false
         checkDependencies = false
-        // Lint never gated anything here (abortOnError = false), so the
-        // lintVital pass that assembleRelease implicitly triggers was pure
-        // build time. Run lint on demand with ./gradlew :app:lintGmsRelease.
         checkReleaseBuilds = false
     }
 
@@ -240,12 +297,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     }
 }
 
-// Android provides org.json as a platform API (/apex/com.android.art/javalib/core-libart.jar).
-// The standalone org.json:json artefact bundles an older Apache Harmony copy of JSONArray that
-// contains an internal `myArrayList` field absent from the platform class.  Without obfuscation
-// R8 inlines against this internal field; at runtime the platform class is resolved instead,
-// producing a NoSuchFieldError.  Excluding the artefact globally ensures only the platform
-// class is ever referenced.
 configurations.configureEach {
     exclude(group = "org.json", module = "json")
 }
@@ -286,7 +337,6 @@ dependencies {
     implementation(libs.media3.session)
     implementation(libs.media3.okhttp)
 
-    // Google Cast - only included in GMS flavor (not available in F-Droid/FOSS builds)
     "gmsImplementation"(libs.media3.cast)
     "gmsImplementation"(libs.mediarouter)
     "gmsImplementation"(libs.cast.framework)
@@ -307,7 +357,6 @@ dependencies {
     implementation(libs.ktor.client.encoding)
     implementation(libs.ktor.serialization.json)
 
-    // Protobuf for message serialization (lite version for Android)
     implementation(libs.protobuf.javalite)
     implementation(libs.protobuf.kotlin.lite)
 

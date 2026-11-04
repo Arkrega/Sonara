@@ -228,12 +228,15 @@ import timber.log.Timber
 import java.util.Locale
 import javax.inject.Inject
 
+import com.metrolist.music.utils.AppUpdateDownloader
+import com.metrolist.music.utils.UpdateDownloadState
+
 private data class AvailableUpdate(
     val release: ReleaseInfo,
     val downloadUrl: String,
-    val isKmp: Boolean,
+    val isKmp: Boolean = false,
 ) {
-    val dismissalKey = if (isKmp) DismissedKmpUpdateKey else DismissedStandaloneUpdateKey
+    val dismissalKey = DismissedStandaloneUpdateKey
 }
 
 @Suppress("DEPRECATION", "ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -510,13 +513,7 @@ class MainActivity : FragmentActivity() {
                                     AvailableUpdate(release, downloadUrl, isKmp = false)
                                 }
                             }
-                    val kmpUpdate =
-                        Updater.getLatestKmpRelease().getOrNull()?.let { release ->
-                            release.assets.firstOrNull()?.let { asset ->
-                                AvailableUpdate(release, asset.downloadUrl, isKmp = true)
-                            }
-                        }
-                    val update = kmpUpdate ?: standaloneUpdate
+                    val update = standaloneUpdate
                     availableUpdate = update?.takeUnless {
                         it.release.tagName == preferences[it.dismissalKey]
                     }
@@ -525,29 +522,13 @@ class MainActivity : FragmentActivity() {
                         val intent = Intent(Intent.ACTION_VIEW, update.downloadUrl.toUri())
                         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                         val pending = PendingIntent.getActivity(this@MainActivity, 1001, intent, flags)
-                        val notificationText =
-                            if (update.isKmp) {
-                                getString(R.string.kmp_upgrade_warning)
-                            } else {
-                                update.release.versionName
-                            }
+                        val notificationText = update.release.versionName
                         val notification =
                             NotificationCompat
                                 .Builder(this@MainActivity, "updates")
                                 .setSmallIcon(R.drawable.update)
-                                .setContentTitle(
-                                    if (update.isKmp) {
-                                        getString(R.string.kmp_upgrade_title, update.release.versionName)
-                                    } else {
-                                        getString(R.string.update_available_title)
-                                    },
-                                )
+                                .setContentTitle(getString(R.string.update_available_title))
                                 .setContentText(notificationText)
-                                .apply {
-                                    if (update.isKmp) {
-                                        setStyle(NotificationCompat.BigTextStyle().bigText(notificationText))
-                                    }
-                                }
                                 .setContentIntent(pending)
                                 .setAutoCancel(true)
                                 .build()
@@ -1470,23 +1451,11 @@ class MainActivity : FragmentActivity() {
                                         Text(
                                             text =
                                                 stringResource(
-                                                    if (update.isKmp) {
-                                                        R.string.kmp_upgrade_title
-                                                    } else {
-                                                        R.string.update_available_message
-                                                    },
+                                                    R.string.update_available_message,
                                                     update.release.versionName,
                                                 ),
                                             style = MaterialTheme.typography.bodyMedium,
                                         )
-                                        if (update.isKmp) {
-                                            Text(
-                                                text = stringResource(R.string.kmp_upgrade_warning),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.padding(top = 12.dp),
-                                            )
-                                        }
                                         Text(
                                             text = stringResource(R.string.changelog),
                                             style = MaterialTheme.typography.titleSmall,
@@ -1501,15 +1470,32 @@ class MainActivity : FragmentActivity() {
                                 confirmButton = {
                                     TextButton(
                                         onClick = {
+                                            val currentAsset = Updater.getAssetForCurrentVariant(update.release)
                                             dismissUpdate()
-                                            startActivity(Intent(Intent.ACTION_VIEW, update.downloadUrl.toUri()))
+                                            if (currentAsset != null) {
+                                                lifecycleScope.launch {
+                                                    AppUpdateDownloader.downloadApk(
+                                                        context = this@MainActivity,
+                                                        asset = currentAsset,
+                                                        sha256SumsUrl = update.release.sha256SumsUrl,
+                                                        onProgress = { state ->
+                                                            if (state is UpdateDownloadState.ReadyToInstall) {
+                                                                if (!AppUpdateDownloader.canInstallPackages(this@MainActivity)) {
+                                                                    AppUpdateDownloader.openInstallPermissionSettings(this@MainActivity)
+                                                                }
+                                                                AppUpdateDownloader.triggerInstall(this@MainActivity, state.apkFile)
+                                                            }
+                                                        }
+                                                    ).onFailure {
+                                                        startActivity(Intent(Intent.ACTION_VIEW, update.downloadUrl.toUri()))
+                                                    }
+                                                }
+                                            } else {
+                                                startActivity(Intent(Intent.ACTION_VIEW, update.downloadUrl.toUri()))
+                                            }
                                         },
                                     ) {
-                                        Text(
-                                            stringResource(
-                                                if (update.isKmp) R.string.kmp_upgrade_action else R.string.update_action,
-                                            ),
-                                        )
+                                        Text(stringResource(R.string.update_action))
                                     }
                                 },
                                 dismissButton = {

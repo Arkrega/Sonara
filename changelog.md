@@ -1,3 +1,17 @@
+---v1.0.0
+# Welcome to Rega Music 1.0.0
+
+Initial stable release of Rega Music — an independently branded, high-performance Android music player.
+
+## Highlights
+- Independent application identity (`com.arkrega.regamusic`)
+- Clean, stable YouTube Music playback engine powered by AndroidX Media3
+- Full synchronized lyrics support
+- Offline music caching and downloads
+- Equalizer and advanced audio processing
+- Dedicated update channel with SHA-256 integrity verification
+- Modern Material 3 user interface
+
 ---v13.7.0
 # KMP status update
 Metrolist-KMP remains in alpha, but tester feedback has been very positive. To try it, join our Discord and donate at least $1 to support development.
