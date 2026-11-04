@@ -1,0 +1,180 @@
+name: Stable Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Stable Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Source Code Recursively
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-cleanup: on-success
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Validate Release Tag and Version
+        id: validate_version
+        run: |
+          TAG="${{ github.ref_name }}"
+          echo "Processing tag: $TAG"
+
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '$TAG' does not follow Semantic Versioning (vMAJOR.MINOR.PATCH)!"
+            exit 1
+          fi
+
+          TAG_VERSION="${TAG#v}"
+          
+          GRADLE_VERSION=$(grep -E '^\s*rega\.versionName\s*=' rega.properties | cut -d'=' -f2 | tr -d ' ' || echo "")
+          GRADLE_CODE=$(grep -E '^\s*rega\.versionCode\s*=' rega.properties | cut -d'=' -f2 | tr -d ' ' || echo "")
+
+          if [ -z "$GRADLE_VERSION" ]; then
+            GRADLE_VERSION=$(grep -m1 -oP '^\s*versionName\s*=\s*"\K[^"]+' app/build.gradle.kts || echo "")
+            GRADLE_CODE=$(grep -m1 -oP '^\s*versionCode\s*=\s*\K\d+' app/build.gradle.kts || echo "")
+          fi
+
+          echo "Tag Version: $TAG_VERSION"
+          echo "Configured Version: $GRADLE_VERSION (code: $GRADLE_CODE)"
+
+          if [ "$TAG_VERSION" != "$GRADLE_VERSION" ]; then
+            echo "::error::Release tag '$TAG_VERSION' does not match configured app version '$GRADLE_VERSION'!"
+            exit 1
+          fi
+
+          echo "tag_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$GRADLE_CODE" >> $GITHUB_OUTPUT
+
+      - name: Validate Monotonically Increasing Version Code
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CURRENT_CODE="${{ steps.validate_version.outputs.version_code }}"
+          echo "Current versionCode: $CURRENT_CODE"
+
+          PREV_TAG=$(git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "Previous release tag found: $PREV_TAG"
+            PREV_CODE=$(git show "$PREV_TAG:rega.properties" 2>/dev/null | grep -E '^\s*rega\.versionCode\s*=' | cut -d'=' -f2 | tr -d ' ' || echo "")
+            if [ -z "$PREV_CODE" ]; then
+              PREV_CODE=$(git show "$PREV_TAG:app/build.gradle.kts" 2>/dev/null | grep -m1 -oP '^\s*versionCode\s*=\s*\K\d+' || echo "")
+            fi
+
+            if [ -n "$PREV_CODE" ]; then
+              echo "Previous versionCode was: $PREV_CODE"
+              if [ "$CURRENT_CODE" -le "$PREV_CODE" ]; then
+                echo "::error::versionCode ($CURRENT_CODE) must be strictly greater than previous release ($PREV_CODE)!"
+                exit 1
+              fi
+            fi
+          fi
+
+      - name: Setup Release Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_BASE64 is missing! Stable builds cannot be published unsigned."
+            exit 1
+          fi
+          mkdir -p app/keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > app/keystore/release.keystore
+
+      - name: Build FOSS Release APK
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
+        run: |
+          ./gradlew --console=plain assembleFossRelease --warning-mode summary
+
+      - name: Prepare and Verify Signed APK
+        run: |
+          RELEASE_DIR="app/build/outputs/apk/foss/release"
+          BUILT_APK=$(find "$RELEASE_DIR" -maxdepth 1 -name "*.apk" | head -n 1)
+
+          if [ -z "$BUILT_APK" ]; then
+            echo "::error::No release APK found in $RELEASE_DIR"
+            exit 1
+          fi
+
+          cp "$BUILT_APK" Rega-Music.apk
+          echo "Output artifact prepared: Rega-Music.apk"
+
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name "apksigner" | sort -V | tail -n 1)
+          if [ -n "$APKSIGNER" ] && [ -x "$APKSIGNER" ]; then
+            echo "Verifying APK signature using $APKSIGNER..."
+            "$APKSIGNER" verify --verbose Rega-Music.apk
+          else
+            echo "apksigner not found, skipping signature verification step."
+          fi
+
+      - name: Generate Checksums
+        run: |
+          sha256sum Rega-Music.apk > SHA256SUMS.txt
+          echo "SHA-256 Checksum:"
+          cat SHA256SUMS.txt
+
+      - name: Extract Release Notes from Changelog
+        run: |
+          chmod +x .github/scripts/parse_changelog.sh || true
+          VERSION="${{ steps.validate_version.outputs.tag_version }}"
+
+          if [ -f .github/scripts/parse_changelog.sh ] && bash .github/scripts/parse_changelog.sh "$VERSION" changelog.md > release_notes.md; then
+            echo "Release notes successfully extracted for version $VERSION."
+          else
+            echo "Changelog entry for $VERSION not found. Falling back to git log."
+            {
+              echo "## What's Changed in Rega Music $VERSION"
+              echo ""
+              git log "$(git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>/dev/null || echo "HEAD~10")..HEAD" \
+                --pretty=format:"- %s" --no-merges | head -20 || echo "- Initial stable release of Rega Music"
+            } > release_notes.md
+          fi
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${{ steps.validate_version.outputs.tag_version }}"
+
+          gh release create "$TAG" \
+            --title "Rega Music $VERSION" \
+            --notes-file release_notes.md \
+            --latest \
+            Rega-Music.apk \
+            SHA256SUMS.txt
+
+      - name: Cleanup Keystore from Runner
+        if: always()
+        run: |
+          rm -f app/keystore/release.keystore
