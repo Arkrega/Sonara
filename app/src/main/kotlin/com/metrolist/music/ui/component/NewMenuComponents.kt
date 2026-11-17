@@ -31,10 +31,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.metrolist.music.ui.component.glass.regaGlassSpecular
+import com.metrolist.music.ui.theme.LocalRegaColors
 
 @Composable
 private fun NewActionButton(
@@ -43,17 +46,17 @@ private fun NewActionButton(
     onClick: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    backgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    backgroundColor: Color = LocalRegaColors.current.glassTint,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     val animatedBackground by animateColorAsState(
-        targetValue = if (enabled) backgroundColor else backgroundColor.copy(alpha = 0.5f),
+        targetValue = if (enabled) backgroundColor else backgroundColor.copy(alpha = 0.35f),
         animationSpec = tween(200),
         label = "background",
     )
 
     val animatedContent by animateColorAsState(
-        targetValue = if (enabled) contentColor else contentColor.copy(alpha = 0.5f),
+        targetValue = if (enabled) contentColor else contentColor.copy(alpha = 0.45f),
         animationSpec = tween(200),
         label = "content",
     )
@@ -67,17 +70,17 @@ private fun NewActionButton(
         }
     }
 
-    Card(
+    val shape = RoundedCornerShape(8.dp)
+    Box(
         modifier =
             modifier
+                .regaGlassSpecular(
+                    shape = shape,
+                    tintColor = animatedBackground,
+                    borderColor = LocalRegaColors.current.glassBorder,
+                )
+                .clip(shape)
                 .clickable(enabled = enabled) { performAction = true },
-        colors =
-            CardDefaults.cardColors(
-                containerColor = animatedBackground,
-            ),
-        shape = RoundedCornerShape(16.dp),
-        elevation =
-            CardDefaults.cardElevation(),
     ) {
         Column(
             modifier =
@@ -138,7 +141,7 @@ fun NewActionGrid(
                             ) {
                                 action.backgroundColor
                             } else {
-                                MaterialTheme.colorScheme.surfaceVariant
+                                LocalRegaColors.current.glassTint
                             },
                         contentColor =
                             if (action.contentColor !=
@@ -146,7 +149,7 @@ fun NewActionGrid(
                             ) {
                                 action.contentColor
                             } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                                MaterialTheme.colorScheme.onSurface
                             },
                     )
                 }

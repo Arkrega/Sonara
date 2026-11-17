@@ -72,6 +72,7 @@ import com.metrolist.music.constants.HideExplicitKey
 import com.metrolist.music.constants.HideVideoSongsKey
 import com.metrolist.music.constants.HideYoutubeShortsKey
 import com.metrolist.music.constants.LanguageCodeToName
+import com.metrolist.music.constants.ShippedAppLanguageTags
 import com.metrolist.music.constants.LyricsProviderOrderKey
 import com.metrolist.music.constants.ProxyEnabledKey
 import com.metrolist.music.constants.ProxyPasswordKey
@@ -356,7 +357,7 @@ fun ContentSettings(
             },
             title = stringResource(R.string.app_language),
             current = appLanguage,
-            values = (listOf(SYSTEM_DEFAULT) + LanguageCodeToName.keys.toList()),
+            values = (listOf(SYSTEM_DEFAULT) + LanguageCodeToName.keys.filter { it in ShippedAppLanguageTags }),
             valueText = {
                 LanguageCodeToName.getOrElse(it) { stringResource(R.string.system_default) }
             }

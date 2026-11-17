@@ -87,16 +87,20 @@ object Updater {
             val size = asset.optLong("size", 0L)
 
             val (arch, variant) = when {
-                name == "Rega-Music.apk" -> "universal" to "foss"
-                name == "Rega-Music-with-Google-Cast.apk" -> "universal" to "gms"
+                name == "Sonara.apk" || name == "Rega-Music.apk" -> "universal" to "foss"
+                name == "Sonara-with-Google-Cast.apk" || name == "Rega-Music-with-Google-Cast.apk" -> "universal" to "gms"
+                name.startsWith("Sonara-") && name.endsWith("-with-Google-Cast.apk") -> {
+                    name.removePrefix("Sonara-").removeSuffix("-with-Google-Cast.apk") to "gms"
+                }
+                name.startsWith("Sonara-") && name.endsWith(".apk") -> {
+                    name.removePrefix("Sonara-").removeSuffix(".apk") to "foss"
+                }
                 name.startsWith("Rega-Music-") && name.endsWith("-with-Google-Cast.apk") -> {
                     name.removePrefix("Rega-Music-").removeSuffix("-with-Google-Cast.apk") to "gms"
                 }
                 name.startsWith("Rega-Music-") && name.endsWith(".apk") -> {
                     name.removePrefix("Rega-Music-").removeSuffix(".apk") to "foss"
                 }
-                name == "Metrolist.apk" -> "universal" to "foss"
-                name == "Metrolist-with-Google-Cast.apk" -> "universal" to "gms"
                 name.startsWith("app-") && name.endsWith("-release.apk") -> {
                     name.removePrefix("app-").removeSuffix("-release.apk") to "foss"
                 }

@@ -1,0 +1,190 @@
+/* SONARA — changelog page styles */
+
+.changelog-hero {
+  padding: 7rem 1.25rem 3rem;
+  background: radial-gradient(1100px 550px at 20% -5%, rgba(255, 255, 255, 0.04), transparent 60%),
+    radial-gradient(950px 480px at 110% 10%, rgba(255, 255, 255, 0.03), transparent 60%);
+}
+
+.changelog-body {
+  padding: 4rem 1.25rem;
+}
+
+.changelog-container {
+  max-width: 820px;
+}
+
+.version-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 1.75rem;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.version-block:hover {
+  border-color: var(--text-tertiary);
+  transform: translateY(-1px);
+}
+
+.version-block--placeholder {
+  opacity: 0.7;
+}
+
+.version-header {
+  padding: 1.25rem 1.75rem;
+  background: var(--charcoal);
+  border-bottom: 1px solid var(--border);
+}
+
+.version-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.version-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.version-date {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+}
+
+.version-content {
+  padding: 1.75rem;
+}
+
+.version-content > p:first-of-type {
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  line-height: 1.7;
+  margin: 0 0 1.25rem;
+}
+
+.change-group {
+  margin-top: 1rem;
+}
+
+.change-group-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 0 0 0.75rem;
+}
+
+.change-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.change-list li {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.change-list li code {
+  background: var(--charcoal);
+  color: var(--text-primary);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.empty-message {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* Schema / structure section */
+.changelog-schema {
+  padding: 4rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.schema-grid {
+  margin-top: 2rem;
+}
+
+.schema-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.4rem;
+}
+
+.schema-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.schema-tag.added {
+  background: rgba(100, 116, 139, 0.15);
+  color: #a8b3c0;
+}
+
+.schema-tag.improved {
+  background: rgba(100, 116, 139, 0.15);
+  color: #a8b3c0;
+}
+
+.schema-tag.fixed {
+  background: rgba(100, 116, 139, 0.15);
+  color: #a8b3c0;
+}
+
+.schema-tag.changed {
+  background: rgba(100, 116, 139, 0.15);
+  color: #a8b3c0;
+}
+
+.schema-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Update CTA */
+.changelog-update {
+  padding: 5rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .changelog-hero {
+    padding: 6rem 1.25rem 2.5rem;
+  }
+
+  .version-head {
+    flex-direction: column;
+  }
+
+  .version-date {
+    order: -1;
+  }
+}

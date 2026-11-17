@@ -108,7 +108,7 @@ fun BottomSheet(
                 )
             }
             .graphicsLayer {
-                val cornerRadius = if (!state.isExpanded) 16.dp.toPx() else 0f
+                val cornerRadius = if (!state.isExpanded) 10.dp.toPx() else 0f
                 shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius)
                 clip = true
             }
@@ -136,7 +136,12 @@ fun BottomSheet(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        alpha = ((state.progress - 0.15f) * 4).coerceIn(0f, 1f)
+                        val progress = state.progress.coerceIn(0f, 1f)
+                        alpha = ((progress - 0.15f) * 4).coerceIn(0f, 1f)
+                        // Mini player grows into the full player instead of being swapped.
+                        val morphScale = 0.94f + 0.06f * progress
+                        scaleX = morphScale
+                        scaleY = morphScale
                     },
                 content = content
             )
@@ -147,7 +152,11 @@ fun BottomSheet(
                 modifier =
                 Modifier
                     .graphicsLayer {
-                        alpha = 1f - (state.progress * 4).coerceAtMost(1f)
+                        val progress = state.progress.coerceIn(0f, 1f)
+                        alpha = 1f - (progress * 4).coerceAtMost(1f)
+                        val shrink = 1f - 0.04f * progress
+                        scaleX = shrink
+                        scaleY = shrink
                     }.clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,

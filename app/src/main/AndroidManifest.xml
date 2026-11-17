@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- Microphone feature for music recognition (not required) -->
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
@@ -41,7 +42,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="false"
-        android:theme="@style/Theme.Metrolist"
+        android:theme="@style/Theme.Sonara"
         tools:targetApi="tiramisu">
         <uses-library
             android:name="org.apache.http.legacy"
@@ -50,7 +51,7 @@
         <activity
             android:name=".ui.screens.CrashActivity"
             android:exported="false"
-            android:theme="@style/Theme.Metrolist"
+            android:theme="@style/Theme.Sonara"
             android:excludeFromRecents="true"
             android:process=":crash" />
 
@@ -59,7 +60,7 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:resizeableActivity="true"
-            android:theme="@style/Theme.Metrolist"
+            android:theme="@style/Theme.Sonara"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -202,6 +203,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
+                <data android:scheme="sonaradiscord" />
                 <data android:scheme="metrolistdiscord" />
                 <data android:host="oauth2" />
                 <data android:pathPrefix="/callback" />
@@ -229,7 +231,7 @@
             android:exported="false"
             android:launchMode="singleTask"
             android:noHistory="true"
-            android:theme="@style/Theme.Metrolist.Transparent" />
+            android:theme="@style/Theme.Sonara.Transparent" />
 
         <service
             android:name=".playback.MusicService"

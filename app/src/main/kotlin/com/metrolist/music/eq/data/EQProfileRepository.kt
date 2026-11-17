@@ -15,27 +15,20 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Saved EQ Profile with metadata
- */
 @Serializable
 data class SavedEQProfile(
-    val id: String,                       // Unique identifier
-    val name: String,                     // Display name
-    val deviceModel: String,              // e.g., "Sony WH-1000XM4"
-    val bands: List<ParametricEQBand>,    // EQ bands
-    val preamp: Double = 0.0,             // Preamp gain in dB
-    val source: String = "unknown",       // Measurement source (e.g., oratory1990, crinacle)
-    val rig: String = "unknown",          // Measurement rig (e.g., HMS II.3, GRAS 43AG-7)
-    val isCustom: Boolean = false,        // Whether this is a custom imported profile
-    val isActive: Boolean = false,        // Whether this profile is currently active
+    val id: String,
+    val name: String,
+    val deviceModel: String,
+    val bands: List<ParametricEQBand>,
+    val preamp: Double = 0.0,
+    val source: String = "unknown",
+    val rig: String = "unknown",
+    val isCustom: Boolean = false,
+    val isActive: Boolean = false,
     val addedTimestamp: Long = System.currentTimeMillis()
 )
 
-/**
- * Repository for managing EQ profiles
- * Handles saving, loading, and activating EQ profiles
- */
 @Singleton
 class EQProfileRepository @Inject constructor(
     @ApplicationContext private val context: Context
@@ -60,47 +53,135 @@ class EQProfileRepository @Inject constructor(
         private const val TAG = "EQProfileRepository"
         private const val KEY_PROFILES = "eq_profiles"
         private const val KEY_ACTIVE_PROFILE_ID = "active_profile_id"
+
+        val STANDARD_FREQUENCIES = listOf(
+            31.0, 63.0, 125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0, 16000.0
+        )
+
+        fun createBands(gains: List<Double>): List<ParametricEQBand> {
+            return STANDARD_FREQUENCIES.mapIndexed { index, freq ->
+                ParametricEQBand(
+                    frequency = freq,
+                    gain = gains.getOrElse(index) { 0.0 },
+                    q = 1.41,
+                    filterType = FilterType.PK,
+                    enabled = true
+                )
+            }
+        }
+
+        fun getDefaultPresets(): List<SavedEQProfile> {
+            return listOf(
+                SavedEQProfile(
+                    id = "builtin_flat",
+                    name = "Flat",
+                    deviceModel = "Flat",
+                    bands = createBands(listOf(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)),
+                    preamp = 0.0,
+                    source = "Sonara System",
+                    isCustom = false
+                ),
+                SavedEQProfile(
+                    id = "builtin_rock",
+                    name = "Rock",
+                    deviceModel = "Rock",
+                    bands = createBands(listOf(4.5, 3.0, -1.0, -2.0, -1.0, 1.0, 3.0, 4.0, 4.5, 4.5)),
+                    preamp = -2.0,
+                    source = "Sonara System",
+                    isCustom = false
+                ),
+                SavedEQProfile(
+                    id = "builtin_pop",
+                    name = "Pop",
+                    deviceModel = "Pop",
+                    bands = createBands(listOf(-1.5, -1.0, 2.0, 3.5, 4.0, 3.0, 1.0, -1.0, -1.5, -2.0)),
+                    preamp = -1.5,
+                    source = "Sonara System",
+                    isCustom = false
+                ),
+                SavedEQProfile(
+                    id = "builtin_jazz",
+                    name = "Jazz",
+                    deviceModel = "Jazz",
+                    bands = createBands(listOf(3.5, 2.5, 1.0, 1.5, -1.5, -1.5, 0.0, 1.5, 2.5, 3.5)),
+                    preamp = -1.5,
+                    source = "Sonara System",
+                    isCustom = false
+                ),
+                SavedEQProfile(
+                    id = "builtin_classical",
+                    name = "Classical",
+                    deviceModel = "Classical",
+                    bands = createBands(listOf(4.5, 3.5, 2.5, 2.0, -1.5, -1.5, 0.0, 2.0, 3.0, 3.5)),
+                    preamp = -2.0,
+                    source = "Sonara System",
+                    isCustom = false
+                ),
+                SavedEQProfile(
+                    id = "builtin_bass_boost",
+                    name = "Bass Boost",
+                    deviceModel = "Bass Boost",
+                    bands = createBands(listOf(6.0, 5.5, 4.0, 2.5, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0)),
+                    preamp = -3.0,
+                    source = "Sonara System",
+                    isCustom = false
+                ),
+                SavedEQProfile(
+                    id = "builtin_vocal",
+                    name = "Vocal",
+                    deviceModel = "Vocal",
+                    bands = createBands(listOf(-2.0, -2.5, -1.0, 1.5, 3.5, 4.0, 3.5, 1.5, 0.0, -1.5)),
+                    preamp = -1.5,
+                    source = "Sonara System",
+                    isCustom = false
+                )
+            )
+        }
     }
 
     init {
         loadProfiles()
     }
 
-    /**
-     * Load all saved profiles from SharedPreferences
-     */
     private fun loadProfiles() {
         try {
             val profilesJson = prefs.getString(KEY_PROFILES, null)
+            val defaults = getDefaultPresets()
             if (profilesJson != null) {
                 val loadedProfiles = json.decodeFromString<List<SavedEQProfile>>(profilesJson)
-                _profiles.value = loadedProfiles
+                val merged = defaults.toMutableList()
+                loadedProfiles.forEach { saved ->
+                    if (saved.isCustom) {
+                        merged.add(saved)
+                    }
+                }
+                _profiles.value = merged
 
-                // Load active profile
                 val activeId = prefs.getString(KEY_ACTIVE_PROFILE_ID, null)
-                _activeProfile.value = loadedProfiles.find { it.id == activeId }
+                _activeProfile.value = merged.find { it.id == activeId }
+            } else {
+                _profiles.value = defaults
+                _activeProfile.value = defaults.firstOrNull()
+                prefs.edit {
+                    putString(KEY_PROFILES, json.encodeToString<List<SavedEQProfile>>(defaults))
+                    putString(KEY_ACTIVE_PROFILE_ID, defaults.first().id)
+                }
             }
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Error loading EQ profiles")
-            _profiles.value = emptyList()
-            _activeProfile.value = null
+            val defaults = getDefaultPresets()
+            _profiles.value = defaults
+            _activeProfile.value = defaults.firstOrNull()
         }
     }
 
-    /**
-     * Save a new EQ profile
-     */
     suspend fun saveProfile(profile: SavedEQProfile) = withContext(Dispatchers.IO) {
         val currentProfiles = _profiles.value.toMutableList()
-
-        // Check if profile with same ID already exists
         val existingIndex = currentProfiles.indexOfFirst { it.id == profile.id }
 
         if (existingIndex >= 0) {
-            // Update existing profile
             currentProfiles[existingIndex] = profile
         } else {
-            // Add new profile
             currentProfiles.add(profile)
         }
 
@@ -108,19 +189,15 @@ class EQProfileRepository @Inject constructor(
             _activeProfile.value = profile
         }
 
-        // Save to SharedPreferences
-        val profilesJson = json.encodeToString<List<SavedEQProfile>>(currentProfiles)
+        val customOnly = currentProfiles.filter { it.isCustom }
+        val profilesJson = json.encodeToString<List<SavedEQProfile>>(customOnly)
         prefs.edit { putString(KEY_PROFILES, profilesJson) }
 
         _profiles.value = currentProfiles
     }
 
-    /**
-     * Save multiple profiles at once (useful for wizard)
-     */
     suspend fun saveProfiles(profiles: List<SavedEQProfile>) = withContext(Dispatchers.IO) {
         val currentProfiles = _profiles.value.toMutableList()
-
         val activeId = _activeProfile.value?.id
 
         profiles.forEach { newProfile ->
@@ -135,40 +212,61 @@ class EQProfileRepository @Inject constructor(
             }
         }
 
-        val profilesJson = json.encodeToString<List<SavedEQProfile>>(currentProfiles)
+        val customOnly = currentProfiles.filter { it.isCustom }
+        val profilesJson = json.encodeToString<List<SavedEQProfile>>(customOnly)
         prefs.edit { putString(KEY_PROFILES, profilesJson) }
 
         _profiles.value = currentProfiles
     }
 
-    /**
-     * Delete a profile
-     */
+    suspend fun renameProfile(profileId: String, newName: String) = withContext(Dispatchers.IO) {
+        val currentProfiles = _profiles.value.toMutableList()
+        val index = currentProfiles.indexOfFirst { it.id == profileId }
+        if (index >= 0) {
+            val old = currentProfiles[index]
+            val updated = old.copy(name = newName, deviceModel = newName)
+            currentProfiles[index] = updated
+            if (_activeProfile.value?.id == profileId) {
+                _activeProfile.value = updated
+            }
+            val customOnly = currentProfiles.filter { it.isCustom }
+            val profilesJson = json.encodeToString<List<SavedEQProfile>>(customOnly)
+            prefs.edit { putString(KEY_PROFILES, profilesJson) }
+            _profiles.value = currentProfiles
+        }
+    }
+
     suspend fun deleteProfile(profileId: String) = withContext(Dispatchers.IO) {
         val currentProfiles = _profiles.value.toMutableList()
-        currentProfiles.removeAll { it.id == profileId }
+        currentProfiles.removeAll { it.id == profileId && it.isCustom }
 
-        val profilesJson = json.encodeToString<List<SavedEQProfile>>(currentProfiles)
+        val customOnly = currentProfiles.filter { it.isCustom }
+        val profilesJson = json.encodeToString<List<SavedEQProfile>>(customOnly)
         prefs.edit { putString(KEY_PROFILES, profilesJson) }
 
-        // If deleted profile was active, clear active profile
         if (_activeProfile.value?.id == profileId) {
-            _activeProfile.value = null
-            prefs.edit { remove(KEY_ACTIVE_PROFILE_ID) }
+            val fallback = getDefaultPresets().first()
+            _activeProfile.value = fallback
+            prefs.edit { putString(KEY_ACTIVE_PROFILE_ID, fallback.id) }
         }
 
         _profiles.value = currentProfiles
     }
 
-    /**
-     * Set a profile as active (only one profile can be active at a time)
-     * Pass null to deactivate all profiles
-     */
+    suspend fun restoreDefaults() = withContext(Dispatchers.IO) {
+        val defaults = getDefaultPresets()
+        prefs.edit {
+            remove(KEY_PROFILES)
+            putString(KEY_ACTIVE_PROFILE_ID, defaults.first().id)
+        }
+        _profiles.value = defaults
+        _activeProfile.value = defaults.first()
+    }
+
     suspend fun setActiveProfile(profileId: String?) = withContext(Dispatchers.IO) {
         val currentProfiles = _profiles.value
 
         if (profileId == null) {
-            // Deactivate all profiles
             _activeProfile.value = null
             prefs.edit { remove(KEY_ACTIVE_PROFILE_ID) }
         } else {
@@ -178,37 +276,28 @@ class EQProfileRepository @Inject constructor(
         }
     }
 
-    /**
-     * Import a custom EQ profile from ParametricEQ data
-     */
     suspend fun importCustomProfile(
         name: String,
         parametricEQ: ParametricEQ
     ) = withContext(Dispatchers.IO) {
-        // Generate unique ID for custom profile
         val id = "custom_${System.currentTimeMillis()}_${name.hashCode()}"
 
         val customProfile = SavedEQProfile(
             id = id,
             name = name,
             deviceModel = name,
-            bands = parametricEQ.bands,  // Already ParametricEQBand
+            bands = parametricEQ.bands,
             preamp = parametricEQ.preamp,
             isActive = false,
-            isCustom = true // Ensure this flag is set!
+            isCustom = true
         )
 
         saveProfile(customProfile)
     }
 
-    /**
-     * Get profiles sorted by type: AutoEQ first, then custom profiles
-     * Within each group, sort by timestamp (newest first)
-     */
     fun getSortedProfiles(): List<SavedEQProfile> {
-        // Only custom profiles are supported now
-        return _profiles.value
-            .filter { it.isCustom }
-            .sortedByDescending { it.addedTimestamp }
+        val defaults = _profiles.value.filter { !it.isCustom }
+        val customs = _profiles.value.filter { it.isCustom }.sortedByDescending { it.addedTimestamp }
+        return defaults + customs
     }
 }

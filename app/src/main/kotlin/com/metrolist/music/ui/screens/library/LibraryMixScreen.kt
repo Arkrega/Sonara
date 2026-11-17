@@ -6,6 +6,8 @@
 package com.metrolist.music.ui.screens.library
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -28,7 +30,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import com.metrolist.music.ui.component.glass.RegaGlassFab
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -455,18 +457,18 @@ fun LibraryMixScreen(
                     state = lazyListState,
                     contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
                 ) {
-                    item(
-                        key = "filter",
+                    stickyHeader(
+                        key = "sticky_filter_header",
                         contentType = CONTENT_TYPE_HEADER,
                     ) {
-                        filterContent()
-                    }
-
-                    item(
-                        key = "header",
-                        contentType = CONTENT_TYPE_HEADER,
-                    ) {
-                        headerContent()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.background),
+                        ) {
+                            filterContent()
+                            headerContent()
+                        }
                     }
 
                     if (showLikedPlaylist) {
@@ -1052,9 +1054,10 @@ fun LibraryMixScreen(
             }
         }
 
-        // Always visible + button (no scroll hiding)
-        FloatingActionButton(
+
+        RegaGlassFab(
             onClick = { showCreatePlaylistDialog = true },
+            contentDescription = stringResource(R.string.create_playlist),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .windowInsetsPadding(
@@ -1065,7 +1068,7 @@ fun LibraryMixScreen(
         ) {
             Icon(
                 painter = painterResource(R.drawable.add),
-                contentDescription = stringResource(R.string.create_playlist),
+                contentDescription = null,
             )
         }
 

@@ -1,10 +1,24 @@
----v1.0.0
-# Welcome to Rega Music 1.0.0
+---v1.1.0
+# SONARA 1.1.0
 
-Initial stable release of Rega Music — an independently branded, high-performance Android music player.
+Polish release for the SONARA identity: a cleaner launch, a redesigned Mood & genres wall, and account actions moved into a dedicated Profile tab.
 
 ## Highlights
-- Independent application identity (`com.arkrega.regamusic`)
+- Intro shortened from 5.5s to 3.2s and the Home screen no longer flashes before it starts
+- Mood & genres rebuilt as artwork cards with generated visuals instead of plain colour boxes
+- New Profile tab in the navigation dock; the top bar on Home is now just the wordmark
+- Opening Search no longer pops the keyboard up automatically
+- Simpler account sheet: the duplicate Settings entry is gone (Settings lives in Profile)
+- Home keeps its Mood & genres section even when the explore feed omits it
+- Quieter first launch: SQLite PRAGMA settings no longer log an error on every cold start
+
+---v1.0.0
+# Welcome to SONARA 1.0.0
+
+Initial stable release of SONARA — an independently branded, high-performance Android music player.
+
+## Highlights
+- Independent application identity (`com.arkrega.sonara`)
 - Clean, stable YouTube Music playback engine powered by AndroidX Media3
 - Full synchronized lyrics support
 - Offline music caching and downloads

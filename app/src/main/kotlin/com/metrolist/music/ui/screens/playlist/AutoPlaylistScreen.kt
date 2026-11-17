@@ -36,7 +36,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import com.metrolist.music.ui.component.glass.RegaGlassFab
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -685,7 +685,7 @@ fun AutoPlaylistScreen(
                                 .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
                         ).padding(16.dp),
             ) {
-                FloatingActionButton(
+                RegaGlassFab(
                     onClick = {
                         filePickerLauncher.launch(
                             arrayOf(
@@ -698,10 +698,11 @@ fun AutoPlaylistScreen(
                             ),
                         )
                     },
+                    contentDescription = stringResource(R.string.upload_songs),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.upload),
-                        contentDescription = stringResource(R.string.upload_songs),
+                        contentDescription = null,
                     )
                 }
             }

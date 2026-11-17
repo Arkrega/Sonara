@@ -1,0 +1,172 @@
+/* SONARA — features page styles */
+
+.page-hero {
+  padding: 8rem 1.25rem 5rem;
+  background: radial-gradient(1200px 600px at 70% -10%, rgba(255, 255, 255, 0.04), transparent 60%),
+    radial-gradient(1000px 500px at -10% 110%, rgba(255, 255, 255, 0.03), transparent 60%);
+}
+
+/* Feature rows — alternating layouts */
+.feature-row {
+  padding: 3.5rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.feature-row--reverse .feature-content {
+  order: 2;
+}
+
+.feature-row--reverse .feature-media {
+  order: 1;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.feature-media {
+  display: flex;
+  justify-content: center;
+}
+
+.feature-content .section-tag {
+  font-size: 0.7rem;
+}
+
+.feature-title {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin: 0.6rem 0 1rem;
+}
+
+.feature-desc {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feature-list .bullet {
+  color: var(--text-tertiary);
+  font-weight: 700;
+  margin-right: 0.45rem;
+}
+
+/* Centered feature — text top, media + list bottom */
+.feature-center,
+.feature-center--reverse {
+  padding: 4rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.feature-center .feature-title {
+  text-align: center;
+}
+
+.feature-center .feature-desc {
+  text-align: center;
+}
+
+.feature-media-center {
+  display: flex;
+  justify-content: center;
+  margin: 2rem auto;
+}
+
+.feature-center--reverse .feature-list {
+  margin-top: 0;
+}
+
+.feature-list--center {
+  align-items: center;
+  max-width: 560px;
+  margin: 2rem auto 0;
+}
+
+/* Effects grid */
+.feature-effects {
+  padding: 5rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.effect-grid {
+  margin-top: 2rem;
+}
+
+.effect-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.effect-card:hover {
+  border-color: var(--text-tertiary);
+  transform: translateY(-2px);
+}
+
+.effect-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.6rem;
+}
+
+.effect-desc {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.cta {
+  text-align: center;
+  padding: 5rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .feature-row--reverse .feature-content {
+    order: 0;
+  }
+
+  .feature-row--reverse .feature-media {
+    order: 0;
+  }
+
+  .feature-title {
+    font-size: 1.7rem;
+  }
+
+  .feature-media img,
+  .feature-media-center img {
+    max-width: 270px;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-hero {
+    padding: 7rem 1.25rem 4rem;
+  }
+
+  .feature-effects {
+    padding: 3.5rem 1.25rem;
+  }
+}

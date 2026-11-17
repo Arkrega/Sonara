@@ -22,12 +22,14 @@ import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -47,15 +49,15 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -84,7 +86,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -96,6 +97,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
@@ -123,13 +126,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import coil3.compose.AsyncImage
-import coil3.imageLoader
-import coil3.request.CachePolicy
-import coil3.request.ImageRequest
-import coil3.request.allowHardware
-import coil3.request.crossfade
-import coil3.toBitmap
 import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import com.metrolist.innertube.models.WatchEndpoint
@@ -137,12 +133,14 @@ import com.metrolist.music.constants.AppBarHeight
 import com.metrolist.music.constants.AppLanguageKey
 import com.metrolist.music.constants.CheckForUpdatesKey
 import com.metrolist.music.constants.DarkModeKey
+import com.metrolist.music.constants.InnerTubeCookieKey
+import com.metrolist.music.constants.IntroCompletedKey
+import com.metrolist.music.constants.OnboardingStateKey
 import com.metrolist.music.constants.DefaultOpenTabKey
 import com.metrolist.music.constants.DismissedKmpUpdateKey
 import com.metrolist.music.constants.DismissedStandaloneUpdateKey
 import com.metrolist.music.constants.DensityScaleKey
 import com.metrolist.music.constants.DisableScreenshotKey
-import com.metrolist.music.constants.DynamicThemeKey
 import com.metrolist.music.constants.EnableHighRefreshRateKey
 import com.metrolist.music.constants.EnableLandscapeScalingKey
 import com.metrolist.music.constants.ExperimentalLyricsKey
@@ -187,18 +185,21 @@ import com.metrolist.music.ui.component.BottomSheetPage
 import com.metrolist.music.ui.component.LocalBottomSheetPageState
 import com.metrolist.music.ui.component.LocalMenuState
 import com.metrolist.music.ui.component.rememberBottomSheetState
-import com.metrolist.music.ui.component.shimmer.ShimmerTheme
+import com.metrolist.music.ui.component.glass.LocalRegaBackdrop
+import com.metrolist.music.ui.component.glass.regaBackdropSource
+import com.metrolist.music.ui.component.glass.rememberRegaBackdropState
 import com.metrolist.music.ui.menu.YouTubeSongMenu
 import com.metrolist.music.ui.player.BottomSheetPlayer
 import com.metrolist.music.ui.screens.Screens
+import com.metrolist.music.ui.screens.SonaraOnboarding
 import com.metrolist.music.ui.screens.navigationBuilder
 import com.metrolist.music.ui.screens.settings.ChangelogScreen
 import com.metrolist.music.ui.screens.settings.DarkMode
 import com.metrolist.music.ui.screens.settings.NavigationTab
-import com.metrolist.music.ui.theme.ColorSaver
 import com.metrolist.music.ui.theme.DefaultThemeColor
 import com.metrolist.music.ui.theme.MetrolistTheme
-import com.metrolist.music.ui.theme.extractThemeColor
+import com.metrolist.music.ui.theme.SonaraMotion
+import com.metrolist.music.ui.theme.SonaraTheme
 import com.metrolist.music.ui.utils.appBarScrollBehavior
 import com.metrolist.music.ui.utils.resetHeightOffset
 import com.metrolist.music.utils.ReleaseInfo
@@ -206,16 +207,18 @@ import com.metrolist.music.utils.SearchRoutes
 import com.metrolist.music.utils.SyncUtils
 import com.metrolist.music.utils.ArtistNameAliases
 import com.metrolist.music.utils.Updater
+import com.metrolist.music.utils.OnboardingStatus
 import com.metrolist.music.utils.dataStore
+import com.metrolist.music.utils.resolveOnboardingStatus
 import com.metrolist.music.utils.safeDataStoreEdit
 import com.metrolist.music.utils.get
 import com.metrolist.music.utils.rememberEnumPreference
+import com.metrolist.music.utils.applyRefreshRatePreference
 import com.metrolist.music.utils.rememberPreference
 import com.metrolist.music.utils.reportException
 import com.metrolist.music.utils.setAppLocale
 import com.metrolist.music.viewmodels.HomeViewModel
 import com.metrolist.music.widget.PlaylistWidgetReceiver
-import com.valentinilk.shimmer.LocalShimmerTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -250,6 +253,11 @@ class MainActivity : FragmentActivity() {
         const val EXTRA_AUTO_START_RECOGNITION = "auto_start_recognition"
         const val EXTRA_WIDGET_TARGET_TYPE = "widget_target_type"
         const val EXTRA_WIDGET_TARGET_ID = "widget_target_id"
+
+        // Intro replays on every cold launch, but survives activity recreation
+        // (rotation, theme change) without restarting the five second card.
+        @Volatile
+        private var introPlayedThisProcess = false
     }
 
     @Inject
@@ -472,7 +480,7 @@ class MainActivity : FragmentActivity() {
         }
 
         setContent {
-            MetrolistApp(
+            SonaraApp(
                 latestVersionName = latestVersionName,
                 onLatestVersionNameChange = { latestVersionName = it },
                 playerConnection = playerConnectionSnapshot,
@@ -486,7 +494,7 @@ class MainActivity : FragmentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun MetrolistApp(
+    private fun SonaraApp(
         latestVersionName: String,
         onLatestVersionNameChange: (String) -> Unit,
         playerConnection: PlayerConnection?,
@@ -547,35 +555,12 @@ class MainActivity : FragmentActivity() {
             }
         }
 
-        val enableDynamicTheme by rememberPreference(DynamicThemeKey, defaultValue = true)
         val enableHighRefreshRate by rememberPreference(EnableHighRefreshRateKey, defaultValue = true)
 
+        // MONOCHROME SONIC supports 120/144 Hz panels: animations run on Compose's
+        // frame clock and the window asks the display for its fastest mode.
         LaunchedEffect(enableHighRefreshRate) {
-            val window = this@MainActivity.window
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                val layoutParams = window.attributes
-                if (enableHighRefreshRate) {
-                    layoutParams.preferredDisplayModeId = 0
-                } else {
-                    val modes = window.windowManager.defaultDisplay.supportedModes
-                    val mode60 =
-                        modes.firstOrNull { kotlin.math.abs(it.refreshRate - 60f) < 1f }
-                            ?: modes.minByOrNull { kotlin.math.abs(it.refreshRate - 60f) }
-
-                    if (mode60 != null) {
-                        layoutParams.preferredDisplayModeId = mode60.modeId
-                    }
-                }
-                window.attributes = layoutParams
-            } else {
-                val params = window.attributes
-                if (enableHighRefreshRate) {
-                    params.preferredRefreshRate = 0f
-                } else {
-                    params.preferredRefreshRate = 60f
-                }
-                window.attributes = params
-            }
+            applyRefreshRatePreference(enableHighRefreshRate)
         }
 
         val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
@@ -602,65 +587,44 @@ class MainActivity : FragmentActivity() {
 
         val showChangelog = rememberSaveable { mutableStateOf(false) }
 
-        var themeColor by rememberSaveable(stateSaver = ColorSaver) {
-            mutableStateOf(selectedThemeColor)
-        }
-
-        val themeColorCache = remember { mutableMapOf<String, Color>() }
-
-        LaunchedEffect(selectedThemeColor) {
-            if (!enableDynamicTheme) {
-                themeColor = selectedThemeColor
-            }
-        }
-
-        LaunchedEffect(playerConnection, enableDynamicTheme, selectedThemeColor) {
-            val playerConnection = playerConnection
-            if (!enableDynamicTheme || playerConnection == null) {
-                themeColor = selectedThemeColor
-                return@LaunchedEffect
-            }
-
-            playerConnection.service.currentMediaMetadata
-                .distinctUntilChanged { old, new -> old?.id == new?.id }
-                .collectLatest { song ->
-                    if (song?.thumbnailUrl != null) {
-                        val cached = themeColorCache[song.thumbnailUrl]
-                        if (cached != null) {
-                            withFrameNanos { }
-                            themeColor = cached
-                            return@collectLatest
-                        }
-                        withContext(Dispatchers.IO) {
-                            try {
-                                val result =
-                                    imageLoader.execute(
-                                        ImageRequest
-                                            .Builder(this@MainActivity)
-                                            .data(song.thumbnailUrl)
-                                            .allowHardware(false)
-                                            .memoryCachePolicy(CachePolicy.ENABLED)
-                                            .diskCachePolicy(CachePolicy.ENABLED)
-                                            .networkCachePolicy(CachePolicy.ENABLED)
-                                            .crossfade(false)
-                                            .build(),
-                                    )
-                                val extractedColor = result.image?.toBitmap()?.extractThemeColor() ?: selectedThemeColor
-                                themeColorCache[song.thumbnailUrl] = extractedColor
-                                withFrameNanos { }
-                                themeColor = extractedColor
-                            } catch (e: Exception) {
-                                withFrameNanos { }
-                                themeColor = selectedThemeColor
-                            }
-                        }
-                    } else {
-                        themeColor = selectedThemeColor
-                    }
+        // Launch gate. `resolved` stays false until DataStore answers so a cold
+        // start shows a black frame instead of Home before the intro.
+        var onboardingResolved by remember { mutableStateOf(false) }
+        var onboardingPending by remember { mutableStateOf(false) }
+        var launchGateVisible by remember { mutableStateOf(!introPlayedThisProcess) }
+        LaunchedEffect(Unit) {
+            val preferences = runCatching { dataStore.data.first() }.getOrNull()
+            val stored = preferences?.get(OnboardingStateKey)
+            val hasAccountSession = preferences?.get(InnerTubeCookieKey)?.contains("SAPISID") == true
+            val status = resolveOnboardingStatus(
+                storedValue = stored,
+                legacyIntroCompleted = preferences?.get(IntroCompletedKey) == true,
+                hasAccountSession = hasAccountSession,
+            )
+            if (preferences != null && stored == null && status != OnboardingStatus.PENDING) {
+                safeDataStoreEdit {
+                    it[OnboardingStateKey] = status.value
+                    it[IntroCompletedKey] = true
                 }
+            }
+            onboardingPending = status == OnboardingStatus.PENDING
+            if (onboardingPending) launchGateVisible = true
+            onboardingResolved = true
         }
 
-        MetrolistTheme(
+        // The intro is always black, so force light system-bar icons until the
+        // gate is gone even when the app is configured for the light theme.
+        LaunchedEffect(useDarkTheme, onboardingResolved, launchGateVisible) {
+            val onboardingActive = !onboardingResolved || launchGateVisible
+            setSystemBarAppearance(if (onboardingActive) true else useDarkTheme)
+        }
+
+        // MONOCHROME SONIC: the palette is fixed. Album-art colour extraction used to
+        // run on every track change (bitmap decode + palette scoring) and no longer
+        // has any visual effect, so it is gone along with its per-track work.
+        val themeColor = selectedThemeColor
+
+        SonaraTheme(
             darkTheme = useDarkTheme,
             pureBlack = pureBlack,
             themeColor = themeColor,
@@ -715,7 +679,6 @@ class MainActivity : FragmentActivity() {
                 }
 
                 val homeViewModel: HomeViewModel = hiltViewModel()
-                val accountImageUrl by homeViewModel.accountImageUrl.collectAsStateWithLifecycle()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val (previousTab, setPreviousTab) = rememberSaveable { mutableStateOf("home") }
 
@@ -1011,8 +974,9 @@ class MainActivity : FragmentActivity() {
                         !(pauseListenHistory && eventCount == 0)
                     }
 
-                val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+                val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.background
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
+                val appBackdropState = rememberRegaBackdropState()
 
                 CompositionLocalProvider(
                     LocalDatabase provides database,
@@ -1021,11 +985,11 @@ class MainActivity : FragmentActivity() {
                     LocalPlayerConnection provides playerConnection,
                     LocalPlayerAwareWindowInsets provides playerAwareWindowInsets,
                     LocalDownloadUtil provides downloadUtil,
-                    LocalShimmerTheme provides ShimmerTheme,
                     LocalSyncUtils provides syncUtils,
                     LocalListenTogetherManager provides listenTogetherManager,
                     LocalChangelogState provides showChangelog,
                     LocalArtistNameAliases provides artistNameAliases,
+                    LocalRegaBackdrop provides appBackdropState,
                 ) {
                     if (showChangelog.value) {
                         ChangelogScreen(onDismiss = { showChangelog.value = false })
@@ -1042,13 +1006,26 @@ class MainActivity : FragmentActivity() {
                                 Row {
                                     TopAppBar(
                                         title = {
-                                            Text(
-                                                text = currentTitleRes?.let { stringResource(it) } ?: "",
-                                                style = MaterialTheme.typography.titleLarge,
-                                            )
+                                            if (currentRoute == Screens.Home.route) {
+                                                Image(
+                                                    painter = painterResource(R.drawable.sonara_logo_horizontal),
+                                                    contentDescription = null,
+                                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+                                                    contentScale = ContentScale.Fit,
+                                                    modifier = Modifier
+                                                        .height(22.dp)
+                                                        .widthIn(max = 124.dp),
+                                                )
+                                            } else {
+                                                Text(
+                                                    text = currentTitleRes?.let { stringResource(it) } ?: "",
+                                                    style = MaterialTheme.typography.titleLarge,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                )
+                                            }
                                         },
                                         actions = {
-                                            if (showHistoryButton) {
+                                            if (showHistoryButton && currentRoute != Screens.Home.route) {
                                                 IconButton(onClick = { navController.navigate("history") }) {
                                                     Icon(
                                                         painter = painterResource(R.drawable.history),
@@ -1056,13 +1033,13 @@ class MainActivity : FragmentActivity() {
                                                     )
                                                 }
                                             }
-                                            IconButton(onClick = { navController.navigate("stats") }) {
+                                            if (currentRoute != Screens.Home.route) IconButton(onClick = { navController.navigate("stats") }) {
                                                 Icon(
                                                     painter = painterResource(R.drawable.stats),
                                                     contentDescription = stringResource(R.string.stats),
                                                 )
                                             }
-                                            if (listenTogetherInTopBar) {
+                                            if (listenTogetherInTopBar && currentRoute != Screens.Home.route) {
                                                 IconButton(onClick = { navController.navigate("listen_together_from_topbar") }) {
                                                     Icon(
                                                         painter = painterResource(R.drawable.group_outlined),
@@ -1070,39 +1047,15 @@ class MainActivity : FragmentActivity() {
                                                     )
                                                 }
                                             }
-                                            IconButton(onClick = { showAccountDialog = true }) {
-                                                BadgedBox(badge = {
-                                                    if (latestVersionName != BuildConfig.BASE_VERSION_NAME) {
-                                                        Badge()
-                                                    }
-                                                }) {
-                                                    if (accountImageUrl != null) {
-                                                        AsyncImage(
-                                                            model = accountImageUrl,
-                                                            contentDescription = stringResource(R.string.account),
-                                                            modifier =
-                                                                Modifier
-                                                                    .size(24.dp)
-                                                                    .clip(CircleShape),
-                                                        )
-                                                    } else {
-                                                        Icon(
-                                                            painter = painterResource(R.drawable.account),
-                                                            contentDescription = stringResource(R.string.account),
-                                                            modifier = Modifier.size(24.dp),
-                                                        )
-                                                    }
-                                                }
-                                            }
                                         },
                                         scrollBehavior = topAppBarScrollBehavior,
                                         colors =
                                             TopAppBarDefaults.topAppBarColors(
-                                                containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
-                                                scrolledContainerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
+                                                containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.background,
+                                                scrolledContainerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.background,
                                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
-                                                actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+                                                navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
                                             ),
                                         modifier =
                                             Modifier.windowInsetsPadding(
@@ -1275,7 +1228,12 @@ class MainActivity : FragmentActivity() {
                                 .fillMaxSize()
                                 .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                     ) {
-                        Row(Modifier.fillMaxSize()) {
+                        Row(
+                            Modifier
+                                .fillMaxSize()
+                                .regaBackdropSource(appBackdropState),
+                        ) {
+                            CompositionLocalProvider(LocalRegaBackdrop provides null) {
                             val onRailItemClick: (Screens, Boolean) -> Unit =
                                 remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState) {
                                     { screen: Screens, isSelected: Boolean ->
@@ -1332,42 +1290,45 @@ class MainActivity : FragmentActivity() {
                                     enterTransition = {
                                         val currentRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
                                         val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
+                                        val forward = currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex
 
-                                        if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex) {
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(200))
-                                        } else {
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(200))
-                                        }
+                                        // MONOCHROME SONIC: a shallow parallax slide under a soft fade.
+                                        // The borrowed distance stays small so the transition reads as
+                                        // depth rather than a page flip, and it never leaves the frame budget.
+                                        fadeIn(tween(SonaraMotion.Medium, easing = SonaraMotion.Standard)) +
+                                            slideInHorizontally(tween(SonaraMotion.Slow, easing = SonaraMotion.EmphasizedDecel)) {
+                                                if (forward) it / 18 else -it / 18
+                                            }
                                     },
                                     exitTransition = {
                                         val currentRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
                                         val targetRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
+                                        val forward = targetRouteIndex == -1 || targetRouteIndex > currentRouteIndex
 
-                                        if (targetRouteIndex == -1 || targetRouteIndex > currentRouteIndex) {
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(200))
-                                        } else {
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(200))
-                                        }
+                                        fadeOut(tween(SonaraMotion.Fast, easing = SonaraMotion.EmphasizedAccel)) +
+                                            slideOutHorizontally(tween(SonaraMotion.Medium, easing = SonaraMotion.EmphasizedAccel)) {
+                                                if (forward) -it / 24 else it / 24
+                                            }
                                     },
                                     popEnterTransition = {
                                         val currentRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
                                         val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
+                                        val backwards = previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex
 
-                                        if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex) {
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(200))
-                                        } else {
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(200))
-                                        }
+                                        fadeIn(tween(SonaraMotion.Medium, easing = SonaraMotion.Standard)) +
+                                            slideInHorizontally(tween(SonaraMotion.Slow, easing = SonaraMotion.EmphasizedDecel)) {
+                                                if (backwards) it / 18 else -it / 18
+                                            }
                                     },
                                     popExitTransition = {
                                         val currentRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
                                         val targetRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
+                                        val backwards = currentRouteIndex != -1 && currentRouteIndex < targetRouteIndex
 
-                                        if (currentRouteIndex != -1 && currentRouteIndex < targetRouteIndex) {
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(200))
-                                        } else {
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(200))
-                                        }
+                                        fadeOut(tween(SonaraMotion.Fast, easing = SonaraMotion.EmphasizedAccel)) +
+                                            slideOutHorizontally(tween(SonaraMotion.Medium, easing = SonaraMotion.EmphasizedAccel)) {
+                                                if (backwards) it / 24 else -it / 24
+                                            }
                                     },
                                     modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                                 ) {
@@ -1379,6 +1340,7 @@ class MainActivity : FragmentActivity() {
                                         snackbarHostState = snackbarHostState,
                                     )
                                 }
+                            }
                             }
                         }
                     }
@@ -1428,7 +1390,7 @@ class MainActivity : FragmentActivity() {
                         }
                     }
 
-                    if (!showChangelog.value) {
+                    if (!showChangelog.value && onboardingResolved && !launchGateVisible) {
                         availableUpdate?.let { update ->
                             val dismissUpdate: () -> Unit = {
                                 availableUpdate = null
@@ -1480,10 +1442,14 @@ class MainActivity : FragmentActivity() {
                                                         sha256SumsUrl = update.release.sha256SumsUrl,
                                                         onProgress = { state ->
                                                             if (state is UpdateDownloadState.ReadyToInstall) {
-                                                                if (!AppUpdateDownloader.canInstallPackages(this@MainActivity)) {
-                                                                    AppUpdateDownloader.openInstallPermissionSettings(this@MainActivity)
-                                                                }
                                                                 AppUpdateDownloader.triggerInstall(this@MainActivity, state.apkFile)
+                                                            } else if (state is UpdateDownloadState.PermissionRequired) {
+                                                                android.widget.Toast.makeText(
+                                                                    this@MainActivity,
+                                                                    getString(R.string.install_permission_required),
+                                                                    android.widget.Toast.LENGTH_LONG
+                                                                ).show()
+                                                                AppUpdateDownloader.openInstallPermissionSettings(this@MainActivity)
                                                             }
                                                         }
                                                     ).onFailure {
@@ -1506,6 +1472,40 @@ class MainActivity : FragmentActivity() {
                             )
                         }
                     }
+                }
+                if (!onboardingResolved) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF050505)),
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = onboardingResolved && launchGateVisible,
+                    // The gate must be opaque on its very first frame: a fade-in
+                    // let Home show through for a beat before the intro started.
+                    enter = EnterTransition.None,
+                    exit = fadeOut(tween(320)),
+                ) {
+                    SonaraOnboarding(
+                        navController = navController,
+                        needsWelcome = onboardingPending,
+                        startAtWelcome = introPlayedThisProcess,
+                        onIntroFinished = {
+                            introPlayedThisProcess = true
+                            if (!onboardingPending) launchGateVisible = false
+                        },
+                        onGuest = {
+                            lifecycleScope.launch {
+                                safeDataStoreEdit {
+                                    it[OnboardingStateKey] = OnboardingStatus.GUEST.value
+                                    it[IntroCompletedKey] = true
+                                }
+                                launchGateVisible = false
+                            }
+                        },
+                    )
                 }
             }
             }

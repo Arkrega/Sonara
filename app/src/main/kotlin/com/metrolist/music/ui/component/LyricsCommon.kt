@@ -17,6 +17,7 @@ import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -47,7 +48,8 @@ internal fun IntervalIndicator(
     currentPositionMs: Long,
     visible: Boolean,
     color: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    positionState: State<Long>? = null,
 ) {
     val alpha = remember { Animatable(0f) }
     val rowHeightPx = remember { Animatable(0f) }
@@ -62,15 +64,12 @@ internal fun IntervalIndicator(
         }
     }
 
-    val density = LocalDensity.current
     val targetHeightDp = 72.dp
 
-    val progress = if (gapEndMs > gapStartMs) {
-        ((currentPositionMs - gapStartMs).toFloat() / (gapEndMs - gapStartMs).toFloat()).coerceIn(0f, 1f)
-    } else 0f
-
     val animatedProgress by animateFloatAsState(
-        targetValue = progress,
+        targetValue = if (gapEndMs > gapStartMs) {
+            ((currentPositionMs - gapStartMs).toFloat() / (gapEndMs - gapStartMs).toFloat()).coerceIn(0f, 1f)
+        } else 0f,
         animationSpec = tween(durationMillis = 100, easing = LinearEasing),
         label = "intervalProgress"
     )
@@ -86,7 +85,14 @@ internal fun IntervalIndicator(
         contentAlignment = Alignment.Center
     ) {
         CircularWavyProgressIndicator(
-            progress = { animatedProgress },
+            progress = {
+                if (positionState != null && gapEndMs > gapStartMs) {
+                    val livePos = positionState.value
+                    ((livePos - gapStartMs).toFloat() / (gapEndMs - gapStartMs).toFloat()).coerceIn(0f, 1f)
+                } else {
+                    animatedProgress
+                }
+            },
             modifier = Modifier
                 .size(36.dp)
                 .alpha(alpha.value),

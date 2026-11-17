@@ -79,7 +79,7 @@ fun EqFrequencyResponseGraph(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
         color = surfaceColor,
         tonalElevation = 2.dp
     ) {

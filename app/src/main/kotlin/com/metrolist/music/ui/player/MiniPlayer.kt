@@ -108,6 +108,14 @@ import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import com.metrolist.music.ui.component.Icon as MIcon
+import com.metrolist.music.ui.theme.LocalRegaColors
+import com.metrolist.music.ui.theme.artworkInteraction
+import com.metrolist.music.ui.component.AnimatedWaveform
+import androidx.compose.ui.draw.shadow
+import com.metrolist.music.ui.component.glass.RegaGlassMaterial
+import com.metrolist.music.ui.component.glass.RegaGlassStyle
+import com.metrolist.music.ui.component.glass.RegaLiquidGlass
+import com.metrolist.music.ui.component.glass.regaGlassSpecular
 import androidx.compose.ui.draw.blur
 import com.metrolist.music.constants.MiniPlayerBackgroundStyle
 import com.metrolist.music.constants.MiniPlayerBackgroundStyleKey
@@ -185,6 +193,7 @@ private fun NewMiniPlayer(
         MiniPlayerBackgroundStyleKey,
         defaultValue = MiniPlayerBackgroundStyle.DEFAULT,
     )
+    val pureBlack by rememberPreference(PureBlackMiniPlayerKey, defaultValue = false)
     val context = LocalContext.current
     var gradientColors by remember { mutableStateOf<List<Color>>(emptyList()) }
     val isSystemInDarkTheme = isSystemInDarkTheme()
@@ -287,7 +296,7 @@ private fun NewMiniPlayer(
 
     // Memoize colors
     val backgroundColor = when (miniPlayerBackground) {
-        MiniPlayerBackgroundStyle.DEFAULT    -> MaterialTheme.colorScheme.surfaceContainer
+        MiniPlayerBackgroundStyle.DEFAULT    -> if (pureBlack && isSystemInDarkTheme()) Color.Black else LocalRegaColors.current.glassTint
         MiniPlayerBackgroundStyle.TRANSPARENT -> Color.Black.copy(alpha = 0.25f)
         MiniPlayerBackgroundStyle.BLUR       -> MaterialTheme.colorScheme.surfaceContainer
         MiniPlayerBackgroundStyle.GRADIENT   -> MaterialTheme.colorScheme.surfaceContainer
@@ -308,7 +317,6 @@ private fun NewMiniPlayer(
                 .fillMaxWidth()
                 .height(MiniPlayerHeight)
                 .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
-                .padding(horizontal = 12.dp)
                 .let { baseModifier ->
                     if (swipeThumbnail) {
                         baseModifier.pointerInput(Unit) {
@@ -373,21 +381,40 @@ private fun NewMiniPlayer(
                 },
     ) {
         val interactionSource = remember { MutableInteractionSource() }
-        Box(
+        val miniPlayerShape = RoundedCornerShape(16.dp)
+        RegaLiquidGlass(
             modifier =
                 Modifier
-                    .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
-                    .height(64.dp)
-                    .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(color = backgroundColor)
-                    .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
+                    .padding(horizontal = 22.dp, vertical = 6.dp)
+                    .then(if (isTabletLandscape) Modifier.width(520.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
+                    .height(66.dp)
+                    .shadow(
+                        elevation = 14.dp,
+                        shape = miniPlayerShape,
+                        clip = false,
+                        ambientColor = Color.Black.copy(alpha = 0.45f),
+                        spotColor = Color.Black.copy(alpha = 0.45f),
+                    )
+                    .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) },
+            shape = miniPlayerShape,
+            borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.09f),
+            style = RegaGlassStyle.preset(
+                material = RegaGlassMaterial.Thin,
+                tint = backgroundColor,
+                borderRadius = 16.dp,
+                elevation = 0.dp,
+            ),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
                     .clickable(
                         interactionSource = interactionSource,
                         indication = LocalIndication.current,
                         onClick = onClick
                     ),
-        ) {
+            ) {
             when (miniPlayerBackground) {
                 MiniPlayerBackgroundStyle.BLUR -> {
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
@@ -396,6 +423,9 @@ private fun NewMiniPlayer(
                                 model = url,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
+                                colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+                                    androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) },
+                                ),
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .blur(60.dp),
@@ -411,8 +441,8 @@ private fun NewMiniPlayer(
                 MiniPlayerBackgroundStyle.GRADIENT -> {
                     val colors = if (gradientColors.isNotEmpty()) gradientColors
                     else listOf(
-                        MaterialTheme.colorScheme.surfaceContainer,
-                        MaterialTheme.colorScheme.surfaceContainer,
+                        LocalRegaColors.current.glassTint,
+                        LocalRegaColors.current.glassTint,
                     )
                     Box(
                         Modifier
@@ -427,9 +457,8 @@ private fun NewMiniPlayer(
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 8.dp),
             ) {
-                // Play button with progress - isolated composable
                 NewMiniPlayerPlayButton(
                     progressState = progressState,
                     playbackState = playbackState,
@@ -442,9 +471,17 @@ private fun NewMiniPlayer(
                     listenTogetherManager = listenTogetherManager,
                 )
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(14.dp))
 
-                // Song info - isolated composable
+                AnimatedWaveform(
+                    isPlaying = playbackState == Player.STATE_READY,
+                    color = onSurfaceColor,
+                    barCount = 4,
+                    modifier = Modifier.size(width = 14.dp, height = 16.dp),
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
                 NewMiniPlayerSongInfo(
                     mediaMetadata = mediaMetadata,
                     onSurfaceColor = onSurfaceColor,
@@ -454,7 +491,6 @@ private fun NewMiniPlayer(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Cast indicator
                 if (isCasting) {
                     Icon(
                         painter = painterResource(R.drawable.cast_connected),
@@ -465,7 +501,6 @@ private fun NewMiniPlayer(
                     Spacer(modifier = Modifier.width(12.dp))
                 }
 
-// Subscribe button - isolated composable
                 mediaMetadata?.artists?.firstOrNull()?.id?.let { artistId ->
                     SubscribeButton(
                         artistId = artistId,
@@ -478,7 +513,6 @@ private fun NewMiniPlayer(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-// Favorite button - isolated composable
                 mediaMetadata?.let { FavoriteButton(
                     songId = it.id,
                     errorColor = errorColor,
@@ -487,6 +521,20 @@ private fun NewMiniPlayer(
                 )
                 }
             }
+
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .align(Alignment.BottomCenter)
+                        .drawWithContent {
+                            val progress = progressState.progress
+                            drawRect(outlineColor.copy(alpha = 0.22f))
+                            drawRect(primaryColor, size = Size(size.width * progress, size.height))
+                        },
+            )
+        }
         }
     }
 }
@@ -513,7 +561,7 @@ private fun NewMiniPlayerPlayButton(
     val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
     val isMuted by playerConnection.isMuted.collectAsStateWithLifecycle()
 
-    val trackColor = outlineColor.copy(alpha = 0.2f)
+    val trackColor = primaryColor.copy(alpha = 0.18f)
     val strokeWidth = 3.dp
 
     Box(
@@ -559,6 +607,7 @@ private fun NewMiniPlayerPlayButton(
             modifier =
                 Modifier
                     .size(40.dp)
+                    .artworkInteraction(hoverScale = 1.06f, pressScale = 0.94f)
                     .clip(CircleShape)
                     .border(1.dp, outlineColor.copy(alpha = 0.3f), CircleShape)
                     .clickable {
@@ -639,7 +688,7 @@ private fun NewMiniPlayerSongInfo(
             Text(
                 text = metadata.title,
                 color = onSurfaceColor,
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Clip,
@@ -654,7 +703,7 @@ private fun NewMiniPlayerSongInfo(
                      Text(
                          text = metadata.artists.joinToArtistString(" ${stringResource(R.string.and)} ") { it.name },
                          color = onSurfaceColor.copy(alpha = 0.7f),
-                        fontSize = 12.sp,
+                        fontSize = 12.5.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Clip,
                         modifier = Modifier.basicMarquee(iterations = 1, initialDelayMillis = 3000, velocity = 30.dp),
@@ -741,20 +790,27 @@ private fun LegacyMiniPlayer(
 
     val interactionSource = remember { MutableInteractionSource() }
 
-    Box(
+    val legacyShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    RegaLiquidGlass(
         modifier =
             modifier
                 .then(if (isTabletLandscape) Modifier.width(500.dp) else Modifier.fillMaxWidth())
                 .height(MiniPlayerHeight)
-                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
-                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                .background(
-                    if (pureBlack && isSystemInDarkTheme()) {
-                        Color.Black
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainer
-                    },
-                ).clickable(
+                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
+        shape = legacyShape,
+        borderColor = LocalRegaColors.current.glassBorder,
+        style = RegaGlassStyle.preset(
+            material = RegaGlassMaterial.Regular,
+            tint = if (pureBlack && isSystemInDarkTheme()) Color.Black.copy(alpha = 0.85f) else LocalRegaColors.current.glassTint,
+            borderRadius = 20.dp,
+            elevation = 10.dp,
+        ),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
                     interactionSource = interactionSource,
                     indication = LocalIndication.current,
                     onClick = onClick
@@ -887,6 +943,7 @@ private fun LegacyMiniPlayer(
                 )
             }
         }
+    }
     }
 }
 
@@ -1105,17 +1162,17 @@ private fun FavoriteButton(
                 .clip(CircleShape)
                 .border(
                     width = 1.dp,
-                    color = if (isLiked) errorColor.copy(alpha = 0.5f) else outlineColor.copy(alpha = 0.3f),
+                    color = if (isLiked) onSurfaceColor.copy(alpha = 0.55f) else outlineColor.copy(alpha = 0.3f),
                     shape = CircleShape,
                 ).background(
-                    color = if (isLiked) errorColor.copy(alpha = 0.1f) else Color.Transparent,
+                    color = if (isLiked) onSurfaceColor.copy(alpha = 0.12f) else Color.Transparent,
                     shape = CircleShape,
                 ).clickable { playerConnection.service.toggleLike() },
     ) {
         Icon(
             painter = painterResource(if (isLiked) R.drawable.favorite else R.drawable.favorite_border),
             contentDescription = null,
-            tint = if (isLiked) errorColor else onSurfaceColor.copy(alpha = 0.7f),
+            tint = if (isLiked) onSurfaceColor else onSurfaceColor.copy(alpha = 0.7f),
             modifier = Modifier.size(20.dp),
         )
     }

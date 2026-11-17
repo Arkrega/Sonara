@@ -167,7 +167,7 @@ fun ChartsScreen(
                                             modifier =
                                                 Modifier
                                                     .size(ListItemHeight - 16.dp)
-                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .clip(RoundedCornerShape(8.dp))
                                                     .background(MaterialTheme.colorScheme.onSurface),
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))

@@ -49,6 +49,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import com.metrolist.music.ui.component.glass.RegaGlassFab
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -111,6 +112,8 @@ import com.metrolist.music.ui.component.NavigationTitle
 import com.metrolist.music.ui.component.SongListItem
 import com.metrolist.music.ui.component.YouTubeGridItem
 import com.metrolist.music.ui.component.YouTubeListItem
+import com.metrolist.music.ui.component.shimmer.skeletonPulse
+import com.metrolist.music.ui.theme.LocalRegaColors
 import com.metrolist.music.ui.component.shimmer.ButtonPlaceholder
 import com.metrolist.music.ui.component.shimmer.ListItemPlaceHolder
 import com.metrolist.music.ui.component.shimmer.ShimmerHost
@@ -128,7 +131,6 @@ import com.metrolist.music.ui.utils.resize
 import com.metrolist.music.utils.ArtistNameAliases
 import com.metrolist.music.utils.rememberPreference
 import com.metrolist.music.viewmodels.ArtistViewModel
-import com.valentinilk.shimmer.shimmer
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -221,8 +223,8 @@ fun ArtistScreen(
                                 modifier =
                                     Modifier
                                         .fillMaxSize()
-                                        .shimmer()
-                                        .background(MaterialTheme.colorScheme.onSurface)
+                                        .skeletonPulse()
+                                        .background(LocalRegaColors.current.surfaceContainerHighest)
                                         .fadingEdge(
                                             top = systemBarsTopPadding + AppBarHeight,
                                             bottom = 200.dp,
@@ -278,10 +280,10 @@ fun ArtistScreen(
                                         modifier =
                                             Modifier
                                                 .size(48.dp)
-                                                .shimmer()
+                                                .skeletonPulse()
                                                 .background(
-                                                    MaterialTheme.colorScheme.onSurface,
-                                                    RoundedCornerShape(24.dp),
+                                                    LocalRegaColors.current.surfaceContainerHighest,
+                                                    RoundedCornerShape(8.dp),
                                                 ),
                                     )
                                 }
@@ -352,9 +354,15 @@ fun ArtistScreen(
                             ) {
                                 // Artist Name
                                 Text(
+                                    text = stringResource(R.string.sonara_artist_label),
+                                    style = com.metrolist.music.ui.theme.SonaraLabelStyle,
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    modifier = Modifier.padding(bottom = 6.dp),
+                                )
+                                Text(
                                     text = displayArtistName ?: "Unknown",
-                                    style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.displaySmall,
+                                    fontWeight = FontWeight.SemiBold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     fontSize = 32.sp,
@@ -432,7 +440,7 @@ fun ArtistScreen(
                                                             .size(48.dp)
                                                             .background(
                                                                 MaterialTheme.colorScheme.primary,
-                                                                RoundedCornerShape(24.dp),
+                                                                RoundedCornerShape(8.dp),
                                                             ),
                                                 ) {
                                                     Icon(
@@ -485,7 +493,7 @@ fun ArtistScreen(
                                     Text(
                                         text = subscriberCount,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = LocalRegaColors.current.textSecondary,
                                         modifier = Modifier.padding(bottom = 4.dp),
                                     )
                                 }
@@ -494,7 +502,7 @@ fun ArtistScreen(
                                     Text(
                                         text = monthlyListeners,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = LocalRegaColors.current.textSecondary,
                                         modifier =
                                             Modifier.padding(
                                                 bottom =
@@ -979,24 +987,28 @@ fun ArtistScreen(
                 }
 
                 if (showLocalFab) {
-                    androidx.compose.material3.SmallFloatingActionButton(
-                        modifier = Modifier.padding(16.dp).offset(x = (-4).dp), // Align center with standard FAB (56dp vs 48dp)
+                    RegaGlassFab(
+                        size = 44.dp,
+                        modifier = Modifier.padding(16.dp).offset(x = (-4).dp),
                         onClick = onPlayAllClick,
+                        contentDescription = "Play All",
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.play),
-                            contentDescription = "Play All",
+                            contentDescription = null,
+                            modifier = Modifier.size(22.dp),
                         )
                     }
                 } else {
-                    androidx.compose.material3.FloatingActionButton(
+                    RegaGlassFab(
                         modifier = Modifier.padding(16.dp),
                         onClick = onPlayAllClick,
+                        contentDescription = "Play All",
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.play),
-                            contentDescription = "Play All",
-                            modifier = Modifier.size(32.dp),
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
                         )
                     }
                 }

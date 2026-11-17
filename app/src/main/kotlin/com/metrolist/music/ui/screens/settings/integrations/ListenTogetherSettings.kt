@@ -646,7 +646,7 @@ private fun ServerChooserDialog(
                         Modifier
                             .fillMaxWidth()
                             .clickable { onSelect(server) },
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(8.dp),
                     colors =
                         CardDefaults.cardColors(
                             containerColor =
@@ -715,7 +715,7 @@ private fun ServerChooserDialog(
                 onClick = { onUseCustom(trimmedCustomUrl) },
                 enabled = trimmedCustomUrl.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(8.dp),
             ) {
                 Text(stringResource(R.string.listen_together_use_custom_server))
             }
@@ -833,7 +833,7 @@ fun BlockedUsersDialog(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(8.dp))
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
                                     .padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,

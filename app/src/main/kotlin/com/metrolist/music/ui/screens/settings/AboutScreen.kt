@@ -103,8 +103,17 @@ private data class CommunityLink(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private val leadDeveloper = Contributor(
-    name = "Mo Agamy",
+    name = "Arkrega",
     roleRes = R.string.credits_lead_developer,
+    githubHandle = "arkrega",
+    polygon = MaterialShapes.Cookie9Sided,
+    favoriteSongVideoId = null
+)
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+private val originalCreator = Contributor(
+    name = "Mo Agamy",
+    roleRes = R.string.credits_original_creator,
     githubHandle = "mostafaalagamy",
     polygon = MaterialShapes.Cookie9Sided,
     favoriteSongVideoId = "Mh2JWGWvy_Y"
@@ -119,8 +128,8 @@ private val collaborators = listOf(
 private val communityLinks = listOf(
     CommunityLink(R.string.credits_discord, R.drawable.discord, "https://discord.com/invite/zrdbeRG2Mt"),
     CommunityLink(R.string.credits_telegram, R.drawable.telegram, "https://t.me/metrolistapp"),
-    CommunityLink(R.string.credits_view_repo, R.drawable.github, "https://github.com/MetrolistGroup/Metrolist"),
-    CommunityLink(R.string.credits_license_name, R.drawable.info, "https://github.com/MetrolistGroup/Metrolist/blob/main/LICENSE")
+    CommunityLink(R.string.credits_view_repo, R.drawable.github, "https://github.com/arkrega/sonara"),
+    CommunityLink(R.string.credits_license_name, R.drawable.info, "https://github.com/arkrega/sonara/blob/main/LICENSE")
 )
 
 private fun handleEasterEggClick(
@@ -182,35 +191,6 @@ private fun ContributorAvatar(
     }
 }
 
-@Composable
-private fun DeveloperSocials(
-    uriHandler: androidx.compose.ui.platform.UriHandler
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        FilledTonalButton(
-            onClick = { uriHandler.openUri("https://metrolist.cc") },
-            modifier = Modifier.weight(1f).height(48.dp)
-        ) {
-            Icon(painterResource(R.drawable.language), contentDescription = null)
-        }
-        FilledTonalButton(
-            onClick = { uriHandler.openUri("https://github.com/mostafaalagamy") },
-            modifier = Modifier.weight(1f).height(48.dp)
-        ) {
-            Icon(painterResource(R.drawable.github), contentDescription = null)
-        }
-        FilledTonalButton(
-            onClick = { uriHandler.openUri("https://www.instagram.com/mostafaalagamy") },
-            modifier = Modifier.weight(1f).height(48.dp)
-        ) {
-            Icon(painterResource(R.drawable.instagram), contentDescription = null)
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AboutScreen(
@@ -231,7 +211,7 @@ fun AboutScreen(
             .windowInsetsPadding(windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.Start,
     ) {
         Spacer(
             Modifier.windowInsetsPadding(
@@ -241,9 +221,8 @@ fun AboutScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // App Header Section
         ElevatedCard(
-            shape = RoundedCornerShape(32.dp),
+            shape = RoundedCornerShape(10.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
@@ -253,7 +232,7 @@ fun AboutScreen(
                     .padding(24.dp)
             ) {
                 Image(
-                    painter = painterResource(R.drawable.small_icon),
+                    painter = painterResource(R.drawable.app_logo),
                     contentDescription = stringResource(R.string.metrolist),
                     colorFilter = ColorFilter.tint(
                         color = MaterialTheme.colorScheme.primary,
@@ -265,16 +244,12 @@ fun AboutScreen(
                 Spacer(Modifier.width(20.dp))
         
                 Column {
-                    val metrolistName = stringResource(R.string.metrolist)
-                        .lowercase(Locale.getDefault())
-                        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-
-                    Text(
-                        text = metrolistName,
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        letterSpacing = (-0.5).sp
+                    Image(
+                        painter = painterResource(R.drawable.sonara_wordmark),
+                        contentDescription = null,
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.height(18.dp),
                     )
             
                     Spacer(Modifier.height(8.dp))
@@ -329,9 +304,8 @@ fun AboutScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // Lead Developer Hero Card
         ElevatedCard(
-            shape = RoundedCornerShape(32.dp),
+            shape = RoundedCornerShape(10.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -349,17 +323,19 @@ fun AboutScreen(
                         sizeDp = 110,
                         shape = leadDeveloper.polygon?.toShape() ?: CircleShape,
                         contentDescription = leadDeveloper.name,
-                        onClick = {
-                            handleEasterEggClick(
-                                clickCount = leadClickCount,
-                                favoriteSongVideoId = leadDeveloper.favoriteSongVideoId,
-                                coroutineScope = coroutineScope,
-                                snackbarHostState = snackbarHostState,
-                                playerConnection = playerConnection,
-                                wannaPlayStr = wannaPlayStr,
-                                yeahStr = yeahStr,
-                                onCountUpdate = { leadClickCount = it }
-                            )
+                        onClick = leadDeveloper.favoriteSongVideoId?.let { videoId ->
+                            {
+                                handleEasterEggClick(
+                                    clickCount = leadClickCount,
+                                    favoriteSongVideoId = videoId,
+                                    coroutineScope = coroutineScope,
+                                    snackbarHostState = snackbarHostState,
+                                    playerConnection = playerConnection,
+                                    wannaPlayStr = wannaPlayStr,
+                                    yeahStr = yeahStr,
+                                    onCountUpdate = { leadClickCount = it }
+                                )
+                            }
                         }
                     )
 
@@ -375,7 +351,7 @@ fun AboutScreen(
                             letterSpacing = (-0.5).sp
                         )
                         Text(
-                            text = stringResource(R.string.credits_lead_developer),
+                            text = stringResource(leadDeveloper.roleRes),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
@@ -385,7 +361,106 @@ fun AboutScreen(
                 
                 Spacer(Modifier.height(24.dp))
                 
-                DeveloperSocials(uriHandler)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = { uriHandler.openUri("https://arkrega.github.io/sonara/") },
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Icon(painterResource(R.drawable.language), contentDescription = null)
+                    }
+                    FilledTonalButton(
+                        onClick = { uriHandler.openUri(leadDeveloper.githubUrl) },
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Icon(painterResource(R.drawable.github), contentDescription = null)
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        ElevatedCard(
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    var creatorClickCount by remember(originalCreator.name) { mutableIntStateOf(0) }
+            
+                    ContributorAvatar(
+                        avatarUrl = originalCreator.avatarUrl,
+                        sizeDp = 110,
+                        shape = originalCreator.polygon?.toShape() ?: CircleShape,
+                        contentDescription = originalCreator.name,
+                        onClick = {
+                            handleEasterEggClick(
+                                clickCount = creatorClickCount,
+                                favoriteSongVideoId = originalCreator.favoriteSongVideoId,
+                                coroutineScope = coroutineScope,
+                                snackbarHostState = snackbarHostState,
+                                playerConnection = playerConnection,
+                                wannaPlayStr = wannaPlayStr,
+                                yeahStr = yeahStr,
+                                onCountUpdate = { creatorClickCount = it }
+                            )
+                        }
+                    )
+
+                    Column(
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = originalCreator.name,
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            lineHeight = 38.sp,
+                            letterSpacing = (-0.5).sp
+                        )
+                        Text(
+                            text = stringResource(originalCreator.roleRes),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                
+                Spacer(Modifier.height(24.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = { uriHandler.openUri(BuildConfig.WEBSITE_URL) },
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Icon(painterResource(R.drawable.language), contentDescription = null)
+                    }
+                    FilledTonalButton(
+                        onClick = { uriHandler.openUri(originalCreator.githubUrl) },
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Icon(painterResource(R.drawable.github), contentDescription = null)
+                    }
+                    FilledTonalButton(
+                        onClick = { uriHandler.openUri("https://www.instagram.com/mostafaalagamy") },
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Icon(painterResource(R.drawable.instagram), contentDescription = null)
+                    }
+                }
                 
                 Spacer(Modifier.height(16.dp))
                 
@@ -407,7 +482,6 @@ fun AboutScreen(
 
         Spacer(Modifier.height(32.dp))
         
-        // Collaborators section - back to Material3SettingsGroup
         Material3SettingsGroup(
             title = stringResource(R.string.credits_collaborators_section),
             items = collaborators.map { contributor ->
@@ -472,7 +546,6 @@ fun AboutScreen(
 
         Spacer(Modifier.height(32.dp))
 
-        // Community & Info using standard Group
         Material3SettingsGroup(
             title = stringResource(R.string.community_and_info),
             items = communityLinks.map { link ->
