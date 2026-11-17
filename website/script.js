@@ -4,7 +4,7 @@ const CONFIG = {
     defaultVersion: "1.0.0",
     defaultTag: "v1.0.0",
     defaultFilename: "Sonara.apk",
-    defaultFallbackUrl: "https://github.com/arkrega/sonara/releases/latest/download/Sonara.apk"
+    defaultFallbackUrl: "https://github.com/arkrega/Sonara/releases/latest/download/Sonara.apk"
 };
 
 function formatBytes(bytes, decimals = 1) {
