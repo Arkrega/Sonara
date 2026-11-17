@@ -26,13 +26,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,10 +59,9 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.metrolist.music.lyrics.LyricsEntry
+import com.metrolist.music.lyrics.LyricsSyncType
 import com.metrolist.music.lyrics.WordTimestamp
-import com.metrolist.music.playback.PlayerConnection
 import com.metrolist.music.ui.screens.settings.LyricsPosition
-import kotlinx.coroutines.isActive
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
@@ -122,14 +118,12 @@ private fun String.toGraphemeClusters(): List<String> {
 internal fun LyricsLine(
     index: Int,
     item: LyricsEntry,
-    isSynced: Boolean,
+    syncType: LyricsSyncType,
     isActiveLine: Boolean,
     bgVisible: Boolean,
     isSelected: Boolean,
     isSelectionModeActive: Boolean,
-    currentPositionState: Long,
-    lyricsOffset: Long,
-    playerConnection: PlayerConnection,
+    effectivePositionState: State<Long>,
     lyricsTextSize: Float,
     lyricsLineSpacing: Float,
     expressiveAccent: Color,
@@ -145,7 +139,7 @@ internal fun LyricsLine(
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val density = LocalDensity.current
+    val isSynced = syncType != LyricsSyncType.UNSYNCED
     
     val itemModifier = modifier
         .fillMaxWidth()
@@ -160,7 +154,7 @@ internal fun LyricsLine(
             start = when (lyricsTextPosition) { LyricsPosition.LEFT, LyricsPosition.RIGHT -> 11.dp; LyricsPosition.CENTER -> 24.dp },
             end = when (lyricsTextPosition) { LyricsPosition.LEFT, LyricsPosition.RIGHT -> 11.dp; LyricsPosition.CENTER -> 24.dp },
             top = if (item.isBackground) 0.dp else 12.dp,
-            bottom = if (item.isBackground) 2.dp else 12.dp // simplified gap logic
+            bottom = if (item.isBackground) 2.dp else 12.dp
         )
 
     val agentAlignment = when {
@@ -200,16 +194,35 @@ internal fun LyricsLine(
     }) {
         @Composable
         fun LyricContent() {
-            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = agentAlignment) {
-                val inactiveAlpha = if (item.isBackground) 0.08f else 0.2f
+            val targetScale = if (isActiveLine && !item.isBackground) 1.05f else 1.0f
+            val animatedScale by animateFloatAsState(targetScale, tween(250), label = "lyricsLineScale")
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        scaleX = animatedScale
+                        scaleY = animatedScale
+                        transformOrigin = TransformOrigin(
+                            when (agentAlignment) {
+                                Alignment.Start -> 0f
+                                Alignment.End -> 1f
+                                else -> 0.5f
+                            },
+                            0.5f
+                        )
+                    },
+                horizontalAlignment = agentAlignment
+            ) {
+                val inactiveAlpha = if (item.isBackground) 0.22f else 0.36f
                 val activeAlpha = 1f
-                val focusedAlpha = if (item.isBackground) 0.5f else 0.3f
+                val focusedAlpha = if (item.isBackground) 0.55f else 0.62f
                 val targetAlpha = if (!isSynced || item.isBackground || isActiveLine) {
                     activeAlpha
                 } else if (isAutoScrollEnabled && displayedCurrentLineIndex >= 0) {
                     when (abs(index - displayedCurrentLineIndex)) {
                         0 -> focusedAlpha
-                        1 -> 0.2f; 2 -> 0.2f; 3 -> 0.15f; 4 -> 0.1f; else -> 0.08f
+                        1 -> 0.56f; 2 -> 0.44f; 3 -> 0.36f; else -> 0.30f
                     }
                 } else inactiveAlpha
                 
@@ -225,7 +238,7 @@ internal fun LyricsLine(
 
                 val lyricStyle = TextStyle(
                     fontSize = if (item.isBackground) (lyricsTextSize * 0.7f).sp else lyricsTextSize.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = if (isActiveLine) FontWeight.ExtraBold else if (item.isBackground) FontWeight.Bold else FontWeight.Medium,
                     fontStyle = if (item.isBackground) FontStyle.Italic else FontStyle.Normal,
                     lineHeight = if (item.isBackground) (lyricsTextSize * 0.7f * lyricsLineSpacing).sp else (lyricsTextSize * lyricsLineSpacing).sp,
                     letterSpacing = (-0.5).sp,
@@ -238,33 +251,20 @@ internal fun LyricsLine(
                     )
                 )
 
-                val effectiveWords = if (item.words?.isNotEmpty() == true) {
-                    item.words
-                } else if (mainText != null) {
-                    remember(mainText, item.time) {
-                        val words = mainText.split(Regex("\\s+")).filter { it.isNotBlank() }
-                        val wordDurationSec = 0.18
-                        val wordStaggerSec = 0.03
-                        val startTimeSec = item.time / 1000.0
-                        words.mapIndexed { idx, wordText ->
-                            WordTimestamp(
-                                text = wordText,
-                                startTime = startTimeSec + (idx * wordStaggerSec),
-                                endTime = startTimeSec + (idx * wordStaggerSec) + wordDurationSec,
-                                hasTrailingSpace = idx < words.size - 1
-                            )
-                        }
-                    }
-                } else null
+                val realWords = item.words?.takeIf { list ->
+                    list.isNotEmpty() && list.any { it.endTime > it.startTime }
+                }
 
-                if (isSynced && effectiveWords != null && (isActiveLine || abs(index - displayedCurrentLineIndex) <= 3) && mainText != null) {
+                if (syncType == LyricsSyncType.RICH_SYNCED &&
+                    realWords != null &&
+                    (isActiveLine || abs(index - displayedCurrentLineIndex) <= 3) &&
+                    mainText != null
+                ) {
                     WordLevelLyrics(
                         mainText = mainText,
-                        words = effectiveWords,
+                        words = realWords,
                         isActiveLine = isActiveLine,
-                        currentPositionState = currentPositionState,
-                        lyricsOffset = lyricsOffset,
-                        playerConnection = playerConnection,
+                        effectivePositionState = effectivePositionState,
                         lyricStyle = lyricStyle,
                         lineColor = lineColor,
                         expressiveAccent = expressiveAccent,
@@ -275,7 +275,13 @@ internal fun LyricsLine(
                 } else {
                     Text(
                         text = mainText ?: "",
-                        style = lyricStyle.copy(color = if (isActiveLine) expressiveAccent else lineColor),
+                        style = lyricStyle.copy(
+                            color = when {
+                                !isSynced -> expressiveAccent.copy(alpha = 0.92f)
+                                isActiveLine -> expressiveAccent
+                                else -> lineColor
+                            }
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -326,9 +332,7 @@ private fun WordLevelLyrics(
     mainText: String,
     words: List<WordTimestamp>,
     isActiveLine: Boolean,
-    currentPositionState: Long,
-    lyricsOffset: Long,
-    playerConnection: PlayerConnection,
+    effectivePositionState: State<Long>,
     lyricStyle: TextStyle,
     lineColor: Color,
     expressiveAccent: Color,
@@ -341,33 +345,6 @@ private fun WordLevelLyrics(
     val glowPaint = remember {
         android.graphics.Paint().apply {
             isAntiAlias = true
-        }
-    }
-    
-    var smoothPosition by remember { mutableLongStateOf(currentPositionState + lyricsOffset) }
-    
-    LaunchedEffect(isActiveLine) {
-        if (isActiveLine) {
-            var lastPlayerPos = playerConnection.player.currentPosition
-            var lastUpdateTime = System.currentTimeMillis()
-            while (isActive) {
-                withFrameMillis {
-                    val now = System.currentTimeMillis()
-                    val playerPos = playerConnection.player.currentPosition
-                    if (playerPos != lastPlayerPos) {
-                        lastPlayerPos = playerPos
-                        lastUpdateTime = now
-                    }
-                    val elapsed = now - lastUpdateTime
-                    smoothPosition = lastPlayerPos + lyricsOffset + (if (playerConnection.player.isPlaying) elapsed else 0)
-                }
-            }
-        }
-    }
-    
-    LaunchedEffect(isActiveLine, currentPositionState) {
-        if (!isActiveLine) {
-            smoothPosition = currentPositionState + lyricsOffset
         }
     }
 
@@ -527,6 +504,7 @@ private fun WordLevelLyrics(
             if (!isActiveLine) {
                 drawText(layoutResult, color = lineColor)
             } else {
+                val smoothPosition = effectivePositionState.value
                 if (drawWholeLine) {
                     val (wordIdxMap, _, _) = charToWordData
                     val wordFactors = effectiveWords.map { word ->
@@ -731,16 +709,14 @@ private fun WordLevelLyrics(
                     withTransform({
                         var waveOffset = 0f
                         if (groupWord != null) {
-                            val wallTime = System.currentTimeMillis()
-                            val adjSmoothPos = smoothPosition
-                            val timeInGroup = (adjSmoothPos - groupWord.groupStartMs).toFloat()
-                            val timeToGroupEnd = (groupWord.groupEndMs - adjSmoothPos).toFloat()
+                            val timeInGroup = (smoothPosition - groupWord.groupStartMs).toFloat()
+                            val timeToGroupEnd = (groupWord.groupEndMs - smoothPosition).toFloat()
                             val waveFade = (timeInGroup / 200f).coerceIn(0f, 1f) * (timeToGroupEnd / 200f).coerceIn(0f, 1f)
                             if (waveFade > 0.01f) {
                                 val waveSpeed = 0.006f
                                 val waveHeight = 3.24f
                                 val phaseOffset = i * 0.4f
-                                waveOffset = sin(wallTime * waveSpeed + phaseOffset) * waveHeight * waveFade
+                                waveOffset = sin(smoothPosition * waveSpeed + phaseOffset) * waveHeight * waveFade
                             }
                         }
 

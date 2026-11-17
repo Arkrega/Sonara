@@ -1,0 +1,231 @@
+/* SONARA — about page styles */
+
+.about-hero {
+  padding: 8rem 1.25rem 4rem;
+  background: radial-gradient(1200px 600px at 30% 0%, rgba(255, 255, 255, 0.04), transparent 60%),
+    radial-gradient(1000px 500px at 100% 5%, rgba(255, 255, 255, 0.03), transparent 60%);
+}
+
+.about-what,
+.about-philosophy,
+.about-vision,
+.about-design,
+.about-team,
+.about-license {
+  padding: 5rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.quote-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 800px;
+  position: relative;
+}
+
+.quote-mark {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  color: var(--text-tertiary);
+  position: absolute;
+  top: 1rem;
+  left: 1.5rem;
+  line-height: 1;
+}
+
+.quote-text {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  line-height: 1.7;
+  margin: 0;
+  position: relative;
+  padding: 0.5rem 1rem;
+}
+
+.quote-attribution {
+  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  margin-top: 1rem;
+  text-align: right;
+}
+
+.phil-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+
+.phil-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.6rem;
+}
+
+.phil-desc {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.vision-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+}
+
+.vision-list li {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.35rem;
+  margin-bottom: 0.9rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.vision-item {
+  color: var(--text-primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vision-item::after {
+  content: "—";
+  color: var(--text-tertiary);
+  margin-left: 0.5rem;
+}
+
+.vision-item + span {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  flex: 1;
+}
+
+.team-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+
+.team-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.contributor {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.contributor img {
+  border-radius: 12px;
+  background: var(--charcoal);
+}
+
+.contributor-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.contributor-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+}
+
+.contributor-role {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+}
+
+.attribution-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+}
+
+.attribution-text {
+  font-size: 0.98rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 1.25rem;
+}
+
+.upstream-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.upstream-list li {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 0.6rem;
+}
+
+.upstream-list li a {
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.open-source-list {
+  margin-top: 1.5rem;
+}
+
+.open-source-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 0.75rem;
+}
+
+.open-source-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.open-source-list li {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 0.5rem;
+}
+
+.license-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+@media (max-width: 600px) {
+  .about-hero {
+    padding: 6rem 1.25rem 3rem;
+  }
+
+  .vision-list li {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .vision-item::after {
+    content: "";
+  }
+}

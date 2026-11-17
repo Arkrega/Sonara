@@ -48,8 +48,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -70,14 +68,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.materialkolor.PaletteStyle
-import com.materialkolor.rememberDynamicColorScheme
 import com.metrolist.music.R
 import com.metrolist.music.constants.DarkModeKey
 import com.metrolist.music.constants.DynamicThemeKey
 import com.metrolist.music.constants.PureBlackKey
 import com.metrolist.music.constants.PureBlackMiniPlayerKey
 import com.metrolist.music.constants.SelectedThemeColorKey
+import com.metrolist.music.ui.theme.CinematicDarkColorScheme
+import com.metrolist.music.ui.theme.CinematicLightColorScheme
 import com.metrolist.music.ui.theme.DefaultThemeColor
 import com.metrolist.music.ui.theme.MetrolistTheme
 import com.metrolist.music.utils.rememberEnumPreference
@@ -89,26 +87,9 @@ data class ThemePalette(
 )
 
 val PaletteColors = listOf(
-    ThemePalette(R.string.palette_dynamic, Color.Transparent), // Sentinel for System/Dynamic colors
-    ThemePalette(R.string.palette_crimson, Color(0xFFEC5464)), // Slightly shifted from DefaultThemeColor (0xFFED5564) to avoid conflict
-    ThemePalette(R.string.palette_rose, Color(0xFFD81B60)),
-    ThemePalette(R.string.palette_purple, Color(0xFF8E24AA)),
-    ThemePalette(R.string.palette_deep_purple, Color(0xFF5E35B1)),
-    ThemePalette(R.string.palette_indigo, Color(0xFF3949AB)),
-    ThemePalette(R.string.palette_blue, Color(0xFF1E88E5)),
-    ThemePalette(R.string.palette_sky_blue, Color(0xFF039BE5)),
-    ThemePalette(R.string.palette_cyan, Color(0xFF00ACC1)),
-    ThemePalette(R.string.palette_teal, Color(0xFF00897B)),
-    ThemePalette(R.string.palette_green, Color(0xFF43A047)),
-    ThemePalette(R.string.palette_light_green, Color(0xFF7CB342)),
-    ThemePalette(R.string.palette_lime, Color(0xFFC0CA33)),
-    ThemePalette(R.string.palette_yellow, Color(0xFFFDD835)),
-    ThemePalette(R.string.palette_amber, Color(0xFFFFB300)),
-    ThemePalette(R.string.palette_orange, Color(0xFFFB8C00)),
-    ThemePalette(R.string.palette_deep_orange, Color(0xFFF4511E)),
-    ThemePalette(R.string.palette_brown, Color(0xFF6D4C41)),
-    ThemePalette(R.string.palette_grey, Color(0xFF757575)),
-    ThemePalette(R.string.palette_blue_grey, Color(0xFF546E7A)),
+    // MONOCHROME SONIC is the only palette. Keeping the list shape means the
+    // existing picker UI keeps working while the design stays colour-blind.
+    ThemePalette(R.string.palette_linear, DefaultThemeColor),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -298,7 +279,7 @@ fun ThemeControls(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
@@ -433,15 +414,7 @@ fun ModeCircle(
     }
     
     // Use actual system colors for AUTO mode on Android 12+
-    val modeColorScheme = if (targetMode == DarkMode.AUTO && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        if (effectiveDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    } else {
-        rememberDynamicColorScheme(
-            seedColor = DefaultThemeColor,
-            isDark = effectiveDark,
-            style = PaletteStyle.TonalSpot
-        )
-    }
+    val modeColorScheme = if (effectiveDark) CinematicDarkColorScheme else CinematicLightColorScheme
     
     val fillColor = when {
         targetPureBlack -> Color.Black
@@ -453,7 +426,7 @@ fun ModeCircle(
     val borderWidth by animateDpAsState(
         targetValue = if (isSelected) 3.dp else 0.dp,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
+            dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMedium
         ),
         label = "borderWidth"
@@ -463,7 +436,7 @@ fun ModeCircle(
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.05f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
+            dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMedium
         ),
         label = "scale"
@@ -523,7 +496,7 @@ fun ModeCircle(
                     enter = fadeIn(animationSpec = tween(300)) + scaleIn(
                         initialScale = 0.3f,
                         animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            dampingRatio = Spring.DampingRatioNoBouncy,
                             stiffness = Spring.StiffnessMedium
                         )
                     ),
@@ -552,16 +525,12 @@ fun PaletteItem(
 ) {
     val isSystemDark = isSystemInDarkTheme()
     
-    val colorScheme = rememberDynamicColorScheme(
-        seedColor = palette.seedColor,
-        isDark = isSystemDark,
-        style = PaletteStyle.TonalSpot
-    )
+    val colorScheme = if (isSystemDark) CinematicDarkColorScheme else CinematicLightColorScheme
     
     val cornerRadius by animateDpAsState(
         targetValue = if (isSelected) 48.dp * 0.25f else 24.dp,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
+            dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMedium
         ),
         label = "cornerRadius"
@@ -570,7 +539,7 @@ fun PaletteItem(
     val borderWidth by animateDpAsState(
         targetValue = if (isSelected) 3.dp else 0.dp,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
+            dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMedium
         ),
         label = "borderWidth"
@@ -579,7 +548,7 @@ fun PaletteItem(
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.08f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
+            dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMedium
         ),
         label = "scale"
@@ -838,7 +807,7 @@ fun ThemeMockupPortrait(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(10.dp))
                     )
                     
                     Row(
@@ -851,14 +820,14 @@ fun ThemeMockupPortrait(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(10.dp))
                         )
                         
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .background(MaterialTheme.colorScheme.tertiary, RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.tertiary, RoundedCornerShape(10.dp))
                         )
                     }
                 }

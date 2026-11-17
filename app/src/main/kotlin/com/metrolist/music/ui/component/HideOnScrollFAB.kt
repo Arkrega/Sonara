@@ -19,10 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +29,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.metrolist.music.LocalPlayerAwareWindowInsets
 import com.metrolist.music.R
+import com.metrolist.music.ui.component.glass.RegaGlassFab
+import com.metrolist.music.ui.component.glass.RegaSquircleShape
 import com.metrolist.music.ui.utils.isScrollingUp
 
 @Composable
@@ -46,34 +46,38 @@ fun BoxScope.HideOnScrollFAB(
         enter = slideInVertically { it },
         exit = slideOutVertically { it },
         modifier =
-        Modifier
-            .align(Alignment.BottomEnd)
-            .windowInsetsPadding(
-                LocalPlayerAwareWindowInsets.current
-                    .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
-            ),
+            Modifier
+                .align(Alignment.BottomEnd)
+                .windowInsetsPadding(
+                    LocalPlayerAwareWindowInsets.current
+                        .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
+                ),
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             if (onRecognitionClick != null) {
-                SmallFloatingActionButton(
+                RegaGlassFab(
                     onClick = onRecognitionClick,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(40.dp)
+                    size = 44.dp,
+                    shape = RegaSquircleShape,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    contentDescription = stringResource(R.string.recognize_music),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.mic),
-                        contentDescription = stringResource(R.string.recognize_music),
-                        modifier = Modifier.size(20.dp)
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
-            FloatingActionButton(
+            RegaGlassFab(
                 onClick = onClick,
+                size = 56.dp,
+                shape = RegaSquircleShape,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ) {
                 Icon(
                     painter = painterResource(icon),

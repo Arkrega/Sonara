@@ -143,7 +143,10 @@ import com.metrolist.music.constants.TranslateLanguageKey
 import com.metrolist.music.constants.TranslateModeKey
 import com.metrolist.music.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.metrolist.music.lyrics.LyricsEntry
+import com.metrolist.music.lyrics.LyricsQualityAnalyzer
+import com.metrolist.music.lyrics.LyricsSyncType
 import com.metrolist.music.lyrics.LyricsTranslationHelper
+import com.metrolist.music.lyrics.rememberLyricsPlayhead
 import com.metrolist.music.lyrics.LyricsUtils.findCurrentLineIndex
 import com.metrolist.music.lyrics.LyricsUtils.isBelarusian
 import com.metrolist.music.lyrics.LyricsUtils.isBulgarian
@@ -357,7 +360,15 @@ fun OriginalLyrics(
                 }
             }
         }
-    val isSynced = remember(lyrics) { lyricsTextLooksSynced(lyrics) }
+    val syncType = remember(lyrics, lines) { LyricsQualityAnalyzer.classifyLyrics(lyrics, lines) }
+    val isSynced = syncType != LyricsSyncType.UNSYNCED
+    val playheadPositionState = rememberLyricsPlayhead(
+        playerConnection = playerConnection,
+        sliderPositionProvider = sliderPositionProvider,
+        lyricsOffsetProvider = { currentSong?.song?.lyricsOffset ?: 0 },
+        songId = mediaMetadata?.id,
+        isActive = showLyrics && isSynced,
+    )
 
     // State for translation status
     val translationStatus by LyricsTranslationHelper.status.collectAsStateWithLifecycle()
@@ -554,19 +565,17 @@ fun OriginalLyrics(
         selectedIndices.clear()
     }
 
-    LaunchedEffect(lyrics) {
-        if (lyrics.isNullOrEmpty() || !lyrics.startsWith("[")) {
+    LaunchedEffect(lyrics, syncType, showLyrics) {
+        if (!isSynced || !showLyrics) {
             currentLineIndex = -1
             return@LaunchedEffect
         }
-        while (isActive) {
-            delay(8) // Faster update for word-by-word animation
+        androidx.compose.runtime.snapshotFlow { playheadPositionState.value }.collect { effectivePos ->
             val sliderPosition = sliderPositionProvider()
             isSeeking = sliderPosition != null
-            val position = sliderPosition ?: playerConnection.player.currentPosition
-            currentPlaybackPosition = position
-            val lyricsOffset = currentSong?.song?.lyricsOffset ?: 0
-            currentLineIndex = findCurrentLineIndex(lines, position + lyricsOffset)
+            val offset = currentSong?.song?.lyricsOffset ?: 0
+            currentPlaybackPosition = (effectivePos - offset).coerceAtLeast(0L)
+            currentLineIndex = findCurrentLineIndex(lines, effectivePos)
         }
     }
 
@@ -694,7 +703,7 @@ fun OriginalLyrics(
                             CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                             ),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     ) {
                         Row(
@@ -722,7 +731,7 @@ fun OriginalLyrics(
                             CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
                             ),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     ) {
                         Row(
@@ -751,7 +760,7 @@ fun OriginalLyrics(
                             CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                             ),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     ) {
                         Row(
@@ -1998,7 +2007,7 @@ fun OriginalLyrics(
 
             BasicAlertDialog(onDismissRequest = { showColorPickerDialog = false }) {
                 Card(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(8.dp),
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -2048,7 +2057,7 @@ fun OriginalLyrics(
                                     .fillMaxWidth()
                                     .aspectRatio(1f)
                                     .padding(8.dp)
-                                    .clip(RoundedCornerShape(12.dp)),
+                                    .clip(RoundedCornerShape(8.dp)),
                         ) {
                             LyricsImageCard(
                                 lyricText = lyricsText,

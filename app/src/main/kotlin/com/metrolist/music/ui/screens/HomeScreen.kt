@@ -9,6 +9,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -85,7 +86,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.metrolist.music.LocalNavController
@@ -141,6 +144,9 @@ import com.metrolist.music.ui.component.HideOnScrollFAB
 import com.metrolist.music.ui.component.LocalBottomSheetPageState
 import com.metrolist.music.ui.component.LocalMenuState
 import com.metrolist.music.ui.component.NavigationTitle
+import com.metrolist.music.ui.theme.SonaraLabelStyle
+import com.metrolist.music.ui.theme.SonaraLink
+import com.metrolist.music.ui.theme.SonaraSpacing
 import com.metrolist.music.ui.component.RandomizeGridItem
 import com.metrolist.music.ui.component.SongGridItem
 import com.metrolist.music.ui.component.SongListItem
@@ -156,6 +162,7 @@ import com.metrolist.music.ui.menu.SongMenu
 import com.metrolist.music.ui.menu.YouTubeAlbumMenu
 import com.metrolist.music.ui.menu.YouTubeArtistMenu
 import com.metrolist.music.ui.menu.YouTubePlaylistMenu
+import com.metrolist.music.ui.theme.blurToFocus
 import com.metrolist.music.ui.menu.YouTubeSongMenu
 import com.metrolist.music.ui.utils.SnapLayoutInfoProvider
 import com.metrolist.music.ui.utils.resize
@@ -183,6 +190,7 @@ sealed class HomeSection(
     data object QuickPicks : HomeSection("quick_picks", 90)
 
     data object DailyDiscover : HomeSection("daily_discover", 80)
+    data object NewReleases : HomeSection("new_releases", 70)
 
     data object KeepListening : HomeSection("keep_listening", 50)
 
@@ -202,6 +210,14 @@ sealed class HomeSection(
 
     data object MoodAndGenres : HomeSection("mood_and_genres", 5)
 }
+
+/** Flattened mood/genre destination used by the Home carousel. */
+private data class MoodTileEntry(
+    val title: String,
+    val browseId: String,
+    val params: String?,
+    val stripeColor: Long,
+)
 
 @Composable
 fun CommunityPlaylistCard(
@@ -232,12 +248,14 @@ fun CommunityPlaylistCard(
         modifier =
             modifier
                 .width(320.dp)
-                .height(420.dp),
+                .height(420.dp)
+                .blurToFocus(key = item.playlist.id),
         colors =
             CardDefaults.cardColors(
                 containerColor = containerColor,
             ),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(10.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
         onClick = onClick,
     ) {
         Column(
@@ -255,7 +273,7 @@ fun CommunityPlaylistCard(
                     modifier =
                         Modifier
                             .size(100.dp)
-                            .clip(RoundedCornerShape(12.dp)),
+                            .clip(RoundedCornerShape(6.dp)),
                 ) {
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(modifier = Modifier.weight(1f)) {
@@ -353,7 +371,7 @@ fun CommunityPlaylistCard(
                             Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .combinedClickable(onClick = { onSongClick(song) }),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -364,7 +382,7 @@ fun CommunityPlaylistCard(
                             modifier =
                                 Modifier
                                     .size(56.dp)
-                                    .clip(RoundedCornerShape(12.dp)),
+                                    .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop,
                         )
                         Column(modifier = Modifier.weight(1f)) {
@@ -522,7 +540,8 @@ fun DailyDiscoverCard(
         modifier =
             modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(28.dp))
+                .blurToFocus(key = dailyDiscover.recommendation.id)
+                .clip(RoundedCornerShape(10.dp))
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = {
@@ -541,7 +560,8 @@ fun DailyDiscoverCard(
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
             ),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(10.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
@@ -584,6 +604,40 @@ fun DailyDiscoverCard(
                             .padding(24.dp),
                     verticalArrangement = Arrangement.SpaceBetween,
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        androidx.compose.material3.Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                        ) {
+                            Text(
+                                text = "FEATURED",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
+
+                        androidx.compose.material3.Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(36.dp),
+                        ) {
+
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    painter = painterResource(R.drawable.play),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                        }
+                    }
                     Column {
                         Text(
                             text = dailyDiscover.recommendation.title,
@@ -1038,6 +1092,7 @@ fun HomeScreen(
             similarRecommendations,
             homePage?.sections,
             explorePage?.moodAndGenres,
+            explorePage?.newReleaseAlbums,
         ) {
             val list = mutableListOf<HomeSection>()
             val chipActive = selectedChip != null
@@ -1046,6 +1101,7 @@ fun HomeScreen(
             if (!chipActive && quickPicks?.isNotEmpty() == true) list.add(HomeSection.QuickPicks)
             if (!chipActive && communityPlaylists?.isNotEmpty() == true) list.add(HomeSection.FromTheCommunity)
             if (!chipActive && dailyDiscover?.isNotEmpty() == true) list.add(HomeSection.DailyDiscover)
+            if (!chipActive && explorePage?.newReleaseAlbums?.isNotEmpty() == true) list.add(HomeSection.NewReleases)
             if (!chipActive && keepListening?.isNotEmpty() == true) list.add(HomeSection.KeepListening)
             if (!chipActive && accountPlaylists?.isNotEmpty() == true) list.add(HomeSection.AccountPlaylists)
             if (!chipActive && forgottenFavorites?.isNotEmpty() == true) list.add(HomeSection.ForgottenFavorites)
@@ -1121,6 +1177,7 @@ fun HomeScreen(
                         HomeSection.QuickPicks to 90,
                         HomeSection.FromTheCommunity to 80,
                         HomeSection.DailyDiscover to 70,
+                        HomeSection.NewReleases to 65,
                         HomeSection.KeepListening to 60,
                         HomeSection.AccountPlaylists to 50,
                         HomeSection.ForgottenFavorites to 40,
@@ -1189,6 +1246,25 @@ fun HomeScreen(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
+                item(key = "sonara_masthead") {
+                    SonaraMasthead(
+                        accountName = accountName,
+                        onHistory = { navController.navigate("history") },
+                        onStats = { navController.navigate("stats") },
+                        onTogether = { navController.navigate("listen_together_from_topbar") },
+                    )
+                }
+
+                if (!isLoggedIn) {
+                    item(key = "sonara_guest_notice") {
+                        SonaraGuestNotice(
+                            onConnect = {
+                                navController.navigate("login") { launchSingleTop = true }
+                            },
+                        )
+                    }
+                }
+
                 item {
                     ChipsRow(
                         chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
@@ -1213,7 +1289,7 @@ fun HomeScreen(
                                 items(5) {
                                     TextPlaceholder(
                                         height = 30.dp,
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.width(72.dp),
                                     )
                                 }
@@ -1981,6 +2057,35 @@ fun HomeScreen(
                             }
                         }
 
+                        HomeSection.NewReleases -> {
+                            explorePage?.newReleaseAlbums?.takeIf { it.isNotEmpty() }?.let { releases ->
+                                item(key = "new_releases_title") {
+                                    NavigationTitle(
+                                        title = stringResource(R.string.new_release_albums),
+                                        onClick = {
+                                            navController.navigate("youtube_browse/FEmusic_new_releases")
+                                        },
+                                    )
+                                }
+
+                                item(key = "new_releases_list") {
+                                    LazyRow(
+                                        contentPadding =
+                                            WindowInsets.systemBars
+                                                .only(WindowInsetsSides.Horizontal)
+                                                .asPaddingValues(),
+                                    ) {
+                                        items(
+                                            items = releases.distinctBy { it.id },
+                                            key = { "home_new_release_${it.id}" },
+                                        ) { album ->
+                                            ytGridItem(album)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         HomeSection.KeepListening -> {
                             keepListening?.takeIf { it.isNotEmpty() }?.let { keepListening ->
                                 item(key = "keep_listening_title") {
@@ -2451,25 +2556,42 @@ fun HomeScreen(
                                     )
                                 }
                                 item(key = "mood_and_genres_list") {
-                                    LazyHorizontalGrid(
-                                        rows = GridCells.Fixed(4),
-                                        contentPadding = PaddingValues(6.dp),
-                                        modifier =
-                                            Modifier
-                                                .height((MoodAndGenresButtonHeight + 12.dp) * 4 + 12.dp),
+                                    val tiles =
+                                        remember(moodAndGenres) {
+                                            moodAndGenres
+                                                .map { moodItem ->
+                                                    MoodTileEntry(
+                                                        title = moodItem.title,
+                                                        browseId = moodItem.endpoint.browseId,
+                                                        params = moodItem.endpoint.params,
+                                                        stripeColor = moodItem.stripeColor,
+                                                    )
+                                                }
+                                                .distinctBy { "${it.title}_${it.browseId}_${it.params}" }
+                                        }
+                                    LazyRow(
+                                        contentPadding =
+                                            WindowInsets.systemBars
+                                                .only(WindowInsetsSides.Horizontal)
+                                                .asPaddingValues(),
+                                        horizontalArrangement = Arrangement.spacedBy(SonaraSpacing.xs),
+                                        modifier = Modifier.padding(horizontal = SonaraSpacing.md),
                                     ) {
-                                        items(moodAndGenres.distinctBy { "${it.title}_${it.endpoint.browseId}_${it.endpoint.params}" }, key = { "${it.title}_${it.endpoint.browseId}_${it.endpoint.params}" }) {
-                                            MoodAndGenresButton(
-                                                title = it.title,
+                                        items(tiles, key = { "${it.title}_${it.browseId}_${it.params}" }) { tile ->
+                                            MoodAndGenresTile(
+                                                title = tile.title,
+                                                kicker = null,
+                                                accentColor = tile.stripeColor,
                                                 onClick = {
                                                     navController.navigate(
-                                                        "youtube_browse/${it.endpoint.browseId}?params=${it.endpoint.params}",
+                                                        "youtube_browse/${tile.browseId}?params=${tile.params}",
                                                     )
                                                 },
                                                 modifier =
                                                     Modifier
-                                                        .padding(6.dp)
-                                                        .width(180.dp),
+                                                        .width(212.dp)
+                                                        .height(MoodTileHeight)
+                                                        .padding(vertical = SonaraSpacing.xs),
                                             )
                                         }
                                     }
@@ -2515,12 +2637,12 @@ fun HomeScreen(
                                 Row {
                                     repeat(2) {
                                         TextPlaceholder(
-                                            height = MoodAndGenresButtonHeight,
-                                            shape = RoundedCornerShape(6.dp),
+                                            height = MoodTileHeight,
+                                            shape = RoundedCornerShape(10.dp),
                                             modifier =
                                                 Modifier
-                                                    .padding(horizontal = 12.dp)
-                                                    .width(200.dp),
+                                                    .padding(horizontal = 6.dp, vertical = 4.dp)
+                                                    .width(212.dp),
                                         )
                                     }
                                 }
@@ -2608,6 +2730,109 @@ fun HomeScreen(
                     navController.navigate("recognition")
                 },
             )
+        }
+    }
+}
+
+
+/**
+ * Guest mode is a real mode: local library, playlists, playback, equalizer,
+ * reverb and downloads work. Only online catalogue features need a session,
+ * so explain that instead of failing silently.
+ */
+@Composable
+private fun SonaraGuestNotice(onConnect: () -> Unit) {
+    val shape = RoundedCornerShape(10.dp)
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = SonaraSpacing.gutter, vertical = SonaraSpacing.xxs)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                    shape = shape,
+                )
+                .padding(SonaraSpacing.md),
+    ) {
+        Text(
+            text = stringResource(R.string.sonara_guest_notice_title),
+            style = SonaraLabelStyle.copy(fontSize = 9.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(SonaraSpacing.xs))
+        Text(
+            text = stringResource(R.string.sonara_guest_notice_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(SonaraSpacing.sm))
+        SonaraLink(
+            text = stringResource(R.string.sonara_guest_notice_action),
+            onClick = onConnect,
+        )
+    }
+}
+
+/**
+ * SONARA masthead: wordmark, date, greeting and the utility links that used to
+ * live as anonymous icons in the top bar. It anchors every Home visit with one
+ * large piece of editorial type and a single hairline.
+ */
+@Composable
+private fun SonaraMasthead(
+    accountName: String?,
+    onHistory: () -> Unit,
+    onStats: () -> Unit,
+    onTogether: () -> Unit,
+) {
+    val now = remember { java.time.LocalDateTime.now() }
+    val dateText = remember(now) {
+        now.format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM", java.util.Locale.getDefault()))
+            .uppercase(java.util.Locale.getDefault())
+    }
+    val greetingRes = when (now.hour) {
+        in 5..11 -> R.string.sonara_greeting_morning
+        in 12..17 -> R.string.sonara_greeting_afternoon
+        in 18..22 -> R.string.sonara_greeting_evening
+        else -> R.string.sonara_greeting_night
+    }
+    val greeting = stringResource(greetingRes)
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = SonaraSpacing.gutter, end = SonaraSpacing.gutter, top = SonaraSpacing.xs, bottom = SonaraSpacing.sm),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = accountName?.takeIf { it.isNotBlank() }?.let { "$greeting, $it" } ?: greeting,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = dateText,
+                style = com.metrolist.music.ui.theme.SonaraLabelStyle.copy(fontSize = 9.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Spacer(Modifier.height(SonaraSpacing.sm))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(SonaraSpacing.lg)) {
+            com.metrolist.music.ui.theme.SonaraLink(text = stringResource(R.string.history), onClick = onHistory)
+            com.metrolist.music.ui.theme.SonaraLink(text = stringResource(R.string.stats), onClick = onStats)
+            com.metrolist.music.ui.theme.SonaraLink(text = stringResource(R.string.together), onClick = onTogether)
         }
     }
 }

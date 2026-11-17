@@ -240,14 +240,29 @@ abstract class InternalDatabase : RoomDatabase() {
 }
 
 private fun applyPragmaSettings(db: SupportSQLiteDatabase) {
+    // Room runs onCreate/onOpen inside an open transaction on first launch, where
+    // `PRAGMA synchronous` is rejected ("Safety level may not be changed inside a
+    // transaction"). The other pragmas are still worth applying immediately, so a
+    // failure here is retried once on a separate executor instead of being logged
+    // as an error on every cold start.
+    if (tryApplyPragmaSettings(db)) return
+    ioExecutor.execute { tryApplyPragmaSettings(db) }
+}
+
+private fun tryApplyPragmaSettings(db: SupportSQLiteDatabase): Boolean =
     try {
         db.query("PRAGMA busy_timeout = 60000").close()
         db.query("PRAGMA cache_size = -16000").close()
         db.query("PRAGMA wal_autocheckpoint = 1000").close()
         db.query("PRAGMA synchronous = NORMAL").close()
+        true
     } catch (e: Exception) {
-        Timber.tag("MusicDatabase").e(e, "Failed to set PRAGMA settings")
+        Timber.tag("MusicDatabase").d("Deferring PRAGMA settings: %s", e.message)
+        false
     }
+
+private val ioExecutor: java.util.concurrent.Executor by lazy {
+    java.util.concurrent.Executors.newSingleThreadExecutor()
 }
 
 private fun backupDatabase(

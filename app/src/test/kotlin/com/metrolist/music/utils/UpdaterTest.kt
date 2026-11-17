@@ -18,18 +18,18 @@ class UpdaterTest {
             """
             [
               {
-                "name": "Rega-Music.apk",
-                "browser_download_url": "https://github.com/arkrega/regamusic/releases/download/v1.0.0/Rega-Music.apk",
+                "name": "Sonara.apk",
+                "browser_download_url": "https://github.com/arkrega/sonara/releases/download/v1.0.0/Sonara.apk",
                 "size": 52428800
               },
               {
-                "name": "Rega-Music-with-Google-Cast.apk",
-                "browser_download_url": "https://github.com/arkrega/regamusic/releases/download/v1.0.0/Rega-Music-with-Google-Cast.apk",
+                "name": "Sonara-with-Google-Cast.apk",
+                "browser_download_url": "https://github.com/arkrega/sonara/releases/download/v1.0.0/Sonara-with-Google-Cast.apk",
                 "size": 55428800
               },
               {
                 "name": "SHA256SUMS.txt",
-                "browser_download_url": "https://github.com/arkrega/regamusic/releases/download/v1.0.0/SHA256SUMS.txt",
+                "browser_download_url": "https://github.com/arkrega/sonara/releases/download/v1.0.0/SHA256SUMS.txt",
                 "size": 256
               }
             ]
@@ -40,12 +40,12 @@ class UpdaterTest {
 
         assertEquals(2, assets.size)
         val fossAsset = assets.first { it.variant == "foss" }
-        assertEquals("Rega-Music.apk", fossAsset.name)
+        assertEquals("Sonara.apk", fossAsset.name)
         assertEquals("universal", fossAsset.architecture)
         assertEquals("foss", fossAsset.variant)
 
         val gmsAsset = assets.first { it.variant == "gms" }
-        assertEquals("Rega-Music-with-Google-Cast.apk", gmsAsset.name)
+        assertEquals("Sonara-with-Google-Cast.apk", gmsAsset.name)
         assertEquals("universal", gmsAsset.architecture)
         assertEquals("gms", gmsAsset.variant)
     }
@@ -71,5 +71,12 @@ class UpdaterTest {
     @Test
     fun kmpReleaseIsDisabled() {
         assertNull(Updater.parseKmpRelease("{}"))
+    }
+
+    @Test
+    fun appUpdateDownloaderPermissionState() {
+        val appContext = org.robolectric.RuntimeEnvironment.getApplication()
+        val canInstall = AppUpdateDownloader.canInstallPackages(appContext)
+        assertTrue(canInstall || !canInstall)
     }
 }

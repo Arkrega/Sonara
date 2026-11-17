@@ -496,12 +496,26 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) { getCommunityPlaylists() }
 
         viewModelScope.launch(Dispatchers.IO) {
-            YouTube.explore().onSuccess { page ->
-                explorePage.value = page.copy(
-                    newReleaseAlbums = page.newReleaseAlbums.filterOutNulls().filterExplicit(hideExplicit),
-                    moodAndGenres = page.moodAndGenres.filterOutNulls()
+            val exploreResult = YouTube.explore()
+            var moodItems = exploreResult.getOrNull()?.moodAndGenres.orEmpty()
+            // explore() is not guaranteed to carry the mood grid; the dedicated
+            // endpoint still has it, so Home keeps the section instead of losing it.
+            if (moodItems.isEmpty()) {
+                moodItems = YouTube.moodAndGenres().getOrNull().orEmpty().flatMap { it.items }
+            }
+            exploreResult
+                .onSuccess { page ->
+                    explorePage.value = page.copy(
+                        newReleaseAlbums = page.newReleaseAlbums.filterOutNulls().filterExplicit(hideExplicit),
+                        moodAndGenres = moodItems.filterOutNulls(),
+                    )
+                }.onFailure { reportException(it) }
+            if (exploreResult.isFailure && moodItems.isNotEmpty()) {
+                explorePage.value = ExplorePage(
+                    newReleaseAlbums = explorePage.value?.newReleaseAlbums.orEmpty(),
+                    moodAndGenres = moodItems.filterOutNulls(),
                 )
-            }.onFailure { reportException(it) }
+            }
         }
 
         viewModelScope.launch(Dispatchers.IO) {

@@ -119,6 +119,16 @@ val AudioOffload = booleanPreferencesKey("enableOffload")
 val AudioTrackPlaybackParamsKey = booleanPreferencesKey("audioTrackPlaybackParams")
 
 val VarispeedKey = booleanPreferencesKey("varispeed")
+val PlaybackSpeedKey = floatPreferencesKey("playbackSpeed")
+val PlaybackPitchKey = floatPreferencesKey("playbackPitch")
+val ReverbEnabledKey = booleanPreferencesKey("reverbEnabled")
+val ReverbPresetKey = intPreferencesKey("reverbPreset")
+val ReverbRoomSizeKey = floatPreferencesKey("reverbRoomSize")
+val ReverbDampingKey = floatPreferencesKey("reverbDamping")
+val ReverbWetLevelKey = floatPreferencesKey("reverbWetLevel")
+val ReverbDryLevelKey = floatPreferencesKey("reverbDryLevel")
+val ReverbWidthKey = floatPreferencesKey("reverbWidth")
+val ReverbDecayKey = floatPreferencesKey("reverbDecay")
 
 val PersistentQueueKey = booleanPreferencesKey("persistentQueue")
 val PersistentShuffleAcrossQueuesKey = booleanPreferencesKey("persistentShuffleAcrossQueues")
@@ -258,6 +268,10 @@ val QueueEditLockKey = booleanPreferencesKey("queueEditLock")
 val ShowWrappedCardKey = booleanPreferencesKey("show_wrapped_card")
 val WrappedSeenKey = booleanPreferencesKey("wrapped_seen")
 val LastSeenVersionKey = stringPreferencesKey("lastSeenVersion")
+val IntroCompletedKey = booleanPreferencesKey("sonara_intro_completed")
+
+/** Persisted result of the first-launch flow: guest or authenticated. Absent means pending. */
+val OnboardingStateKey = stringPreferencesKey("sonara_onboarding_state")
 val RandomizeHomeOrderKey = booleanPreferencesKey("randomizeHomeOrder")
 
 val ShowLikedPlaylistKey = booleanPreferencesKey("show_liked_playlist")
@@ -525,6 +539,15 @@ val AccountNameKey = stringPreferencesKey("accountName")
 val AccountEmailKey = stringPreferencesKey("accountEmail")
 val AccountChannelHandleKey = stringPreferencesKey("accountChannelHandle")
 val UseLoginForBrowse = booleanPreferencesKey("useLoginForBrowse")
+
+/**
+ * Language tags whose resources are actually bundled in the APK.
+ * Keep in sync with androidResources.localeFilters in app/build.gradle.kts.
+ */
+val ShippedAppLanguageTags = setOf(
+    "en", "en-GB", "id", "es", "es-419", "pt", "fr", "fr-CA", "de", "it", "ru",
+    "tr", "ar", "hi", "ja", "ko", "zh-CN", "zh-TW", "vi", "th", "pl", "nl",
+)
 
 val LanguageCodeToName =
     mapOf(

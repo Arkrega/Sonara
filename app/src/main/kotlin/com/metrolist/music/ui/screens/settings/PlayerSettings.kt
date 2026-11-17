@@ -301,6 +301,12 @@ fun PlayerSettings(
                     onClick = { showAudioQualityDialog = true }
                 ))
                 add(Material3SettingsItem(
+                    icon = painterResource(R.drawable.equalizer),
+                    title = { Text(stringResource(R.string.equalizer_header)) },
+                    description = { Text(stringResource(R.string.equalizer_desc)) },
+                    onClick = { navController.navigate("equalizer") }
+                ))
+                add(Material3SettingsItem(
                     icon = painterResource(R.drawable.linear_scale),
                     title = { Text(stringResource(R.string.crossfade)) },
                     description = { Text(stringResource(R.string.crossfade_desc)) },

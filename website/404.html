@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <title>Page not found — SONARA</title>
+    <meta name="description" content="The page you’re looking for could not be found. Return to SONARA’s home page." />
+    <link rel="icon" type="image/png" href="/sonara/images/icon.png" />
+    <link rel="stylesheet" href="/sonara/assets/css/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .not-found { min-height: 72vh; display: grid; place-items: center; text-align: center; }
+      .not-found .container { max-width: 42rem; }
+      .not-found-code { color: var(--color-muted, #999); font: 500 clamp(4rem, 15vw, 8rem)/1 'JetBrains Mono', monospace; margin: 0; }
+      .not-found .section-title { margin-top: 0.5rem; }
+      .not-found .section-desc { margin-inline: auto; }
+      .not-found .btn { margin-top: 1.5rem; }
+    </style>
+  </head>
+  <body>
+    <main class="page not-found">
+      <div class="container">
+        <p class="not-found-code" aria-hidden="true">404</p>
+        <h1 class="section-title">This page wandered off.</h1>
+        <p class="section-desc">The address may be out of date, or the page may have moved. Let’s get you back to the music.</p>
+        <a class="btn btn-primary" href="/sonara/">Back to SONARA</a>
+      </div>
+    </main>
+  </body>
+</html>

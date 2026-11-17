@@ -6,6 +6,7 @@
 package com.metrolist.music.ui.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -22,7 +23,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState as rememberMaterialBottomSheetState
 import androidx.compose.runtime.Composable
@@ -35,11 +35,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.metrolist.music.ui.theme.LocalRegaColors
 
 val LocalMenuState = compositionLocalOf { MenuState() }
 
@@ -69,17 +72,18 @@ fun AnimatedBottomSheet(
     modifier: Modifier = Modifier,
     sheetState: SheetState = rememberMaterialBottomSheetState(initialValue = SheetValue.Hidden),
     sheetMaxWidth: Dp = BottomSheetDefaults.SheetMaxWidth,
-    shape: Shape = BottomSheetDefaults.ExpandedShape,
-    containerColor: Color = BottomSheetDefaults.ContainerColor,
-    contentColor: Color = contentColorFor(containerColor),
+    shape: Shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+    containerColor: Color = LocalRegaColors.current.glassModal,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
     tonalElevation: Dp = 0.dp,
-    scrimColor: Color = BottomSheetDefaults.ScrimColor,
+    scrimColor: Color = Color.Black.copy(alpha = 0.45f),
     dragHandle: @Composable (() -> Unit)? = { BottomSheetDefaults.DragHandle() },
     contentWindowInsets: @Composable () -> WindowInsets = { BottomSheetDefaults.modalWindowInsets },
     properties: ModalBottomSheetProperties = ModalBottomSheetDefaults.properties,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var lastContent by remember { mutableStateOf(content) }
+    val regaColors = LocalRegaColors.current
 
     LaunchedEffect(content) {
         if (isVisible) {
@@ -101,7 +105,7 @@ fun AnimatedBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
-        modifier = modifier,
+        modifier = modifier.border(1.dp, regaColors.glassBorder, shape),
         sheetState = sheetState,
         sheetMaxWidth = sheetMaxWidth,
         shape = shape,
@@ -112,8 +116,25 @@ fun AnimatedBottomSheet(
         dragHandle = dragHandle,
         contentWindowInsets = contentWindowInsets,
         properties = properties,
-        content = lastContent,
-    )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                regaColors.glassHighlight.copy(alpha = if (regaColors.isDark) 0.14f else 0.35f),
+                                Color.Transparent,
+                            ),
+                            startY = 0f,
+                            endY = 120.dp.toPx(),
+                        ),
+                    )
+                },
+            content = lastContent,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -121,7 +142,7 @@ fun AnimatedBottomSheet(
 fun BottomSheetMenu(
     modifier: Modifier = Modifier,
     state: MenuState,
-    background: Color = MaterialTheme.colorScheme.surface,
+    background: Color = LocalRegaColors.current.glassModal,
 ) {
     val focusManager = LocalFocusManager.current
     val sheetState = rememberMaterialBottomSheetState(initialValue = SheetValue.Hidden)
@@ -144,12 +165,12 @@ fun BottomSheetMenu(
                     .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
             )
         },
-        modifier = modifier.fillMaxHeight()
+        modifier = modifier.fillMaxHeight(),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 20.dp),
         ) {
             state.content(this)
         }

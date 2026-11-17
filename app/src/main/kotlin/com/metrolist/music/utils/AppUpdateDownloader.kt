@@ -27,6 +27,7 @@ sealed interface UpdateDownloadState {
     data class Downloading(val progress: Float) : UpdateDownloadState
     data object VerifyingChecksum : UpdateDownloadState
     data class ReadyToInstall(val apkFile: File) : UpdateDownloadState
+    data class PermissionRequired(val apkFile: File) : UpdateDownloadState
     data class Failed(val error: String) : UpdateDownloadState
 }
 
@@ -111,7 +112,12 @@ object AppUpdateDownloader {
                 }
             }
 
-            onProgress(UpdateDownloadState.ReadyToInstall(targetFile))
+            val finalState = if (canInstallPackages(context)) {
+                UpdateDownloadState.ReadyToInstall(targetFile)
+            } else {
+                UpdateDownloadState.PermissionRequired(targetFile)
+            }
+            onProgress(finalState)
             targetFile
         }.onFailure {
             onProgress(UpdateDownloadState.Failed(it.message ?: "Download failed"))
@@ -150,6 +156,18 @@ object AppUpdateDownloader {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(installIntent)
+        }
+    }
+
+    fun installDownloadedApk(context: Context, apkFile: File): Result<Boolean> {
+        return runCatching {
+            if (!canInstallPackages(context)) {
+                openInstallPermissionSettings(context)
+                false
+            } else {
+                triggerInstall(context, apkFile).getOrThrow()
+                true
+            }
         }
     }
 }

@@ -1,10 +1,10 @@
 const CONFIG = {
     owner: "arkrega",
-    repo: "regamusic",
+    repo: "sonara",
     defaultVersion: "1.0.0",
     defaultTag: "v1.0.0",
-    defaultFilename: "Rega-Music.apk",
-    defaultFallbackUrl: "https://github.com/arkrega/regamusic/releases/latest/download/Rega-Music.apk"
+    defaultFilename: "Sonara.apk",
+    defaultFallbackUrl: "https://github.com/arkrega/sonara/releases/latest/download/Sonara.apk"
 };
 
 function formatBytes(bytes, decimals = 1) {
@@ -70,10 +70,10 @@ function updateUiWithRelease(data) {
     const fileSize = apkAsset ? formatBytes(apkAsset.size) : "~45 MB";
 
     const heroVersionTag = document.getElementById('hero-version-tag');
-    if (heroVersionTag) heroVersionTag.textContent = `Rega Music Stable v${version}`;
+    if (heroVersionTag) heroVersionTag.textContent = `Sonara Stable v${version}`;
 
     const releaseVersionTitle = document.getElementById('release-version-title');
-    if (releaseVersionTitle) releaseVersionTitle.textContent = `Rega Music v${version}`;
+    if (releaseVersionTitle) releaseVersionTitle.textContent = `Sonara v${version}`;
 
     const releaseDate = document.getElementById('release-date');
     if (releaseDate) releaseDate.textContent = `Published: ${publishedAt}`;

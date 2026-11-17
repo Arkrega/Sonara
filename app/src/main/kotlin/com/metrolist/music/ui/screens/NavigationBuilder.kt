@@ -99,6 +99,13 @@ fun NavGraphBuilder.navigationBuilder(
         LibraryScreen()
     }
 
+    composable(Screens.Profile.route) {
+        ProfileScreen(
+            navController = navController,
+            latestVersionName = latestVersionName,
+        )
+    }
+
     composable(Screens.ListenTogether.route) {
         ListenTogetherScreen(navController, showTopBar = false)
     }

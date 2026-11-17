@@ -1,14 +1,14 @@
 /**
  * Metrolist Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
+ *
+ * Skeleton host for loading states. Keeps the original API (ShimmerHost)
+ * so screens don't need to change, but renders the MONOCHROME SONIC
+ * breathing skeleton instead of a gradient shimmer.
  */
 
 package com.metrolist.music.ui.component.shimmer
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -19,9 +19,6 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import com.valentinilk.shimmer.defaultShimmerTheme
-import com.valentinilk.shimmer.shimmer
 
 @Composable
 fun ShimmerHost(
@@ -31,9 +28,7 @@ fun ShimmerHost(
     showGradient: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val baseModifier = modifier
-        .shimmer()
-        .graphicsLayer(alpha = 0.99f)
+    val baseModifier = modifier.skeletonPulse()
 
     Column(
         horizontalAlignment = horizontalAlignment,
@@ -52,23 +47,3 @@ fun ShimmerHost(
         content = content,
     )
 }
-
-val ShimmerTheme =
-    defaultShimmerTheme.copy(
-        animationSpec =
-        infiniteRepeatable(
-            animation =
-            tween(
-                durationMillis = 800,
-                easing = LinearEasing,
-                delayMillis = 250,
-            ),
-            repeatMode = RepeatMode.Restart,
-        ),
-        shaderColors =
-        listOf(
-            Color.Unspecified.copy(alpha = 0.25f),
-            Color.Unspecified.copy(alpha = 0.50f),
-            Color.Unspecified.copy(alpha = 0.25f),
-        ),
-    )

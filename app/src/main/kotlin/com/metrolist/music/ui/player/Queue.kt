@@ -93,6 +93,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.edit
@@ -121,6 +123,7 @@ import com.metrolist.music.ui.component.MediaMetadataListItem
 import com.metrolist.music.ui.menu.PlayerMenu
 import com.metrolist.music.ui.menu.QueueMenu
 import com.metrolist.music.ui.menu.SelectionMediaMetadataMenu
+import com.metrolist.music.ui.theme.LocalRegaColors
 import com.metrolist.music.ui.utils.ShowMediaInfo
 import com.metrolist.music.utils.dataStore
 import com.metrolist.music.utils.makeTimeString
@@ -263,7 +266,8 @@ fun Queue(
             Box(Modifier.fillMaxSize().background(Color.Unspecified))
         },
         collapsedContent = {
-            if (useNewPlayerDesign) {
+            if (state.collapsedBound > 0.dp) {
+                if (useNewPlayerDesign) {
                 // New design
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -538,6 +542,7 @@ fun Queue(
                     }
                 }
             }
+            }
 
             if (showSleepTimerDialog) {
                 ActionPromptDialog(
@@ -654,6 +659,73 @@ fun Queue(
             }
         },
     ) {
+        QueueInnerContent(
+            playerBottomSheetState = playerBottomSheetState,
+            sheetState = state,
+            background = background,
+            pureBlack = pureBlack,
+            locked = locked,
+            onToggleLock = { locked = !locked },
+            inSelectMode = inSelectMode,
+            selection = selection,
+            onEnterSelectionMode = { mediaId ->
+                inSelectMode = true
+                if (mediaId !in selection) selection.add(mediaId)
+            },
+            onExitSelectionMode = onExitSelectionMode,
+            snackbarHostState = snackbarHostState,
+            showTopBar = true,
+            showBottomBar = true,
+        )
+    }
+}
+
+@SuppressLint("UnrememberedMutableState")
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+internal fun QueueInnerContent(
+    playerBottomSheetState: BottomSheetState,
+    sheetState: BottomSheetState? = null,
+    background: Color,
+    pureBlack: Boolean,
+    locked: Boolean,
+    onToggleLock: () -> Unit,
+    inSelectMode: Boolean,
+    selection: MutableList<String>,
+    onEnterSelectionMode: (String) -> Unit,
+    onExitSelectionMode: () -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    showTopBar: Boolean = true,
+    showBottomBar: Boolean = true,
+    contentTopPadding: Dp = ListItemHeight + 8.dp,
+    contentBottomPadding: Dp = ListItemHeight + 8.dp,
+    modifier: Modifier = Modifier,
+) {
+    val navController = LocalNavController.current
+    val haptic = LocalHapticFeedback.current
+    val menuState = LocalMenuState.current
+    val bottomSheetPageState = LocalBottomSheetPageState.current
+    val listenTogetherManager = LocalListenTogetherManager.current
+    val listenTogetherRoleState = listenTogetherManager?.role?.collectAsStateWithLifecycle(initialValue = RoomRole.NONE)
+    val isListenTogetherGuest = listenTogetherRoleState?.value == RoomRole.GUEST
+    val playerConnection = LocalPlayerConnection.current ?: return
+    val isPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
+    val currentWindowIndex by playerConnection.currentWindowIndex.collectAsStateWithLifecycle()
+    val repeatMode by playerConnection.repeatMode.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
+    var dismissJob: Job? by remember { mutableStateOf(null) }
+
+    val castHandler = remember(playerConnection) {
+        try {
+            playerConnection.service.castConnectionHandler
+        } catch (_: Exception) {
+            null
+        }
+    }
+    val isCasting by castHandler?.isCasting?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) }
+    val castIsPlaying by castHandler?.castIsPlaying?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) }
+
+    Box(modifier = modifier.fillMaxSize()) {
         val queueTitle by playerConnection.queueTitle.collectAsStateWithLifecycle()
         val queueWindows by playerConnection.queueWindows.collectAsStateWithLifecycle()
         val automix by playerConnection.service.automixItems.collectAsStateWithLifecycle()
@@ -662,8 +734,6 @@ fun Queue(
             remember(queueWindows) {
                 queueWindows.sumOf { it.mediaItem.metadata!!.duration }
             }
-
-        val coroutineScope = rememberCoroutineScope()
 
         val headerItems = 1
         val lazyListState = rememberLazyListState()
@@ -748,17 +818,22 @@ fun Queue(
                     .fillMaxSize()
                     .background(background),
         ) {
+            val listScrollMod = if (sheetState != null) {
+                Modifier.nestedScroll(sheetState.preUpPostDownNestedScrollConnection)
+            } else {
+                Modifier
+            }
             LazyColumn(
                 state = lazyListState,
                 contentPadding =
                     WindowInsets.systemBars
                         .add(
                             WindowInsets(
-                                top = ListItemHeight + 8.dp,
-                                bottom = ListItemHeight + 8.dp,
+                                top = contentTopPadding,
+                                bottom = contentBottomPadding,
                             ),
                         ).asPaddingValues(),
-                modifier = Modifier.nestedScroll(state.preUpPostDownNestedScrollConnection),
+                modifier = listScrollMod,
             ) {
                 item(key = "queue_top_spacer") {
                     Spacer(
@@ -889,7 +964,13 @@ fun Queue(
                                     modifier =
                                         Modifier
                                             .fillMaxWidth()
-                                            .background(background)
+                                            .background(
+                                                if (isActive) {
+                                                    LocalRegaColors.current.textPrimary.copy(alpha = 0.08f)
+                                                } else {
+                                                    Color.Transparent
+                                                },
+                                            )
                                             .combinedClickable(
                                                 onClick = {
                                                     if (inSelectMode) {
@@ -924,8 +1005,7 @@ fun Queue(
                                                 onLongClick = {
                                                     if (!inSelectMode) {
                                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                        inSelectMode = true
-                                                        onCheckedChange(true)
+                                                        onEnterSelectionMode(currentItem.mediaItem.mediaId)
                                                     }
                                                 },
                                             ),
@@ -1029,6 +1109,9 @@ fun Queue(
             }
         }
 
+        val regaColors = LocalRegaColors.current
+
+        if (showTopBar || inSelectMode) {
         Column(
             modifier =
                 Modifier
@@ -1037,18 +1120,19 @@ fun Queue(
                         interactionSource = remember { MutableInteractionSource() },
                     ) { }
                     .background(
-                        if (pureBlack) {
+                        if (!showTopBar) {
+                            Color.Transparent
+                        } else if (pureBlack) {
                             Color.Black
                         } else {
-                            MaterialTheme.colorScheme
-                                .secondaryContainer
-                                .copy(alpha = 0.90f)
+                            regaColors.glassModal
                         },
                     ).windowInsetsPadding(
                         WindowInsets.systemBars
                             .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                     ),
         ) {
+            if (showTopBar) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1072,7 +1156,7 @@ fun Queue(
                 ) {
                     Row {
                         IconButton(
-                            onClick = { locked = !locked },
+                            onClick = onToggleLock,
                             modifier = Modifier.padding(horizontal = 6.dp),
                         ) {
                             Icon(
@@ -1102,6 +1186,7 @@ fun Queue(
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
+            }
             }
 
             AnimatedVisibility(
@@ -1172,13 +1257,15 @@ fun Queue(
                     }
                 }
             }
-            if (pureBlack) {
+            if (showTopBar && pureBlack) {
                 HorizontalDivider()
             }
+        }
         }
 
         val shuffleModeEnabled by playerConnection.shuffleModeEnabled.collectAsStateWithLifecycle()
 
+        if (showBottomBar && sheetState != null) {
         Box(
             modifier =
                 Modifier
@@ -1186,9 +1273,7 @@ fun Queue(
                         if (pureBlack) {
                             Color.Black
                         } else {
-                            MaterialTheme.colorScheme
-                                .secondaryContainer
-                                .copy(alpha = 0.90f)
+                            regaColors.glassModal
                         },
                     ).fillMaxWidth()
                     .height(
@@ -1198,7 +1283,7 @@ fun Queue(
                                 .calculateBottomPadding(),
                     ).align(Alignment.BottomCenter)
                     .clickable {
-                        state.collapseSoft()
+                        sheetState.collapseSoft()
                     }.windowInsetsPadding(
                         WindowInsets.systemBars
                             .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
@@ -1255,6 +1340,7 @@ fun Queue(
                 )
             }
         }
+        }
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -1262,7 +1348,7 @@ fun Queue(
                 Modifier
                     .padding(
                         bottom =
-                            ListItemHeight +
+                            (if (showBottomBar) ListItemHeight else 84.dp) +
                                 WindowInsets.systemBars
                                     .asPaddingValues()
                                     .calculateBottomPadding(),

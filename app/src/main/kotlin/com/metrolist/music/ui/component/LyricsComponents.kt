@@ -79,6 +79,10 @@ import com.metrolist.music.R
 import com.metrolist.music.lyrics.LyricsTranslationHelper
 import com.metrolist.music.models.MediaMetadata
 import com.metrolist.music.ui.screens.settings.LyricsPosition
+import com.metrolist.music.ui.component.glass.RegaGlassSurface
+import com.metrolist.music.ui.component.glass.RegaPillShape
+import com.metrolist.music.ui.component.glass.RegaSecondaryButton
+import com.metrolist.music.ui.theme.LocalRegaColors
 import com.metrolist.music.utils.ComposeToImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -156,17 +160,21 @@ private fun TranslationCard(
     contentColor: Color,
     content: @Composable RowScope.() -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = containerColor, contentColor = contentColor),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    RegaGlassSurface(
+        shape = RegaPillShape,
+        tintColor = containerColor.copy(alpha = 0.72f),
+        borderColor = LocalRegaColors.current.glassBorder,
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            content = content
-        )
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.material3.LocalContentColor provides contentColor,
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                content = content,
+            )
+        }
     }
 }
 
@@ -190,8 +198,11 @@ internal fun LyricsActionOverlay(
             enter = slideInVertically { it } + fadeIn(),
             exit = slideOutVertically { it } + fadeOut()
         ) {
-            FilledTonalButton(onClick = onSyncClick) {
-                Icon(painterResource(R.drawable.sync), stringResource(R.string.auto_scroll), Modifier.size(20.dp))
+            RegaSecondaryButton(
+                onClick = onSyncClick,
+                shape = RegaPillShape,
+            ) {
+                Icon(painterResource(R.drawable.sync), stringResource(R.string.auto_scroll), Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.auto_scroll))
             }
@@ -206,14 +217,18 @@ internal fun LyricsActionOverlay(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FilledTonalButton(onClick = onCancelSelection) {
-                    Icon(painterResource(R.drawable.close), stringResource(R.string.cancel), Modifier.size(20.dp))
-                }
-                FilledTonalButton(
-                    onClick = onShareSelection,
-                    enabled = anySelected
+                RegaSecondaryButton(
+                    onClick = onCancelSelection,
+                    shape = RegaPillShape,
                 ) {
-                    Icon(painterResource(R.drawable.share), stringResource(R.string.share_selected), Modifier.size(20.dp))
+                    Icon(painterResource(R.drawable.close), stringResource(R.string.cancel), Modifier.size(18.dp))
+                }
+                RegaSecondaryButton(
+                    onClick = onShareSelection,
+                    enabled = anySelected,
+                    shape = RegaPillShape,
+                ) {
+                    Icon(painterResource(R.drawable.share), stringResource(R.string.share_selected), Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.share))
                 }
@@ -340,7 +355,7 @@ internal fun LyricsColorPickerDialog(
     }
 
     BasicAlertDialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+        Card(shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().padding(20.dp)) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.verticalScroll(rememberScrollState()).padding(20.dp)
@@ -360,7 +375,7 @@ internal fun LyricsColorPickerDialog(
                     }
                 }
                 
-                Box(Modifier.fillMaxWidth().aspectRatio(1f).padding(8.dp).clip(RoundedCornerShape(12.dp))) {
+                Box(Modifier.fillMaxWidth().aspectRatio(1f).padding(8.dp).clip(RoundedCornerShape(8.dp))) {
                     LyricsImageCard(
                         lyricText = txt,
                         mediaMetadata = MediaMetadata(

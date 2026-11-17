@@ -24,6 +24,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,7 +74,26 @@ fun UpdaterScreen(
     var showChangelog by remember { mutableStateOf(false) }
     var changelogContent by remember { mutableStateOf<String?>(null) }
     var checkError by remember { mutableStateOf<String?>(null) }
-    val failedToCheckUpdatesTemplate = stringResource(R.string.failed_to_check_updates)
+        val failedToCheckUpdatesTemplate = stringResource(R.string.failed_to_check_updates)
+    var downloadState by remember { mutableStateOf<UpdateDownloadState>(UpdateDownloadState.Idle) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val current = downloadState
+                if (current is UpdateDownloadState.PermissionRequired) {
+                    if (AppUpdateDownloader.canInstallPackages(context)) {
+                        downloadState = UpdateDownloadState.ReadyToInstall(current.apkFile)
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -220,41 +243,113 @@ fun UpdaterScreen(
 
         if (updateAvailable && latestVersion != null) {
             Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    val releaseInfo = Updater.getCachedLatestRelease()
-                    val currentAsset = releaseInfo?.let { Updater.getAssetForCurrentVariant(it) }
-                    val downloadUrl = releaseInfo?.let { Updater.getDownloadUrlForCurrentVariant(it) }
-                    if (currentAsset != null) {
-                        coroutineScope.launch {
-                            AppUpdateDownloader.downloadApk(
-                                context = context,
-                                asset = currentAsset,
-                                sha256SumsUrl = releaseInfo.sha256SumsUrl,
-                                onProgress = { state ->
-                                    if (state is UpdateDownloadState.ReadyToInstall) {
-                                        if (!AppUpdateDownloader.canInstallPackages(context)) {
-                                            AppUpdateDownloader.openInstallPermissionSettings(context)
+
+            when (val state = downloadState) {
+                is UpdateDownloadState.Downloading -> {
+                    Button(
+                        onClick = {},
+                        enabled = false,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(end = 8.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                        val percent = if (state.progress >= 0f) " ${(state.progress * 100).toInt()}%" else ""
+                        Text("Downloading$percent…")
+                    }
+                }
+                is UpdateDownloadState.VerifyingChecksum -> {
+                    Button(
+                        onClick = {},
+                        enabled = false,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(end = 8.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                        Text("Verifying checksum…")
+                    }
+                }
+                is UpdateDownloadState.PermissionRequired -> {
+                    Text(
+                        text = stringResource(R.string.install_permission_required),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
+                    Button(
+                        onClick = {
+                            AppUpdateDownloader.openInstallPermissionSettings(context)
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                    ) {
+                        Text(stringResource(R.string.grant_install_permission))
+                    }
+                }
+                is UpdateDownloadState.ReadyToInstall -> {
+                    Button(
+                        onClick = {
+                            if (!AppUpdateDownloader.canInstallPackages(context)) {
+                                downloadState = UpdateDownloadState.PermissionRequired(state.apkFile)
+                                AppUpdateDownloader.openInstallPermissionSettings(context)
+                            } else {
+                                AppUpdateDownloader.triggerInstall(context, state.apkFile)
+                            }
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                    ) {
+                        Text(stringResource(R.string.install_update))
+                    }
+                }
+                else -> {
+                    Button(
+                        onClick = {
+                            val releaseInfo = Updater.getCachedLatestRelease()
+                            val currentAsset = releaseInfo?.let { Updater.getAssetForCurrentVariant(it) }
+                            val downloadUrl = releaseInfo?.let { Updater.getDownloadUrlForCurrentVariant(it) }
+                            if (currentAsset != null) {
+                                coroutineScope.launch {
+                                    AppUpdateDownloader.downloadApk(
+                                        context = context,
+                                        asset = currentAsset,
+                                        sha256SumsUrl = releaseInfo.sha256SumsUrl,
+                                        onProgress = { newState ->
+                                            downloadState = newState
+                                        },
+                                    ).onFailure {
+                                        downloadUrl?.let { url ->
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                                         }
-                                        AppUpdateDownloader.triggerInstall(context, state.apkFile)
                                     }
                                 }
-                            ).onFailure {
-                                downloadUrl?.let { url ->
-                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                                }
+                            } else if (downloadUrl != null) {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)))
                             }
-                        }
-                    } else if (downloadUrl != null) {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)))
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                    ) {
+                        Text(stringResource(R.string.update_action))
                     }
-                },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-            ) {
-                Text(stringResource(R.string.update_action))
+                }
             }
 
             Spacer(Modifier.height(8.dp))

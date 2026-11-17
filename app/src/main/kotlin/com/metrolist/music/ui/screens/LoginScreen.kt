@@ -10,6 +10,7 @@ import android.content.Intent
 import android.net.Uri
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -26,6 +27,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -40,6 +44,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -71,9 +76,12 @@ import com.metrolist.music.constants.AccountNameKey
 import com.metrolist.music.constants.DataSyncIdKey
 import com.metrolist.music.constants.InnerTubeAuthUserKey
 import com.metrolist.music.constants.InnerTubeCookieKey
+import com.metrolist.music.constants.IntroCompletedKey
+import com.metrolist.music.constants.OnboardingStateKey
 import com.metrolist.music.constants.VisitorDataKey
 import com.metrolist.music.ui.component.IconButton
 import com.metrolist.music.ui.utils.backToMain
+import com.metrolist.music.utils.OnboardingStatus
 import com.metrolist.music.utils.reportException
 import com.metrolist.music.utils.safeDataStoreEdit
 import kotlinx.coroutines.CompletableDeferred
@@ -106,6 +114,7 @@ private data class AuthData(
 fun LoginScreen(
     navController: NavController,
     isSwitchingChannel: Boolean = false,
+    onClose: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -197,6 +206,10 @@ fun LoginScreen(
                         settings[AccountNameKey] = accountInfo.name
                         settings[AccountEmailKey] = accountInfo.email.orEmpty()
                         settings[AccountChannelHandleKey] = accountInfo.channelHandle.orEmpty()
+                        // Login restarts the process, so the onboarding result has to be
+                        // persisted here before the activity is recreated.
+                        settings[OnboardingStateKey] = OnboardingStatus.AUTHENTICATED.value
+                        settings[IntroCompletedKey] = true
                     }
                 }
             check(saved) { "Failed to persist account data" }
@@ -296,99 +309,113 @@ fun LoginScreen(
         }
     }
 
-    Box(
-        modifier =
-            Modifier
-                .windowInsetsPadding(LocalPlayerAwareWindowInsets.current)
-                .fillMaxSize(),
-    ) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { webViewContext ->
-                WebView(webViewContext).apply {
-                    webViewClient =
-                        object : WebViewClient() {
-                            override fun shouldOverrideUrlLoading(
-                                view: WebView,
-                                request: WebResourceRequest,
-                            ): Boolean {
-                                val scheme = request.url.scheme
-                                if (scheme == "http" || scheme == "https") return false
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        stringResource(
+                            if (isSwitchingChannel) R.string.switch_youtube_channel else R.string.login,
+                        ),
+                    )
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = { onClose?.invoke() ?: navController.navigateUp() },
+                        onLongClick = { onClose?.invoke() ?: navController.backToMain() },
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.arrow_back),
+                            contentDescription = null,
+                        )
+                    }
+                },
+            )
+        },
+        contentWindowInsets = WindowInsets.systemBars,
+    ) { innerPadding ->
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .imePadding(),
+        ) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { webViewContext ->
+                    WebView(webViewContext).apply {
+                        val cookieManager = CookieManager.getInstance()
+                        cookieManager.setAcceptCookie(true)
+                        cookieManager.setAcceptThirdPartyCookies(this, true)
 
-                                if (scheme == "intent") {
-                                    runCatching {
-                                        Intent.parseUri(request.url.toString(), Intent.URI_INTENT_SCHEME)
-                                            .apply {
-                                                addCategory(Intent.CATEGORY_BROWSABLE)
-                                                component = null
-                                                selector = null
-                                            }.let(context::startActivity)
+                        webChromeClient = WebChromeClient()
+                        webViewClient =
+                            object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(
+                                    view: WebView,
+                                    request: WebResourceRequest,
+                                ): Boolean {
+                                    val scheme = request.url.scheme
+                                    if (scheme == "http" || scheme == "https") return false
+
+                                    if (scheme == "intent") {
+                                        runCatching {
+                                            Intent.parseUri(request.url.toString(), Intent.URI_INTENT_SCHEME)
+                                                .apply {
+                                                    addCategory(Intent.CATEGORY_BROWSABLE)
+                                                    component = null
+                                                    selector = null
+                                                }.let(context::startActivity)
+                                        }
+                                    }
+                                    return true
+                                }
+
+                                override fun onPageFinished(
+                                    view: WebView,
+                                    url: String?,
+                                ) {
+                                    val pageUri = url?.let(Uri::parse)
+                                    if (pageUri?.scheme == "https" && pageUri.host == "music.youtube.com") {
+                                        handleAuthenticatedPage()
                                     }
                                 }
-                                return true
                             }
-
-                            override fun onPageFinished(
-                                view: WebView,
-                                url: String?,
-                            ) {
-                                val pageUri = url?.let(Uri::parse)
-                                if (pageUri?.scheme == "https" && pageUri.host == "music.youtube.com") {
-                                    handleAuthenticatedPage()
-                                }
-                            }
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            useWideViewPort = true
+                            loadWithOverviewMode = true
+                            setSupportZoom(true)
+                            builtInZoomControls = true
+                            displayZoomControls = false
                         }
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        setSupportZoom(true)
-                        builtInZoomControls = true
-                        displayZoomControls = false
-                    }
-                    addJavascriptInterface(jsInterface, "Android")
-                    webViewRef = this
-                    if (isSwitchingChannel) {
-                        restoreYouTubeCookies(YouTube.cookie)
-                    }
-                    loadUrl(
+                        addJavascriptInterface(jsInterface, "Android")
+                        webViewRef = this
                         if (isSwitchingChannel) {
-                            "https://music.youtube.com"
-                        } else {
-                            "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com"
-                        },
-                    )
-                }
-            },
-        )
+                            restoreYouTubeCookies(YouTube.cookie)
+                        }
+                        loadUrl(
+                            if (isSwitchingChannel) {
+                                "https://music.youtube.com"
+                            } else {
+                                "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com"
+                            },
+                        )
+                    }
+                },
+            )
 
-        if (loginStage == LoginStage.CheckingAccounts || loginStage == LoginStage.Completing) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center))
+            if (loginStage == LoginStage.CheckingAccounts || loginStage == LoginStage.Completing) {
+                CircularProgressIndicator(Modifier.align(Alignment.Center))
+            }
         }
-
-        TopAppBar(
-            title = {
-                Text(
-                    stringResource(
-                        if (isSwitchingChannel) R.string.switch_youtube_channel else R.string.login,
-                    ),
-                )
-            },
-            navigationIcon = {
-                IconButton(
-                    onClick = navController::navigateUp,
-                    onLongClick = navController::backToMain,
-                ) {
-                    Icon(
-                        painterResource(R.drawable.arrow_back),
-                        contentDescription = null,
-                    )
-                }
-            },
-        )
     }
 
     if (loginStage == LoginStage.SelectingAccount) {
         AlertDialog(
+            shape = RoundedCornerShape(8.dp),
             onDismissRequest = {},
             title = { Text(stringResource(R.string.choose_youtube_channel)) },
             text = {
@@ -458,6 +485,7 @@ fun LoginScreen(
 
     errorMessage?.let { error ->
         AlertDialog(
+            shape = RoundedCornerShape(8.dp),
             onDismissRequest = { errorMessage = null },
             title = { Text(stringResource(R.string.login_failed)) },
             text = { Text(error) },
@@ -489,7 +517,7 @@ private fun YouTubeAccountPickerItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor =

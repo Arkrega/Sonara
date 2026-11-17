@@ -7,6 +7,7 @@ package com.metrolist.music.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -195,20 +196,30 @@ fun AlbumScreen(
                     modifier =
                         Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
                             .padding(top = 8.dp, bottom = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    horizontalAlignment = Alignment.Start,
                 ) {
-                    // Album Thumbnail - Large centered with shadow
+                    Text(
+                        text = buildString {
+                            append(stringResource(R.string.sonara_album_label))
+                            albumWithSongs.album.year?.let { append("  /  "); append(it) }
+                        },
+                        style = com.metrolist.music.ui.theme.SonaraLabelStyle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
                     Surface(
                         modifier =
                             Modifier
-                                .size(240.dp)
-                                .shadow(
-                                    elevation = 24.dp,
-                                    shape = RoundedCornerShape(3.dp),
-                                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                .size(176.dp)
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                    shape = RoundedCornerShape(8.dp),
                                 ),
-                        shape = RoundedCornerShape(3.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surface,
                     ) {
                         AsyncImage(
                             model = albumWithSongs.album.thumbnailUrl?.resize(1080, 1080),
@@ -223,12 +234,11 @@ fun AlbumScreen(
                     // Album Name
                     Text(
                         text = albumWithSongs.album.title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Start,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 32.dp),
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -238,7 +248,7 @@ fun AlbumScreen(
                         artists = albumWithSongs.artists,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Normal,
-                            textAlign = TextAlign.Center,
+                            textAlign = TextAlign.Start,
                         ),
                         color = MaterialTheme.colorScheme.secondary,
                         maxLines = Int.MAX_VALUE,
@@ -250,7 +260,7 @@ fun AlbumScreen(
                     // Metadata - Year first, then song count • duration
                     val totalDuration = albumWithSongs.songs.sumOf { it.song.duration }
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                        horizontalAlignment = Alignment.Start,
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         // Year
@@ -290,8 +300,8 @@ fun AlbumScreen(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                                .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.Start),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         // Like Button - Smaller secondary button
@@ -301,9 +311,9 @@ fun AlbumScreen(
                                     update(albumWithSongs.album.toggleLike())
                                 }
                             },
-                            shape = CircleShape,
+                            shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier.size(44.dp),
                         ) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
@@ -343,7 +353,7 @@ fun AlbumScreen(
                                 }
                             },
                             color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape,
+                            shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.size(72.dp),
                         ) {
                             Box(
@@ -373,9 +383,9 @@ fun AlbumScreen(
                                     )
                                 }
                             },
-                            shape = CircleShape,
+                            shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier.size(44.dp),
                         ) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),

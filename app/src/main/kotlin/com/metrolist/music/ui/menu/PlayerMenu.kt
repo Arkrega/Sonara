@@ -226,7 +226,7 @@ fun PlayerMenu(
     }
 
     if (showPitchTempoDialog) {
-        TempoPitchDialog(
+        com.metrolist.music.ui.component.RegaPlaybackSpeedDialog(
             onDismiss = { showPitchTempoDialog = false },
         )
     }
@@ -236,7 +236,7 @@ fun PlayerMenu(
     }
 
     if (showSpeedDialog) {
-        SpeedDialog(
+        com.metrolist.music.ui.component.RegaPlaybackSpeedDialog(
             onDismiss = { showSpeedDialog = false },
         )
     }
@@ -607,7 +607,7 @@ fun PlayerMenu(
                                         )
                                         if (pendingSuggestions.isNotEmpty()) {
                                             Surface(
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(8.dp),
                                                 color = MaterialTheme.colorScheme.primary,
                                                 modifier =
                                                     Modifier
@@ -1057,7 +1057,7 @@ fun ListenTogetherDialog(
                                 selectedUserForMenu = null
                                 selectedUsername = null
                             },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.errorContainer,
                 ) {
                     Row(
@@ -1107,7 +1107,7 @@ fun ListenTogetherDialog(
                                 selectedUserForMenu = null
                                 selectedUsername = null
                             },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                 ) {
                     Row(
@@ -1154,7 +1154,7 @@ fun ListenTogetherDialog(
                                 selectedUserForMenu = null
                                 selectedUsername = null
                             },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
                 ) {
                     Row(
@@ -1274,7 +1274,7 @@ fun ListenTogetherDialog(
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(8.dp),
                 color =
                     when (connectionState) {
                         ConnectionState.CONNECTED -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -1400,7 +1400,7 @@ fun ListenTogetherDialog(
                             Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                     ) {
                         Column(
@@ -1647,7 +1647,7 @@ fun ListenTogetherDialog(
                                 Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
                         ) {
                             Row(
@@ -1734,7 +1734,7 @@ fun ListenTogetherDialog(
                                 Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
                         ) {
                             Row(
@@ -1849,7 +1849,7 @@ fun ListenTogetherDialog(
                         Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                 ) {
                     Column(
@@ -1883,7 +1883,7 @@ fun ListenTogetherDialog(
                                 }
                             },
                             singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors =
                                 OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -1922,7 +1922,7 @@ fun ListenTogetherDialog(
                                 )
                             },
                             singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors =
                                 OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = MaterialTheme.colorScheme.primary,

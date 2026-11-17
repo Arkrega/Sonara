@@ -5,10 +5,7 @@
 
 package com.metrolist.music.ui.component
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -23,7 +20,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialogDefaults
@@ -47,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -59,7 +56,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.metrolist.music.LocalNavController
 import com.metrolist.music.R
+import com.metrolist.music.ui.component.glass.RegaDialogShape
+import com.metrolist.music.ui.component.glass.RegaGlassMaterial
+import com.metrolist.music.ui.component.glass.RegaGlassStyle
+import com.metrolist.music.ui.component.glass.RegaLiquidGlass
+import com.metrolist.music.ui.component.glass.regaGlassSpecular
 import com.metrolist.music.ui.screens.settings.AccountSettings
+import com.metrolist.music.ui.theme.LocalRegaColors
 import kotlinx.coroutines.delay
 
 @Composable
@@ -76,23 +79,26 @@ fun DefaultDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
+        RegaLiquidGlass(
             modifier = Modifier.padding(24.dp),
-            shape = AlertDialogDefaults.shape,
-            color = AlertDialogDefaults.containerColor,
-            tonalElevation = AlertDialogDefaults.TonalElevation,
+            shape = RegaDialogShape,
+            borderColor = LocalRegaColors.current.glassBorder,
+            style = RegaGlassStyle.preset(
+                material = RegaGlassMaterial.Thick,
+                tint = LocalRegaColors.current.glassModal,
+                borderRadius = 28.dp,
+                elevation = 14.dp,
+            ),
+            contentAlignment = Alignment.TopStart,
         ) {
-            Column(
-                horizontalAlignment = horizontalAlignment,
-                modifier =
-                    modifier
-                        .padding(24.dp),
-            ) {
+            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+                Column(
+                    horizontalAlignment = horizontalAlignment,
+                    modifier = modifier.padding(24.dp),
+                ) {
                 if (icon != null) {
-                    CompositionLocalProvider(LocalContentColor provides AlertDialogDefaults.iconContentColor) {
-                        Box(
-                            Modifier.align(Alignment.CenterHorizontally),
-                        ) {
+                    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+                        Box(Modifier.align(Alignment.CenterHorizontally)) {
                             icon()
                         }
                     }
@@ -100,10 +106,9 @@ fun DefaultDialog(
                     Spacer(Modifier.height(16.dp))
                 }
                 if (title != null) {
-                    CompositionLocalProvider(LocalContentColor provides AlertDialogDefaults.titleContentColor) {
+                    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
                         ProvideTextStyle(MaterialTheme.typography.headlineSmall) {
                             Box(
-                                // Align the title to the center when an icon is present.
                                 Modifier.align(if (icon == null) Alignment.Start else Alignment.CenterHorizontally),
                             ) {
                                 title()
@@ -132,6 +137,7 @@ fun DefaultDialog(
                     }
                 }
             }
+            }
         }
     }
 }
@@ -156,7 +162,7 @@ fun AccountSettingsDialog(
                     .fillMaxSize()
                     .pointerInput(Unit) {
                         detectTapGestures(
-                            onTap = { onDismiss() }
+                            onTap = { onDismiss() },
                         )
                     },
             contentAlignment = Alignment.TopCenter,
@@ -166,10 +172,16 @@ fun AccountSettingsDialog(
                     Modifier
                         .fillMaxWidth()
                         .padding(top = 72.dp, start = 16.dp, end = 16.dp)
-                        .clip(RoundedCornerShape(28.dp)),
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp,
+                        .regaGlassSpecular(
+                            shape = RegaDialogShape,
+                            tintColor = LocalRegaColors.current.glassModal,
+                            borderColor = LocalRegaColors.current.glassBorder,
+                        )
+                        .clip(RegaDialogShape),
+                shape = RegaDialogShape,
+                color = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                tonalElevation = 0.dp,
             ) {
                 AccountSettings(
                     navController = navController,
@@ -250,10 +262,18 @@ fun ListDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            modifier = Modifier.padding(24.dp),
-            shape = AlertDialogDefaults.shape,
-            color = AlertDialogDefaults.containerColor,
-            tonalElevation = AlertDialogDefaults.TonalElevation,
+            modifier = Modifier
+                .padding(24.dp)
+                .regaGlassSpecular(
+                    shape = RegaDialogShape,
+                    tintColor = LocalRegaColors.current.glassModal,
+                    borderColor = LocalRegaColors.current.glassBorder,
+                )
+                .clip(RegaDialogShape),
+            shape = RegaDialogShape,
+            color = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            tonalElevation = 0.dp,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -300,7 +320,6 @@ fun TextFieldDialog(
     isInputValid: (String) -> Boolean = { it.isNotEmpty() },
     keyboardType: KeyboardType = KeyboardType.Text,
     onDone: (String) -> Unit = {},
-    // new multi-field support
     textFields: List<Pair<String, TextFieldValue>>? = null,
     onTextFieldsChange: ((Int, TextFieldValue) -> Unit)? = null,
     onDoneMultiple: ((List<String>) -> Unit)? = null,
@@ -309,7 +328,6 @@ fun TextFieldDialog(
     extraContent: (@Composable () -> Unit)? = null,
 ) {
     val legacyFieldState = remember { mutableStateOf(initialTextFieldValue) }
-
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
@@ -382,14 +400,13 @@ fun TextFieldDialog(
                     )
                 }
             } else {
-                // Wrap in Box with pointerInput to prevent double-click crashes in TextClassifier
                 Box(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .pointerInput(Unit) {
                                 detectTapGestures(
-                                    onDoubleTap = { /* Consume double-tap to prevent TextClassifier crash */ },
+                                    onDoubleTap = {},
                                 )
                             },
                 ) {

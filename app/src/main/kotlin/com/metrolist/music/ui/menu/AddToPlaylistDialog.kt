@@ -299,7 +299,7 @@ fun AddToPlaylistDialog(
                     playlist = playlist,
                     modifier = Modifier
                     .padding(horizontal = 8.dp, vertical = 2.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .background(rowBg)
                     .clickable {
                         selectedPlaylist = playlist

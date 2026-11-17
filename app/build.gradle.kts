@@ -18,23 +18,30 @@ fun resolveOriginRepo(): Pair<String, String>? {
         val gitConfigFile = rootProject.file(".git/config")
         if (!gitConfigFile.exists()) return@runCatching null
         val content = gitConfigFile.readText()
-        val regex = Regex("""\[remote\s+"origin"\][^\[]*?url\s*=\s*(?:https://github\.com/|git@github\.com:)([^/\s]+)/([^/\s.]+?)(?:\.git)?""", setOf(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL))
-        val match = regex.find(content)
-        match?.let {
-            val owner = it.groupValues[1]
-            val repo = it.groupValues[2]
-            if (owner.equals("MetrolistGroup", ignoreCase = true) && repo.equals("Metrolist", ignoreCase = true)) {
-                null
-            } else {
-                owner to repo
-            }
+        val url = Regex("""\[remote\s+"origin"\][^\[]*?url\s*=\s*(\S+)""", RegexOption.MULTILINE)
+            .find(content)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.removeSuffix(".git")
+            ?.trimEnd('/')
+            ?: return@runCatching null
+        val path = url.substringAfter("github.com", missingDelimiterValue = "")
+            .trim(':', '/')
+        val parts = path.split('/').filter { it.isNotBlank() }
+        if (parts.size < 2) return@runCatching null
+        val owner = parts[0]
+        val repo = parts[1]
+        if (owner.equals("MetrolistGroup", ignoreCase = true) && repo.equals("Metrolist", ignoreCase = true)) {
+            null
+        } else {
+            owner to repo
         }
     }.getOrNull()
 }
 
 val detectedRepo = resolveOriginRepo()
-val regaAppId = regaProperties.getProperty("rega.applicationId") ?: "com.arkrega.regamusic"
-val regaAppName = regaProperties.getProperty("rega.applicationName") ?: "Rega Music"
+val regaAppId = regaProperties.getProperty("rega.applicationId") ?: "com.arkrega.sonara"
+val regaAppName = regaProperties.getProperty("rega.applicationName") ?: "SONARA"
 val regaVersionName = regaProperties.getProperty("rega.versionName") ?: "1.0.0"
 val regaVersionCode = regaProperties.getProperty("rega.versionCode")?.toIntOrNull() ?: 1
 val githubOwner = System.getenv("REGA_GITHUB_OWNER")
@@ -44,38 +51,47 @@ val githubOwner = System.getenv("REGA_GITHUB_OWNER")
 val githubRepo = System.getenv("REGA_GITHUB_REPO")
     ?: detectedRepo?.second
     ?: regaProperties.getProperty("rega.github.repo")
-    ?: "regamusic"
+    ?: "sonara"
 val websiteUrl = System.getenv("REGA_WEBSITE_URL")
     ?: regaProperties.getProperty("rega.website.url")
     ?: "https://$githubOwner.github.io/$githubRepo/"
 
 val baseApplicationId = regaAppId
 val baseAppName = regaAppName
-val applicationIdOverride = System.getenv("REGA_APPLICATION_ID")
-    ?: System.getenv("METROLIST_APPLICATION_ID")?.takeIf { it.isNotBlank() }
-val appNameOverride = System.getenv("REGA_APP_NAME")
-    ?: System.getenv("METROLIST_APP_NAME")?.takeIf { it.isNotBlank() }
+val applicationIdOverride = System.getenv("SONARA_APPLICATION_ID")
+    ?: System.getenv("REGA_APPLICATION_ID")
+val appNameOverride = System.getenv("SONARA_APP_NAME")
+    ?: System.getenv("REGA_APP_NAME")
 val buildCommit =
-    (System.getenv("REGA_BUILD_COMMIT") ?: System.getenv("METROLIST_BUILD_COMMIT"))
+    (System.getenv("SONARA_BUILD_COMMIT") ?: System.getenv("REGA_BUILD_COMMIT") ?: System.getenv("METROLIST_BUILD_COMMIT"))
         ?.trim()
         ?.takeIf { it.matches(Regex("[0-9a-fA-F]{7,40}")) }
         ?.take(7)
         ?.lowercase()
 val debugKeystorePathOverride =
-    System.getenv("REGA_DEBUG_KEYSTORE_PATH")
+    System.getenv("SONARA_DEBUG_KEYSTORE_PATH")
+        ?: System.getenv("REGA_DEBUG_KEYSTORE_PATH")
         ?: System.getenv("METROLIST_DEBUG_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
 val debugKeystorePassword =
-    System.getenv("REGA_DEBUG_KEYSTORE_PASSWORD")
+    System.getenv("SONARA_DEBUG_KEYSTORE_PASSWORD")
+        ?: System.getenv("REGA_DEBUG_KEYSTORE_PASSWORD")
         ?: System.getenv("METROLIST_DEBUG_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
         ?: "android"
 val debugKeyAlias =
-    System.getenv("REGA_DEBUG_KEY_ALIAS")
+    System.getenv("SONARA_DEBUG_KEY_ALIAS")
+        ?: System.getenv("REGA_DEBUG_KEY_ALIAS")
         ?: System.getenv("METROLIST_DEBUG_KEY_ALIAS")?.takeIf { it.isNotBlank() }
         ?: "androiddebugkey"
 val debugKeyPassword =
-    System.getenv("REGA_DEBUG_KEY_PASSWORD")
+    System.getenv("SONARA_DEBUG_KEY_PASSWORD")
+        ?: System.getenv("REGA_DEBUG_KEY_PASSWORD")
         ?: System.getenv("METROLIST_DEBUG_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
         ?: "android"
+// Debug installs are shipped through CI and installed on phones as the regular
+// app, so by default they are shrunk to the same size class as release. Pass
+// -Psonara.debuggable to get a fully debuggable, unshrunk build for development.
+val debuggableDebugBuilds = providers.gradleProperty("sonara.debuggable").isPresent
+
 val persistentDebugKeystoreFile = file("persistent-debug.keystore")
 val workflowDebugKeystoreFile = debugKeystorePathOverride?.let(::file)
 
@@ -191,9 +207,17 @@ android {
             if (applicationIdOverride == null) {
                 applicationIdSuffix = ".debug"
             }
-            isDebuggable = true
+            isDebuggable = debuggableDebugBuilds
+            // Obfuscation stays off (`-dontobfuscate`), so stack traces and R8
+            // rules behave normally even in the shrunk variant.
+            isMinifyEnabled = !debuggableDebugBuilds
+            isShrinkResources = !debuggableDebugBuilds
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             if (appNameOverride == null) {
-                resValue("string", "app_name", "$baseAppName Debug")
+                resValue("string", "app_name", baseAppName)
             }
             signingConfig =
                 if (workflowDebugKeystoreFile != null) {
@@ -240,6 +264,14 @@ android {
 
     androidResources {
         generateLocaleConfig = true
+        // Ship a curated set of locales instead of every community translation.
+        // Every dropped locale removes a full string table from resources.arsc;
+        // this trims the APK by roughly 2 MB while keeping the major languages.
+        localeFilters += listOf(
+            "en", "in", "es", "pt-rBR", "fr", "de", "it", "ru",
+            "tr", "ar", "hi", "ja", "ko", "zh-rCN", "zh-rTW", "vi", "th",
+            "pl", "nl",
+        )
     }
 
     packaging {
@@ -321,7 +353,6 @@ dependencies {
 
     implementation(libs.material3)
     implementation(libs.palette)
-    implementation(libs.materialKolor)
 
     implementation(libs.appcompat)
 
@@ -331,7 +362,6 @@ dependencies {
 
     implementation(libs.ucrop)
 
-    implementation(libs.shimmer)
 
     implementation(libs.media3)
     implementation(libs.media3.session)
@@ -342,7 +372,6 @@ dependencies {
     "gmsImplementation"(libs.cast.framework)
 
     implementation(libs.room.runtime)
-    implementation(libs.kuromoji.ipadic)
     implementation(libs.tinypinyin)
     ksp(libs.room.compiler)
 

@@ -97,6 +97,7 @@ import com.metrolist.music.constants.LyricsRomanizeAsMainKey
 import com.metrolist.music.constants.LyricsRomanizeCyrillicByLineKey
 import com.metrolist.music.constants.LyricsRomanizeList
 import com.metrolist.music.constants.LyricsTextPositionKey
+import com.metrolist.music.constants.LyricsTextSizeKey
 import com.metrolist.music.constants.OpenRouterApiKey
 import com.metrolist.music.constants.OpenRouterBaseUrlKey
 import com.metrolist.music.constants.OpenRouterDefaultBaseUrl
@@ -109,9 +110,10 @@ import com.metrolist.music.constants.ShowIntervalIndicatorKey
 import com.metrolist.music.constants.TranslateLanguageKey
 import com.metrolist.music.constants.TranslateModeKey
 import com.metrolist.music.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
+import com.metrolist.music.lyrics.LyricsSyncType
 import com.metrolist.music.lyrics.LyricsTranslationHelper
 import com.metrolist.music.lyrics.LyricsUtils.findActiveLineIndices
-import com.metrolist.music.lyrics.lyricsTextLooksSynced
+import com.metrolist.music.lyrics.rememberLyricsPlayhead
 import com.metrolist.music.ui.component.shimmer.ShimmerHost
 import com.metrolist.music.ui.component.shimmer.TextPlaceholder
 import com.metrolist.music.ui.screens.settings.LyricsPosition
@@ -132,9 +134,9 @@ import kotlin.math.roundToInt
 
 private const val LYRICS_ANCHOR_RATIO = 0.35f
 private val LYRICS_ITEM_FALLBACK_HEIGHT_DP = 68.dp
-private val LYRICS_ITEM_GAP_DP = 16.dp
-private val LYRICS_FADE_TOP_DP = 130.dp
-private val LYRICS_FADE_BOTTOM_DP = 160.dp
+private val LYRICS_ITEM_GAP_DP = 14.dp
+private val LYRICS_FADE_TOP_DP = 40.dp
+private val LYRICS_FADE_BOTTOM_DP = 52.dp
 private const val LYRICS_STAGGER_DELAY_PER_DISTANCE = 20
 private const val LYRICS_STAGGER_DELAY_MAX_MS = 200
 private const val LYRICS_PREVIEW_TIME = 8000L
@@ -149,7 +151,8 @@ fun ExperimentalLyrics(
     sliderPositionProvider: () -> Long?,
     modifier: Modifier = Modifier,
     showLyrics: Boolean,
-    lyricsViewModel: LyricsViewModel = hiltViewModel()
+    lyricsViewModel: LyricsViewModel = hiltViewModel(),
+    onUserInteraction: () -> Unit = {},
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val database = LocalDatabase.current
@@ -166,6 +169,7 @@ fun ExperimentalLyrics(
     val romanizeCyrillicByLine by rememberPreference(LyricsRomanizeCyrillicByLineKey, false)
     val respectAgentPositioning by rememberPreference(RespectAgentPositioningKey, true)
     val showIntervalIndicator by rememberPreference(ShowIntervalIndicatorKey, true)
+    val lyricsTextSize by rememberPreference(LyricsTextSizeKey, 24f)
     
     // AI Translation Preferences
     val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
@@ -226,8 +230,9 @@ fun ExperimentalLyrics(
         lyricsViewModel.processLyrics(lyrics, enabledLanguages, romanizeCyrillicByLine, showIntervalIndicator)
     }
 
-    val isSynced = remember(lyrics) { lyricsTextLooksSynced(lyrics) }
-    val hasWordTimings = remember(lines) { lines.any { it.words?.isNotEmpty() == true } }
+    val syncType by lyricsViewModel.syncType.collectAsStateWithLifecycle()
+    val isSynced = syncType != LyricsSyncType.UNSYNCED
+    val hasWordTimings = syncType == LyricsSyncType.RICH_SYNCED
 
     DisposableEffect(Unit) {
         LyricsTranslationHelper.setCompositionActive(true)
@@ -301,6 +306,7 @@ fun ExperimentalLyrics(
     }
 
     var activeLineIndices by remember { mutableStateOf(emptySet<Int>()) }
+    var visibleBgIndices by remember { mutableStateOf(emptySet<Int>()) }
     var scrollTargetIndex by rememberSaveable { mutableIntStateOf(-1) }
     var previousScrollActiveIndices by remember { mutableStateOf(emptySet<Int>()) }
     
@@ -334,42 +340,42 @@ fun ExperimentalLyrics(
     var lastMainMaxSeen by remember(lyrics, lines) { mutableIntStateOf(-1) }
     var smoothPositionForSync by remember { mutableLongStateOf(0L) }
 
-    LaunchedEffect(lyrics, lines) {
-        if (lyrics.isNullOrEmpty() || lines.isEmpty()) {
+    val effectivePositionState = rememberLyricsPlayhead(
+        playerConnection = playerConnection,
+        sliderPositionProvider = sliderPositionProvider,
+        lyricsOffsetProvider = { currentSong?.song?.lyricsOffset ?: 0 },
+        songId = mediaMetadata?.id,
+        isActive = showLyrics && isSynced && lines.isNotEmpty(),
+    )
+
+    val currentActiveIndicatorStartMs by remember(mergedLyricsList, isSynced, isAutoScrollEnabled) {
+        derivedStateOf {
+            if (!isSynced || !isAutoScrollEnabled) return@derivedStateOf Long.MIN_VALUE
+            val pos = effectivePositionState.value
+            val match = mergedLyricsList.firstOrNull { item ->
+                item is LyricsListItem.Indicator && pos in item.gapStartMs..(item.gapEndMs - 650L)
+            } as? LyricsListItem.Indicator
+            match?.gapStartMs ?: Long.MIN_VALUE
+        }
+    }
+
+    LaunchedEffect(lyrics, lines, syncType, showLyrics) {
+        if (lyrics.isNullOrEmpty() || lines.isEmpty() || !isSynced) {
             activeLineIndices = emptySet()
             return@LaunchedEffect
         }
-        
-        var lastPlayerPos = playerConnection.player.currentPosition
-        var lastUpdateTime = System.currentTimeMillis()
-        
-        while (isActive) {
-            withFrameNanos { _ -> }
-            val now = System.currentTimeMillis()
+
+        snapshotFlow { effectivePositionState.value }.collect { effectivePosition ->
             val sliderPosition = sliderPositionProvider()
             isSeeking = sliderPosition != null
-            
-            val position = if (isSeeking) {
-                sliderPosition!!
-            } else {
-                val playerPos = playerConnection.player.currentPosition
-                if (playerPos != lastPlayerPos) {
-                    lastPlayerPos = playerPos
-                    lastUpdateTime = now
-                }
-                val elapsed = now - lastUpdateTime
-                lastPlayerPos + (if (playerConnection.player.isPlaying) elapsed else 0)
-            }
-            
-            currentPositionState = position
-            smoothPositionForSync = position
-            
+
             val lyricsOffset = currentSong?.song?.lyricsOffset ?: 0
-            val effectivePosition = position + lyricsOffset
-            
+            currentPositionState = (effectivePosition - lyricsOffset).coerceAtLeast(0L)
+            smoothPositionForSync = currentPositionState
+
             val initialActiveIndices = findActiveLineIndices(lines, effectivePosition)
             val scrollActiveIndicesRaw = findActiveLineIndices(lines, effectivePosition + (if (hasWordTimings) 0L else 250L))
-            
+
             val scrollActiveIndices = scrollActiveIndicesRaw.toMutableSet()
             for (i in scrollActiveIndicesRaw) {
                 if (lines.getOrNull(i)?.isBackground == true) {
@@ -381,7 +387,7 @@ fun ExperimentalLyrics(
                     }
                 }
             }
-            
+
             val newActiveIndices = initialActiveIndices.toMutableSet()
             for (i in initialActiveIndices) {
                 if (lines.getOrNull(i)?.isBackground == true) {
@@ -403,18 +409,10 @@ fun ExperimentalLyrics(
 
             val shouldScroll = when {
                 isSeeking -> true
-                // If current target just ended and there are other active lines, scroll to the new max
                 !isCurrentTargetStillActive && anyStillActive && scrollMax > scrollTargetIndex -> true
-                
-                // If current target just ended and no other active lines
                 !isCurrentTargetStillActive && !anyStillActive && previousScrollActiveIndices.isNotEmpty() -> true
-                
-                // If we don't have a target yet and lines became active
                 scrollTargetIndex == -1 && anyStillActive -> true
-                
-                // New line started while nothing was active before
                 previousScrollActiveIndices.isEmpty() && anyStillActive && scrollMax > scrollTargetIndex -> true
-
                 else -> false
             }
 
@@ -433,13 +431,26 @@ fun ExperimentalLyrics(
                     scrollTargetIndex = targetToScroll
                 }
             }
-            
+
             if (scrollMax > lastMainMaxSeen && scrollMax != -1) {
                 lastMainMaxSeen = scrollMax
             }
-            
+
+            val newBgVisible = mutableSetOf<Int>()
+            for (idx in lines.indices) {
+                val entry = lines[idx]
+                if (entry.isBackground) {
+                    val pairedMainIdx = (idx - 1 downTo 0).firstOrNull { lines.getOrNull(it)?.isBackground == false } ?: -1
+                    val inGap = pairedMainIdx != -1 && effectivePosition in lines[pairedMainIdx].time..entry.time
+                    if (newActiveIndices.contains(pairedMainIdx) || newActiveIndices.contains(idx) || inGap) {
+                        newBgVisible.add(idx)
+                    }
+                }
+            }
+
             previousScrollActiveIndices = scrollActiveIndices
-            activeLineIndices = newActiveIndices
+            if (activeLineIndices != newActiveIndices) activeLineIndices = newActiveIndices
+            if (visibleBgIndices != newBgVisible) visibleBgIndices = newBgVisible
         }
     }
 
@@ -496,7 +507,7 @@ fun ExperimentalLyrics(
         modifier = modifier.fillMaxSize().padding(bottom = 12.dp)
     ) {
         val maxHeightPx = constraints.maxHeight.toFloat()
-        val anchorY = maxHeightPx * LYRICS_ANCHOR_RATIO
+        val anchorY = if (!isSynced) with(density) { 36.dp.toPx() } else maxHeightPx * LYRICS_ANCHOR_RATIO
         val lineHeightPx = with(density) { LYRICS_ITEM_FALLBACK_HEIGHT_DP.toPx() }
         val indicatorHeightPx = with(density) { 72.dp.toPx() }
         
@@ -644,7 +655,7 @@ fun ExperimentalLyrics(
 
         if (lyrics == LYRICS_NOT_FOUND) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = stringResource(R.string.lyrics_not_found), fontSize = 20.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.alpha(0.5f))
+                Text(text = stringResource(R.string.lyrics_not_found), fontSize = 18.sp, color = expressiveAccent.copy(alpha = 0.55f))
             }
         } else if (lyrics == null && (translationStatus is LyricsTranslationHelper.TranslationStatus.Idle || translationStatus is LyricsTranslationHelper.TranslationStatus.Error)) {
              Column(modifier = Modifier.padding(top = 100.dp)) {
@@ -661,11 +672,13 @@ fun ExperimentalLyrics(
                     .nestedScroll(remember {
                         object : NestedScrollConnection {
                             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                                onUserInteraction()
                                 if (source == NestedScrollSource.UserInput) isAutoScrollEnabled = false
                                 if (!isSelectionModeActive) lastPreviewTime = System.currentTimeMillis()
                                 return super.onPostScroll(consumed, available, source)
                             }
                             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                                onUserInteraction()
                                 isAutoScrollEnabled = false
                                 if (!isSelectionModeActive) lastPreviewTime = System.currentTimeMillis()
                                 return super.onPostFling(consumed, available)
@@ -676,6 +689,7 @@ fun ExperimentalLyrics(
                         awaitPointerEventScope {
                             while (true) {
                                 val down = awaitFirstDown(requireUnconsumed = false)
+                                onUserInteraction()
                                 if (isInitialLayout) continue
                                 flingJob?.cancel()
                                 velocityTracker.resetTracking()
@@ -699,9 +713,6 @@ fun ExperimentalLyrics(
                         }
                     }
             ) {
-                val lyricsOffsetVal = (currentSong?.song?.lyricsOffset ?: 0).toLong()
-                val currentEffectivePosition = currentPositionState + lyricsOffsetVal
-                
                 if (isLyricsProviderShown) {
                     val targetProviderBase = anchorY + (positions[0] ?: 0f) - with(density) { 32.dp.toPx() }
                     val animatedProviderBase by animateFloatAsState(
@@ -714,13 +725,17 @@ fun ExperimentalLyrics(
                     )
                     Text(
                         text = stringResource(R.string.lyrics_from_provider, lyricsEntity.provider),
-                        fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        fontSize = 12.sp, color = expressiveAccent.copy(alpha = 0.6f),
                         modifier = Modifier.fillMaxWidth().offset { IntOffset(0, (animatedProviderBase + userManualOffset).roundToInt()) }.padding(horizontal = 24.dp, vertical = 4.dp)
                     )
                 }
 
                 mergedLyricsList.forEachIndexed { listIndex, listItem ->
-                    key(listItem) {
+                    val itemKey = when (listItem) {
+                        is LyricsListItem.Line -> "line_${listItem.index}_${listItem.entry.time}"
+                        is LyricsListItem.Indicator -> "indicator_${listItem.afterLineIndex}_${listItem.gapStartMs}"
+                    }
+                    key(itemKey) {
                         val distance = abs(listIndex - activeListIndex)
                         val targetOffset = anchorY + positions.getOrDefault(listIndex, (listIndex - activeListIndex) * lineHeightPx)
                         val frozenOffset = remember { mutableFloatStateOf(targetOffset) }
@@ -744,49 +759,69 @@ fun ExperimentalLyrics(
                         ) {
                             when (listItem) {
                                 is LyricsListItem.Indicator -> {
-                                    val visible =
-                                        isAutoScrollEnabled &&
-                                            currentEffectivePosition >= listItem.gapStartMs &&
-                                            currentEffectivePosition <= listItem.gapEndMs - 650L
-                                    IntervalIndicator(listItem.gapStartMs, listItem.gapEndMs - 650L, currentEffectivePosition, visible, expressiveAccent,
-                                        Modifier.fillMaxWidth().onSizeChanged { itemHeights[listIndex] = it.height }.padding(horizontal = 24.dp).wrapContentWidth(Alignment.CenterHorizontally))
+                                    val visible = isSynced && isAutoScrollEnabled && currentActiveIndicatorStartMs == listItem.gapStartMs
+                                    IntervalIndicator(
+                                        gapStartMs = listItem.gapStartMs,
+                                        gapEndMs = listItem.gapEndMs - 650L,
+                                        currentPositionMs = listItem.gapStartMs,
+                                        positionState = effectivePositionState,
+                                        visible = visible,
+                                        color = expressiveAccent,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .onSizeChanged {
+                                                val currentHeight = itemHeights[listIndex]
+                                                if (currentHeight == null || abs(currentHeight - it.height) > 3) {
+                                                    itemHeights[listIndex] = it.height
+                                                }
+                                            }
+                                            .padding(horizontal = 24.dp)
+                                            .wrapContentWidth(Alignment.CenterHorizontally)
+                                    )
                                 }
                                 is LyricsListItem.Line -> {
                                     val index = listItem.index
                                     val item = listItem.entry
-                                    val isActiveLine = activeLineIndices.contains(index)
-                                    val pairedMainLineIndex = if (item.isBackground) (index - 1 downTo 0).firstOrNull { lines.getOrNull(it)?.isBackground == false } ?: -1 else -1
-                                    
-                                    val isInGapWithMain = if (item.isBackground && pairedMainLineIndex != -1) {
-                                        val pairedMainLine = lines[pairedMainLineIndex]
-                                        currentEffectivePosition >= pairedMainLine.time && currentEffectivePosition <= item.time
-                                    } else false
-                                    
-                                    val bgVisible = item.isBackground && (activeLineIndices.contains(pairedMainLineIndex) || activeLineIndices.contains(index) || isInGapWithMain)
-                                    
+                                    val isActiveLine = isSynced && activeLineIndices.contains(index)
+                                    val bgVisible = isSynced && visibleBgIndices.contains(index)
+
                                     LyricsLine(
-                                        index = index, item = item, isSynced = isSynced,
+                                        index = index,
+                                        item = item,
+                                        syncType = syncType,
                                         isActiveLine = isActiveLine,
-                                        bgVisible = bgVisible, isSelected = selectedIndices.contains(index),
-                                        isSelectionModeActive = isSelectionModeActive, currentPositionState = currentPositionState,
-                                        lyricsOffset = (currentSong?.song?.lyricsOffset ?: 0).toLong(),
-                                        playerConnection = playerConnection, lyricsTextSize = 36f, lyricsLineSpacing = 1.3f,
-                                        expressiveAccent = expressiveAccent, lyricsTextPosition = lyricsTextPosition,
-                                        respectAgentPositioning = respectAgentPositioning, isAutoScrollEnabled = isAutoScrollEnabled,
-                                        displayedCurrentLineIndex = deferredCurrentLineIndex, romanizeAsMain = romanizeAsMain,
-                                        enabledLanguages = enabledLanguages, romanizeLyrics = currentSong?.romanizeLyrics == true,
-                                        onSizeChanged = { itemHeights[listIndex] = it },
+                                        bgVisible = bgVisible,
+                                        isSelected = selectedIndices.contains(index),
+                                        isSelectionModeActive = isSelectionModeActive,
+                                        effectivePositionState = effectivePositionState,
+                                        lyricsTextSize = (lyricsTextSize + 4f).coerceIn(22f, 34f),
+                                        lyricsLineSpacing = 1.3f,
+                                        expressiveAccent = expressiveAccent,
+                                        lyricsTextPosition = lyricsTextPosition,
+                                        respectAgentPositioning = respectAgentPositioning,
+                                        isAutoScrollEnabled = isAutoScrollEnabled,
+                                        displayedCurrentLineIndex = deferredCurrentLineIndex,
+                                        romanizeAsMain = romanizeAsMain,
+                                        enabledLanguages = enabledLanguages,
+                                        romanizeLyrics = currentSong?.romanizeLyrics == true,
+                                        onSizeChanged = { newHeight ->
+                                            val currentHeight = itemHeights[listIndex]
+                                            if (currentHeight == null || abs(currentHeight - newHeight) > 3) {
+                                                itemHeights[listIndex] = newHeight
+                                            }
+                                        },
                                         onClick = {
+                                            onUserInteraction()
                                             if (isSelectionModeActive) {
                                                 if (selectedIndices.contains(index)) {
                                                     selectedIndices.remove(index)
                                                     if (selectedIndices.isEmpty()) isSelectionModeActive = false
                                                 } else if (selectedIndices.size < maxSelectionLimit) selectedIndices.add(index)
                                                 else showMaxSelectionToast = true
-                                            } else if (changeLyrics && !isGuest) {
-                                                if (item.time < playerConnection.player.duration + 30000L) {
+                                            } else if (changeLyrics && isSynced && !isGuest) {
+                                                if (item.time >= 0L && item.time < playerConnection.player.duration + 30000L) {
                                                     playerConnection.seekTo((item.time - (currentSong?.song?.lyricsOffset ?: 0)).coerceAtLeast(0))
-                                                } else {
+                                                } else if (item.time >= 0L) {
                                                     scrollTargetIndex = index
                                                     deferredCurrentLineIndex = index
                                                 }

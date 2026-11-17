@@ -119,28 +119,78 @@ jobs:
       - name: Prepare and Verify Signed APK
         run: |
           RELEASE_DIR="app/build/outputs/apk/foss/release"
-          BUILT_APK=$(find "$RELEASE_DIR" -maxdepth 1 -name "*.apk" | head -n 1)
 
-          if [ -z "$BUILT_APK" ]; then
-            echo "::error::No release APK found in $RELEASE_DIR"
+          echo "Locating apksigner executable..."
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name "apksigner" | sort -V | tail -n 1)
+          if [ -z "$APKSIGNER" ] || [ ! -x "$APKSIGNER" ]; then
+            echo "::error::apksigner executable not found in Android SDK Build Tools! Cannot verify release signing."
+            exit 1
+          fi
+          echo "Using apksigner: $APKSIGNER"
+
+          echo "Searching for signed release APKs in $RELEASE_DIR..."
+          CANDIDATES=()
+          while IFS= read -r file; do
+            [ -n "$file" ] && CANDIDATES+=("$file")
+          done < <(find "$RELEASE_DIR" -maxdepth 1 -name "*.apk" ! -name "*unsigned*" ! -name "*-unaligned*")
+
+          if [ "${#CANDIDATES[@]}" -eq 0 ]; then
+            echo "::error::No signed APK found in $RELEASE_DIR. Only unsigned APKs or empty directory present."
+            ls -la "$RELEASE_DIR" || true
             exit 1
           fi
 
-          cp "$BUILT_APK" Rega-Music.apk
-          echo "Output artifact prepared: Rega-Music.apk"
-
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name "apksigner" | sort -V | tail -n 1)
-          if [ -n "$APKSIGNER" ] && [ -x "$APKSIGNER" ]; then
-            echo "Verifying APK signature using $APKSIGNER..."
-            "$APKSIGNER" verify --verbose Rega-Music.apk
-          else
-            echo "apksigner not found, skipping signature verification step."
+          if [ "${#CANDIDATES[@]}" -gt 1 ]; then
+            echo "::error::Ambiguous build output: multiple signed APK candidates found in $RELEASE_DIR:"
+            printf ' - %s\n' "${CANDIDATES[@]}"
+            exit 1
           fi
 
-      - name: Generate Checksums
+          BUILT_APK="${CANDIDATES[0]}"
+          echo "Signed candidate APK identified: $BUILT_APK"
+
+          if [[ "$BUILT_APK" == *"unsigned"* ]]; then
+            echo "::error::Attempted to stage unsigned APK: $BUILT_APK"
+            exit 1
+          fi
+
+          cp "$BUILT_APK" Sonara.apk
+          echo "Output artifact staged: Sonara.apk"
+
+          echo "Running signature verification..."
+          VERIFY_OUTPUT=$("$APKSIGNER" verify --verbose --print-certs Sonara.apk 2>&1)
+          VERIFY_STATUS=$?
+          echo "$VERIFY_OUTPUT"
+
+          if [ $VERIFY_STATUS -ne 0 ]; then
+            echo "::error::apksigner signature verification failed for Sonara.apk!"
+            exit 1
+          fi
+
+          EXPECTED_CERT_SHA256="${{ secrets.EXPECTED_SIGNING_CERT_SHA256 }}"
+          if [ -z "$EXPECTED_CERT_SHA256" ]; then
+            echo "::error::Secret EXPECTED_SIGNING_CERT_SHA256 is missing! Production signing cannot be verified."
+            exit 1
+          fi
+          ACTUAL_CERT_SHA256=$(echo "$VERIFY_OUTPUT" | grep -i "SHA-256 digest:" | head -n 1 | awk '{print $NF}' | tr -d ' ' | tr '[:upper:]' '[:lower:]')
+          CLEAN_EXPECTED=$(echo "$EXPECTED_CERT_SHA256" | tr -d ':' | tr -d ' ' | tr '[:upper:]' '[:lower:]')
+          CLEAN_ACTUAL=$(echo "$ACTUAL_CERT_SHA256" | tr -d ':')
+          if [ -n "$CLEAN_EXPECTED" ] && [ "$CLEAN_ACTUAL" != "$CLEAN_EXPECTED" ]; then
+            echo "::error::Signing certificate fingerprint mismatch!"
+            exit 1
+          fi
+          echo "Certificate fingerprint matched expected fingerprint."
+
+          echo "APK signature successfully validated."
+
+      - name: Generate and Validate Checksums
         run: |
-          sha256sum Rega-Music.apk > SHA256SUMS.txt
-          echo "SHA-256 Checksum:"
+          sha256sum Sonara.apk > SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt || {
+            echo "::error::SHA256SUMS.txt verification failed against Sonara.apk!"
+            exit 1
+          }
+          echo "SHA-256 Checksum verified:"
           cat SHA256SUMS.txt
 
       - name: Extract Release Notes from Changelog
@@ -153,10 +203,10 @@ jobs:
           else
             echo "Changelog entry for $VERSION not found. Falling back to git log."
             {
-              echo "## What's Changed in Rega Music $VERSION"
+              echo "## What's Changed in Sonara $VERSION"
               echo ""
               git log "$(git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>/dev/null || echo "HEAD~10")..HEAD" \
-                --pretty=format:"- %s" --no-merges | head -20 || echo "- Initial stable release of Rega Music"
+                --pretty=format:"- %s" --no-merges | head -20 || echo "- Initial stable release of Sonara"
             } > release_notes.md
           fi
 
@@ -168,10 +218,10 @@ jobs:
           VERSION="${{ steps.validate_version.outputs.tag_version }}"
 
           gh release create "$TAG" \
-            --title "Rega Music $VERSION" \
+            --title "Sonara $VERSION" \
             --notes-file release_notes.md \
             --latest \
-            Rega-Music.apk \
+            Sonara.apk \
             SHA256SUMS.txt
 
       - name: Cleanup Keystore from Runner

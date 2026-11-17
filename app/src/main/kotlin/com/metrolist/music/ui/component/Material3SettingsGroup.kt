@@ -5,8 +5,9 @@
 
 package com.metrolist.music.ui.component
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,11 +19,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
@@ -33,6 +31,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.metrolist.music.ui.theme.SonaraHairline
+import com.metrolist.music.ui.theme.SonaraLabelStyle
+import com.metrolist.music.ui.theme.SonaraSpacing
 
 /**
  * A Material 3 Expressive style settings group component
@@ -46,48 +48,41 @@ fun Material3SettingsGroup(
     useLowContrast: Boolean = false
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
     ) {
-        // Section title
         title?.let {
             Text(
-                text = it,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
+                text = it.uppercase(),
+                style = SonaraLabelStyle.copy(fontSize = 9.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = SonaraSpacing.xs, top = SonaraSpacing.xl, bottom = SonaraSpacing.sm)
             )
         }
 
-        // Settings items
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(10.dp)
+                )
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(10.dp)
+                )
+                .clip(RoundedCornerShape(10.dp))
         ) {
             items.forEachIndexed { index, item ->
-                val shape = when {
-                    items.size == 1 -> RoundedCornerShape(24.dp)
-                    index == 0 -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp)
-                    index == items.size - 1 -> RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
-                    else -> RoundedCornerShape(6.dp)
+                if (index > 0) {
+                    SonaraHairline(
+                        modifier = Modifier.padding(start = 52.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
                 }
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateContentSize(),
-                    shape = shape,
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (!useLowContrast) {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainerLow
-                        }
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Material3SettingsItemRow(item = item)
-                }
+                Material3SettingsItemRow(item = item)
             }
         }
     }
@@ -107,71 +102,59 @@ private fun Material3SettingsItemRow(
                 enabled = item.enabled && item.onClick != null,
                 onClick = { item.onClick?.invoke() }
             )
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = SonaraSpacing.lg, vertical = SonaraSpacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Custom leading content or Icon with background
         if (item.leadingContent != null) {
             item.leadingContent.invoke()
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(SonaraSpacing.md))
         } else if (item.icon != null) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(28.dp)
                     .background(
-                        MaterialTheme.colorScheme.primary.copy(
-                            alpha = if (item.isHighlighted) 0.15f else 0.1f
-                        )
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                        shape = RoundedCornerShape(8.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
+                val tint = when {
+                    !item.enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    item.isHighlighted -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
                 if (item.showBadge) {
                     BadgedBox(
                         badge = {
-                            Badge(
-                                containerColor = MaterialTheme.colorScheme.error
-                            )
+                            Badge(containerColor = MaterialTheme.colorScheme.primary)
                         }
                     ) {
                         Icon(
                             painter = item.icon,
                             contentDescription = null,
-                            tint = if (!item.enabled)
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            else if (item.isHighlighted)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                            modifier = Modifier.size(24.dp)
+                            tint = tint,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 } else {
                     Icon(
                         painter = item.icon,
                         contentDescription = null,
-                        tint = if (!item.enabled)
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        else if (item.isHighlighted)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                        modifier = Modifier.size(24.dp)
+                        tint = tint,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(SonaraSpacing.md))
         }
 
-        // Title and description
         Column(
             modifier = Modifier.weight(1f)
         ) {
-            // Title content
             ProvideTextStyle(
                 MaterialTheme.typography.titleMedium.copy(
-                    color = if (!item.enabled) 
+                    color = if (!item.enabled)
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     else
                         MaterialTheme.colorScheme.onSurface
@@ -180,11 +163,10 @@ private fun Material3SettingsItemRow(
                 item.title()
             }
 
-            // Description if provided
             item.description?.let { desc ->
                 Spacer(modifier = Modifier.height(2.dp))
                 ProvideTextStyle(
-                    MaterialTheme.typography.bodyMedium.copy(
+                    MaterialTheme.typography.bodySmall.copy(
                         color = if (!item.enabled)
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                         else
@@ -196,9 +178,8 @@ private fun Material3SettingsItemRow(
             }
         }
 
-        // Trailing content
         item.trailingContent?.let { trailing ->
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(SonaraSpacing.md))
             trailing()
         }
     }

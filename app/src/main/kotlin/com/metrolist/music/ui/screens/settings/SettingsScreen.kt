@@ -10,22 +10,32 @@ import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.navigation.NavController
@@ -36,9 +46,9 @@ import com.metrolist.music.ui.component.IconButton
 import com.metrolist.music.ui.component.Material3SettingsGroup
 import com.metrolist.music.ui.component.Material3SettingsItem
 import com.metrolist.music.ui.component.ReleaseNotesCard
+import com.metrolist.music.ui.theme.RegaColor
 import com.metrolist.music.ui.utils.backToMain
 import com.metrolist.music.utils.Updater
-import androidx.compose.runtime.remember
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +58,7 @@ fun SettingsScreen(
 ) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+    val showChangelog = com.metrolist.music.LocalChangelogState.current
     val isAndroid12OrLater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val hasAndroidAuto = remember {
         try {
@@ -60,227 +71,253 @@ fun SettingsScreen(
         }
     }
 
-    Column(
-        Modifier
-            .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
-    ) {
-        Spacer(
-            Modifier.windowInsetsPadding(
-                LocalPlayerAwareWindowInsets.current.only(
-                    WindowInsetsSides.Top
+    Scaffold(
+        containerColor = RegaColor.Background,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.settings),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = RegaColor.TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = navController::navigateUp,
+                        onLongClick = navController::backToMain
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.arrow_back),
+                            contentDescription = null,
+                            tint = RegaColor.TextPrimary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = RegaColor.Background,
+                    titleContentColor = RegaColor.TextPrimary
                 )
             )
-        )
-
-        // User Interface Section
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_section_ui),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.palette),
-                    title = { Text(stringResource(R.string.appearance)) },
-                    onClick = { navController.navigate("settings/appearance") }
+        }
+    ) { paddingValues ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(RegaColor.Background)
+                .padding(paddingValues)
+                .windowInsetsPadding(
+                    LocalPlayerAwareWindowInsets.current.only(
+                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                    )
                 )
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Player & Content Section (moved up and combined with content)
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_section_player_content),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.play),
-                    title = { Text(stringResource(R.string.player_and_audio)) },
-                    onClick = { navController.navigate("settings/player") }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.language),
-                    title = { Text(stringResource(R.string.content)) },
-                    onClick = { navController.navigate("settings/content") }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.translate),
-                    title = { Text(stringResource(R.string.ai_lyrics_translation)) },
-                    onClick = { navController.navigate("settings/ai") }
-                )
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Android Auto Section — only shown if Android Auto is installed
-        if (hasAndroidAuto) {
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
             Material3SettingsGroup(
-                title = "Android Auto",
+                title = stringResource(R.string.settings_section_playback),
                 items = listOf(
                     Material3SettingsItem(
-                        icon = painterResource(R.drawable.ic_android_auto),
-                        title = { Text(stringResource(R.string.android_auto)) },
-                        onClick = { navController.navigate("settings/android_auto") }
+                        icon = painterResource(R.drawable.play),
+                        title = { Text(stringResource(R.string.player_and_audio)) },
+                        description = { Text("Crossfade, gapless, queue, skip silence, loudness") },
+                        onClick = { navController.navigate("settings/player") }
                     )
                 )
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-        
-        // Privacy & Security Section
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_section_privacy),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.security),
-                    title = { Text(stringResource(R.string.privacy)) },
-                    onClick = { navController.navigate("settings/privacy") }
-                )
-            )
-        )
+            Spacer(modifier = Modifier.height(14.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Storage & Data Section
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_section_storage),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.storage),
-                    title = { Text(stringResource(R.string.storage)) },
-                    onClick = { navController.navigate("settings/storage") }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.restore),
-                    title = { Text(stringResource(R.string.backup_restore)) },
-                    onClick = { navController.navigate("settings/backup_restore") }
-                )
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // System & About Section
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_section_system),
-            items = buildList {
-                if (isAndroid12OrLater) {
+            Material3SettingsGroup(
+                title = stringResource(R.string.settings_section_audio_eq),
+                items = buildList {
                     add(
                         Material3SettingsItem(
-                            icon = painterResource(R.drawable.link),
-                            title = { Text(stringResource(R.string.default_links)) },
-                            onClick = {
-                                try {
-                                    val intent = Intent(
-                                        Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
-                                        "package:${context.packageName}".toUri()
-                                    )
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    when (e) {
-                                        is ActivityNotFoundException -> {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.open_app_settings_error,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-
-                                        is SecurityException -> {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.open_app_settings_error,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-
-                                        else -> {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.open_app_settings_error,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-                                    }
-                                }
-                            }
+                            icon = painterResource(R.drawable.equalizer),
+                            title = { Text(stringResource(R.string.equalizer_header)) },
+                            description = { Text("10-band parametric EQ, presets, spatial reverb") },
+                            onClick = { navController.navigate("equalizer") }
                         )
                     )
-                }
-                if (BuildConfig.UPDATER_AVAILABLE) {
-                    add(
-                        Material3SettingsItem(
-                            icon = painterResource(R.drawable.update),
-                            title = { Text(stringResource(R.string.updater)) },
-                            onClick = { navController.navigate("settings/updater") }
-                        )
-                    )
-                }
-                val showChangelog = com.metrolist.music.LocalChangelogState.current
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.newspaper),
-                        title = { Text(stringResource(R.string.changelog)) },
-                        onClick = { showChangelog.value = true }
-                    )
-                )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.info),
-                        title = { Text(stringResource(R.string.about)) },
-                        onClick = { navController.navigate("settings/about") }
-                    )
-                )
-                if (BuildConfig.UPDATER_AVAILABLE && latestVersionName != BuildConfig.BASE_VERSION_NAME) {
-                    val releaseInfo = Updater.getCachedLatestRelease()
-                    val downloadUrl = releaseInfo?.let { Updater.getDownloadUrlForCurrentVariant(it) }
-
-                    if (downloadUrl != null) {
+                    if (hasAndroidAuto) {
                         add(
                             Material3SettingsItem(
-                                icon = painterResource(R.drawable.update),
-                                title = { 
-                                    Text(
-                                        text = stringResource(R.string.new_version_available),
-                                    )
-                                },
-                                description = {
-                                    Text(
-                                        text = latestVersionName,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                showBadge = true,
-                                onClick = { uriHandler.openUri(downloadUrl) }
+                                icon = painterResource(R.drawable.ic_android_auto),
+                                title = { Text(stringResource(R.string.android_auto)) },
+                                description = { Text("Car audio integration and playlist options") },
+                                onClick = { navController.navigate("settings/android_auto") }
                             )
                         )
                     }
                 }
-            }
-        )
-    if (BuildConfig.UPDATER_AVAILABLE && latestVersionName != BuildConfig.BASE_VERSION_NAME) {
-            Spacer(modifier = Modifier.height(16.dp))
-            ReleaseNotesCard()
-        }
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
-    }
+            Spacer(modifier = Modifier.height(14.dp))
 
-    TopAppBar(
-        title = { Text(stringResource(R.string.settings)) },
-        navigationIcon = {
-            IconButton(
-                onClick = navController::navigateUp,
-                onLongClick = navController::backToMain
-            ) {
-                Icon(
-                    painterResource(R.drawable.arrow_back),
-                    contentDescription = null
+            Material3SettingsGroup(
+                title = stringResource(R.string.settings_section_appearance),
+                items = listOf(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.palette),
+                        title = { Text(stringResource(R.string.appearance)) },
+                        description = { Text("Linear dark, Pure Black, indigo accents, layout density") },
+                        onClick = { navController.navigate("settings/appearance") }
+                    )
                 )
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Material3SettingsGroup(
+                title = stringResource(R.string.settings_section_library),
+                items = listOf(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.library_music),
+                        title = { Text(stringResource(R.string.content)) },
+                        description = { Text(stringResource(R.string.library_settings_desc)) },
+                        onClick = { navController.navigate("settings/content") }
+                    ),
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.translate),
+                        title = { Text(stringResource(R.string.ai_lyrics_translation)) },
+                        description = { Text("AI-powered multilingual lyrics translation") },
+                        onClick = { navController.navigate("settings/ai") }
+                    )
+                )
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Material3SettingsGroup(
+                title = stringResource(R.string.settings_section_downloads),
+                items = listOf(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.download),
+                        title = { Text(stringResource(R.string.storage)) },
+                        description = { Text(stringResource(R.string.downloads_settings_desc)) },
+                        onClick = { navController.navigate("settings/storage") }
+                    ),
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.restore),
+                        title = { Text(stringResource(R.string.backup_restore)) },
+                        description = { Text("Export and restore local playlists and preferences") },
+                        onClick = { navController.navigate("settings/backup_restore") }
+                    )
+                )
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Material3SettingsGroup(
+                title = stringResource(R.string.settings_section_notifications),
+                items = listOf(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.notification),
+                        title = { Text(stringResource(R.string.privacy)) },
+                        description = { Text(stringResource(R.string.notifications_settings_desc)) },
+                        onClick = { navController.navigate("settings/privacy") }
+                    )
+                )
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Material3SettingsGroup(
+                title = stringResource(R.string.settings_section_updates),
+                items = buildList {
+                    if (BuildConfig.UPDATER_AVAILABLE) {
+                        add(
+                            Material3SettingsItem(
+                                icon = painterResource(R.drawable.update),
+                                title = { Text(stringResource(R.string.updater)) },
+                                description = { Text("Software updates and release channels") },
+                                onClick = { navController.navigate("settings/updater") }
+                            )
+                        )
+                    }
+                    add(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.newspaper),
+                            title = { Text(stringResource(R.string.changelog)) },
+                            description = { Text("What\'s new in SONARA") },
+                            onClick = { showChangelog.value = true }
+                        )
+                    )
+                    if (BuildConfig.UPDATER_AVAILABLE && latestVersionName != BuildConfig.BASE_VERSION_NAME) {
+                        val releaseInfo = Updater.getCachedLatestRelease()
+                        val downloadUrl = releaseInfo?.let { Updater.getDownloadUrlForCurrentVariant(it) }
+
+                        if (downloadUrl != null) {
+                            add(
+                                Material3SettingsItem(
+                                    icon = painterResource(R.drawable.update),
+                                    title = {
+                                        Text(text = stringResource(R.string.new_version_available))
+                                    },
+                                    description = {
+                                        Text(
+                                            text = latestVersionName,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    showBadge = true,
+                                    onClick = { uriHandler.openUri(downloadUrl) }
+                                )
+                            )
+                        }
+                    }
+                }
+            )
+
+            if (BuildConfig.UPDATER_AVAILABLE && latestVersionName != BuildConfig.BASE_VERSION_NAME) {
+                Spacer(modifier = Modifier.height(14.dp))
+                ReleaseNotesCard()
             }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Material3SettingsGroup(
+                title = stringResource(R.string.settings_section_about),
+                items = buildList {
+                    add(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.info),
+                            title = { Text(stringResource(R.string.about)) },
+                            description = { Text("SONARA v${BuildConfig.VERSION_NAME} • Open-source licenses") },
+                            onClick = { navController.navigate("settings/about") }
+                        )
+                    )
+                    if (isAndroid12OrLater) {
+                        add(
+                            Material3SettingsItem(
+                                icon = painterResource(R.drawable.link),
+                                title = { Text(stringResource(R.string.default_links)) },
+                                description = { Text("Open YouTube Music links directly in SONARA") },
+                                onClick = {
+                                    try {
+                                        val intent = Intent(
+                                            Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
+                                            "package:${context.packageName}".toUri()
+                                        )
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(
+                                            context,
+                                            R.string.open_app_settings_error,
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                            )
+                        )
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
-    )
+    }
 }

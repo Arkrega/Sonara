@@ -6,7 +6,6 @@
 package com.metrolist.music.lyrics
 
 import android.text.format.DateUtils
-import com.atilika.kuromoji.ipadic.Tokenizer
 import com.github.promeg.pinyinhelper.Pinyin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -360,11 +359,6 @@ object LyricsUtils {
     private val MACEDONIAN_SPECIFIC_CYRILLIC_LETTERS = setOf(
         "Ѓ", "ѓ", "Ѕ", "ѕ", "Ќ", "ќ"
     )
-
-    // Lazy initialized Tokenizer
-    private val kuromojiTokenizer: Tokenizer by lazy {
-        Tokenizer()
-    }
 
     private val HEX_ENTITY_REGEX = "&#x([0-9a-fA-F]+);".toRegex()
     private val DEC_ENTITY_REGEX = "&#(\\d+);".toRegex()
@@ -867,22 +861,21 @@ object LyricsUtils {
         MACEDONIAN
     } */
 
+    /**
+     * Romanizes Japanese kana directly. Kanji keep their original glyphs.
+     *
+     * The previous implementation bundled the IPA dictionary (~13 MB) purely to
+     * look up kanji readings. Sonara ships without it so the APK stays small;
+     * kana still romanize correctly, which is what the synced-lyrics view needs.
+     */
     suspend fun romanizeJapanese(text: String): String = withContext(Dispatchers.Default) {
-        val tokens = kuromojiTokenizer.tokenize(text)
-        val romanizedTokens = tokens.mapIndexed { index, token ->
-            val currentReading = if (token.reading.isNullOrEmpty() || token.reading == "*") {
-                token.surface
-            } else {
-                token.reading
+        if (text.isEmpty()) return@withContext ""
+        buildString(text.length) {
+            for (char in text) {
+                // Hiragana sits one Unicode block below the matching katakana.
+                append(if (char in 'ぁ'..'ゖ') (char.code + 0x60).toChar() else char)
             }
-            val nextTokenReading = if (index + 1 < tokens.size) {
-                tokens[index + 1].reading?.takeIf { it.isNotEmpty() && it != "*" } ?: tokens[index + 1].surface
-            } else {
-                null
-            }
-            katakanaToRomaji(currentReading, nextTokenReading)
-        }
-        romanizedTokens.joinToString(" ")
+        }.let { katakanaText -> katakanaToRomaji(katakanaText) }
     }
 
     fun katakanaToRomaji(katakana: String?, nextKatakana: String? = null): String {
