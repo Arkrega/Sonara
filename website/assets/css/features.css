@@ -1,7 +1,7 @@
 /* SONARA — features page styles */
 
 .page-hero {
-  padding: 8rem 1.25rem 5rem;
+  padding: 3.5rem 1.25rem 5rem;
   background: radial-gradient(1200px 600px at 70% -10%, rgba(255, 255, 255, 0.04), transparent 60%),
     radial-gradient(1000px 500px at -10% 110%, rgba(255, 255, 255, 0.03), transparent 60%);
 }
@@ -163,7 +163,7 @@
 
 @media (max-width: 600px) {
   .page-hero {
-    padding: 7rem 1.25rem 4rem;
+    padding: 2.5rem 1.25rem 4rem;
   }
 
   .feature-effects {

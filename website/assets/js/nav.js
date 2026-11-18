@@ -1,79 +1,29 @@
 /**
  * SONARA — shared navigation script.
- * Handles the mobile drawer and active-page detection.
+ * Highlights the current page in both the desktop header and the mobile strip.
  */
 
 (function () {
   "use strict";
 
-  // ---------------------------------------------------------------- mobile navigation
-  var toggle = document.getElementById("nav-toggle");
-  var drawer = document.getElementById("nav-drawer");
-  var backdrop = document.getElementById("nav-backdrop");
-
-  function openDrawer() {
-    if (!drawer) return;
-    drawer.classList.add("open");
-    toggle.setAttribute("aria-expanded", "true");
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeDrawer() {
-    if (!drawer) return;
-    drawer.classList.remove("open");
-    toggle.setAttribute("aria-expanded", "false");
-    document.body.style.overflow = "";
-  }
-
-  function isOpen() {
-    return !!drawer && drawer.classList.contains("open");
-  }
-
-  // The same button opens and closes the drawer, so its X state is always clickable.
-  if (toggle) {
-    toggle.addEventListener("click", function () {
-      if (isOpen()) {
-        closeDrawer();
-      } else {
-        openDrawer();
-      }
-    });
-  }
-
-  if (backdrop) {
-    backdrop.addEventListener("click", closeDrawer);
-  }
-
-  if (drawer) {
-    drawer.addEventListener(
-      "click",
-      function (e) {
-        if (e.target.tagName === "A") {
-          closeDrawer();
-        }
-      },
-      false,
-    );
-  }
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && isOpen()) {
-      closeDrawer();
-    }
-  });
-
-  // ---------------------------------------------------------------- active page indicator
-  var path = window.location.pathname;
-  var urlPath = path === "/" ? "" : path.replace(/\/$/, "");
+  var path = window.location.pathname.replace(/\/+$/, "");
+  var current = path === "" ? "/" : path;
 
   var links = document.querySelectorAll(".nav-link");
   links.forEach(function (link) {
-    link.classList.remove("active");
-    var href = link.getAttribute("href");
-    if (!href) return;
-    var linkPath = href.replace(/\/$/, "");
-    if (linkPath === urlPath || href === "/" && urlPath === "") {
-      link.classList.add("active");
+    var href = (link.getAttribute("href") || "").replace(/\/+$/, "");
+    if (href === "") href = "/";
+    link.classList.toggle("active", href === current);
+    if (href === current) {
+      link.setAttribute("aria-current", "page");
     }
   });
+
+  // Keep the active chip in view inside the scrollable mobile strip.
+  var strip = document.querySelector(".mobile-nav-scroll");
+  var activeChip = strip && strip.querySelector(".nav-link.active");
+  if (strip && activeChip) {
+    var offset = activeChip.offsetLeft - (strip.clientWidth - activeChip.offsetWidth) / 2;
+    strip.scrollLeft = Math.max(0, offset);
+  }
 })();

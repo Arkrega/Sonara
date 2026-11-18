@@ -8,7 +8,7 @@
     <title>Page not found — SONARA</title>
     <meta name="description" content="The page you're looking for could not be found. Return to SONARA's home page." />
     <link rel="icon" type="image/png" href="/images/icon.png" />
-    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <link rel="stylesheet" href="/assets/css/styles.css?v=20251119a" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,8 +16,8 @@
       rel="stylesheet"
     />
     <style>
-      .not-found { min-height: 72vh; display: grid; place-items: center; text-align: center; }
-      .not-found .container { max-width: 42rem; }
+      .not-found { padding: 4rem 1.25rem 5rem; text-align: center; }
+      .not-found .container { max-width: 42rem; margin: 0 auto; }
       .not-found-code { color: var(--color-muted, #999); font: 500 clamp(4rem, 15vw, 8rem)/1 'JetBrains Mono', monospace; margin: 0; }
       .not-found .section-title { margin-top: 0.5rem; }
       .not-found .section-desc { margin-inline: auto; }
@@ -33,7 +33,7 @@
       .not-found-quick a:hover { color: var(--text-primary); border-color: var(--text-secondary); }
     </style>
   </head>
-  <body>
+  <body id="top">
     <a href="#main" class="skip-link">Skip to content</a>
 
     <header class="header" role="banner">
@@ -69,39 +69,23 @@
           <span class="lang-toggle-label">ID</span>
         </button>
 
-        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-drawer">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
+
       </div>
     </header>
 
-    <nav class="nav-drawer" id="nav-drawer" role="navigation" aria-label="Mobile">
-      <div class="drawer-lang">
-        <span class="drawer-lang-label" data-en="Language" data-id="Bahasa">Bahasa</span>
-        <button class="lang-toggle lang-toggle--drawer" type="button" aria-label="Switch language">
-          <span class="lang-toggle-label">ID</span>
-        </button>
-      </div>
-      <div class="nav-links">
+    <nav class="mobile-nav" id="mobile-nav" aria-label="Sections">
+      <div class="mobile-nav-scroll">
         <a href="/" class="nav-link">Home</a>
         <a href="/features" class="nav-link">Features</a>
         <a href="/download" class="nav-link">Download</a>
         <a href="/changelog" class="nav-link">Changelog</a>
         <a href="/about" class="nav-link">About</a>
         <a href="/privacy" class="nav-link">Privacy</a>
-        <a
-          href="https://github.com/Arkrega/Sonara"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="github-btn"
-        >
-          GitHub
-        </a>
+        <a href="https://github.com/Arkrega/Sonara" target="_blank" rel="noopener noreferrer" class="github-btn">GitHub</a>
       </div>
     </nav>
-    <div class="nav-backdrop" id="nav-backdrop"></div>
+
+
 
     <main class="page not-found" id="main">
       <div class="container">
@@ -123,8 +107,8 @@
       </div>
     </main>
 
-    <script src="/assets/js/lang.js"></script>
-    <script src="/assets/js/i18n.js"></script>
-    <script src="/assets/js/nav.js"></script>
+    <script src="/assets/js/lang.js?v=20251119a"></script>
+    <script src="/assets/js/i18n.js?v=20251119a"></script>
+    <script src="/assets/js/nav.js?v=20251119a"></script>
   </body>
 </html>
