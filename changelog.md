@@ -1,3 +1,13 @@
+---v1.2.0
+# SONARA 1.2.0
+
+Support the project straight from the app, with a simpler About page behind it.
+
+## Highlights
+- About now offers **Support the developer**: a QRIS code you can scan with any bank or e-wallet app (GoPay, OVO, DANA, ShopeePay, BCA, Mandiri, and more)
+- About carries a single credit — the Discord server and Telegram channel links are gone, along with the old coffee link
+- No playback, library or playback-UI changes in this release
+
 ---v1.1.1
 # SONARA 1.1.1
 
