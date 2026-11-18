@@ -195,7 +195,7 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileIdentity(
+internal fun ProfileIdentity(
     name: String,
     imageUrl: String?,
     isLoggedIn: Boolean,
@@ -280,7 +280,7 @@ private fun ProfileIdentity(
 }
 
 @Composable
-private fun ProfileSectionLabel(text: String) {
+internal fun ProfileSectionLabel(text: String) {
     Text(
         text = text.uppercase(),
         style = SonaraLabelStyle.copy(fontSize = 9.sp, letterSpacing = 1.2.sp),
@@ -296,7 +296,7 @@ private fun ProfileSectionLabel(text: String) {
 }
 
 @Composable
-private fun ProfileRow(
+internal fun ProfileRow(
     title: String,
     iconId: Int,
     onClick: () -> Unit,
@@ -355,7 +355,7 @@ private fun ProfileRow(
 }
 
 @Composable
-private fun ProfileShortcut(
+internal fun ProfileShortcut(
     title: String,
     iconId: Int,
     onClick: () -> Unit,

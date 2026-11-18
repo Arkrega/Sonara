@@ -254,6 +254,14 @@ android {
         includeInBundle = false
     }
 
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources/manifest to render Compose
+            // previews for the screenshot tests.
+            isIncludeAndroidResources = true
+        }
+    }
+
     lint {
         lintConfig = file("lint.xml")
         warningsAsErrors = false
@@ -395,6 +403,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.ktor.client.mock)
 }
