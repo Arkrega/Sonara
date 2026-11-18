@@ -1,3 +1,12 @@
+---v1.1.1
+# SONARA 1.1.1
+
+Maintenance release that turns the Last.fm integration on.
+
+## Highlights
+- Last.fm scrobbling, now playing and love/unlove are wired to the app credentials, so the integration works out of the box
+- Version bump only: no UI or playback changes since 1.1.0
+
 ---v1.1.0
 # SONARA 1.1.0
 
