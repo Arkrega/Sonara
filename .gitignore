@@ -121,3 +121,6 @@ app/src/main/cpp/coverart/
 
 # Local design-review screenshots
 browser-screenshots/
+
+# Vercel build output
+.vercel/
