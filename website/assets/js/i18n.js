@@ -67,7 +67,9 @@
       var el = all[i];
       if (isSkipped(el)) continue;
       var hasKids = el.children.length > 0;
-      if (hasKids && !(TEXT_CONTAINERS.test(el.tagName) && onlyInlineChildren(el))) continue;
+      var explicit = el.hasAttribute("data-i18n-block");
+      if (hasKids && !explicit && !(TEXT_CONTAINERS.test(el.tagName) && onlyInlineChildren(el))) continue;
+      if (hasKids && !onlyInlineChildren(el)) continue;
 
       var insideDone = false;
       for (var d = 0; d < done.length; d++) {

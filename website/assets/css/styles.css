@@ -17,6 +17,8 @@
 
   --container-max: 1200px;
   --header-height: 70px;
+  --mobile-nav-height: 58px;
+  --radius-sm: 10px;
   --radius-md: 12px;
   --radius-lg: 18px;
 
@@ -62,6 +64,7 @@ body {
 
 body {
   margin: 0;
+  padding-top: var(--header-height);
   background-color: var(--black);
   color: var(--text-primary);
   font-family: var(--font-main);
@@ -203,49 +206,63 @@ button {
   border-color: var(--text-tertiary);
 }
 
-.nav-toggle {
+/* ---------------- MOBILE NAV (always visible, no hamburger) ---------------- */
+
+.mobile-nav {
   display: none;
-  flex-direction: column;
+  position: sticky;
+  --strip-fade: 28px;
+  top: var(--header-height);
+  z-index: 900;
+  background: var(--header-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-nav-scroll {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-width: 44px;
-  min-height: 44px;
-  background: var(--surface);
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--strip-fade)), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--strip-fade)), transparent);
+}
+
+.mobile-nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-nav a {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 0.85rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.mobile-nav a.active,
+.mobile-nav a:hover {
   color: var(--text-primary);
-  cursor: pointer;
-  padding: 0.4rem;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.nav-toggle:hover,
-.nav-toggle:focus-visible {
   border-color: var(--text-secondary);
-  outline: none;
+  background: var(--surface-high);
 }
 
-/* The markup ships three bars; no pseudo-elements needed. */
-.nav-toggle span {
-  display: block;
-  width: 20px;
-  height: 2px;
-  border-radius: 2px;
-  background: currentColor;
-  transition: transform 0.18s ease, opacity 0.18s ease;
-}
-
-.nav-toggle[aria-expanded="true"] span:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
-}
-
-.nav-toggle[aria-expanded="true"] span:nth-child(2) {
-  opacity: 0;
-}
-
-.nav-toggle[aria-expanded="true"] span:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
+.mobile-nav a.github-btn {
+  gap: 0.4rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
 }
 
 /* Language switch */
@@ -273,78 +290,6 @@ button {
   outline: none;
 }
 
-.lang-toggle-label::after {
-  content: "";
-}
-
-.drawer-lang {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 0.25rem 0.5rem;
-  border-top: 1px solid var(--border);
-  margin-top: 0.5rem;
-}
-
-.drawer-lang-label {
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-}
-
-/* Mobile nav drawer */
-.nav-drawer {
-  position: fixed;
-  top: var(--header-height);
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--black);
-  border-top: 1px solid var(--border);
-  padding: 2rem 1.5rem;
-  transform: translateX(100%);
-  transition: transform 0.28s ease;
-  z-index: 999;
-  overflow-y: auto;
-}
-
-.nav-drawer.open {
-  transform: translateX(0);
-}
-
-.nav-drawer .nav-links {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.75rem;
-}
-
-.nav-drawer .nav-link {
-  font-size: 1.05rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.nav-drawer .github-btn {
-  justify-content: center;
-}
-
-/* Backdrop */
-.nav-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.28s ease;
-  z-index: 998;
-}
-
-.nav-backdrop.open {
-  opacity: 1;
-  pointer-events: auto;
-}
 
 /* ---------------- PAGE LAYOUT ---------------- */
 
@@ -383,8 +328,14 @@ main {
   margin-bottom: 1rem;
 }
 
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
 .section-title {
-  font-size: clamp(2rem, 5vw, 3rem);
+  font-size: clamp(1.95rem, 4.4vw, 2.85rem);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -392,10 +343,11 @@ main {
 }
 
 .section-desc {
-  font-size: 1.125rem;
+  font-size: 1.05rem;
   color: var(--text-secondary);
-  max-width: 680px;
+  max-width: 64ch;
   line-height: 1.7;
+  margin: 0;
 }
 
 /* ---------------- BUTTONS ---------------- */
@@ -468,6 +420,8 @@ main {
 /* ---------------- CARDS ---------------- */
 
 .card {
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -535,11 +489,28 @@ main {
 .footer .container {
   max-width: var(--container-max);
   margin: 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 2rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1.25rem 2.5rem;
+}
+
+.footer-brand {
+  grid-area: 1 / 1;
+}
+
+.footer-nav {
+  grid-area: 1 / 2;
+  justify-content: flex-end;
+}
+
+.footer-meta {
+  grid-area: 2 / 2;
+  justify-content: flex-end;
+}
+
+.back-to-top {
+  grid-area: 2 / 1;
 }
 
 .footer-brand {
@@ -597,9 +568,10 @@ main {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  align-self: start;
+  justify-self: start;
   font-size: 0.85rem;
   color: var(--text-secondary);
-  margin-top: 1.25rem;
 }
 
 .back-to-top:hover {
@@ -723,27 +695,15 @@ body {
   }
 }
 
-@media (max-width: 768px) {
-  /* Only the header collapses into the drawer; the drawer itself keeps every
-     link, including GitHub, so nothing is trimmed on mobile. */
+@media (max-width: 1000px) {
+  /* The links are shown directly in a scrollable row instead of a hamburger. */
   .header .nav-links,
   .header .github-btn {
     display: none;
   }
 
-  .nav-drawer .nav-links {
-    display: flex;
-  }
-
-  .nav-drawer .github-btn {
-    display: flex;
-  }
-
-  .nav-toggle {
-    display: flex;
-    min-width: 44px;
-    min-height: 44px;
-    margin-right: -0.4rem;
+  .mobile-nav {
+    display: block;
   }
 
   .grid--2,
@@ -761,13 +721,21 @@ body {
   }
 
   .footer .container {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+    grid-template-columns: 1fr;
+  }
+
+  .footer-brand,
+  .footer-nav,
+  .footer-meta,
+  .back-to-top {
+    grid-area: auto;
+    justify-content: flex-start;
+    justify-self: start;
   }
 
   .footer-meta {
-    justify-content: center;
+    flex-direction: column;
+    gap: 0.35rem;
   }
 }
 
@@ -826,18 +794,12 @@ body {
 
 /* Comfortable tap targets on touch devices */
 @media (hover: none) and (pointer: coarse) {
-  .nav-toggle {
-    min-width: 44px;
-    min-height: 44px;
-    align-items: center;
-    justify-content: center;
-  }
-
   .nav-link,
-  .nav-drawer a {
-    min-height: 44px;
-    display: flex;
+  .footer-nav a,
+  .mobile-nav a {
+    display: inline-flex;
     align-items: center;
+    min-height: 40px;
   }
 }
 

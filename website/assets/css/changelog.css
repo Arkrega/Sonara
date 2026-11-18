@@ -1,7 +1,7 @@
 /* SONARA — changelog page styles */
 
 .changelog-hero {
-  padding: 7rem 1.25rem 3rem;
+  padding: 3rem 1.25rem 3rem;
   background: radial-gradient(1100px 550px at 20% -5%, rgba(255, 255, 255, 0.04), transparent 60%),
     radial-gradient(950px 480px at 110% 10%, rgba(255, 255, 255, 0.03), transparent 60%);
 }
@@ -92,9 +92,22 @@
 }
 
 .change-list li {
+  position: relative;
+  padding-left: 1.15rem;
   font-size: 0.95rem;
   color: var(--text-secondary);
   line-height: 1.6;
+}
+
+.change-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
 }
 
 .change-list li code {
@@ -177,7 +190,7 @@
 /* Responsive */
 @media (max-width: 600px) {
   .changelog-hero {
-    padding: 6rem 1.25rem 2.5rem;
+    padding: 2.5rem 1.25rem 2.5rem;
   }
 
   .version-head {
