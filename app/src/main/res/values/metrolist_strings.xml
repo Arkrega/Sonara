@@ -377,6 +377,11 @@
     <string name="update_available_title">New update available</string>
     <string name="update_available_message">SONARA %s is ready to download.</string>
     <string name="update_action">Update</string>
+    <string name="new_update_badge">New Update</string>
+    <string name="update_now">Update now</string>
+    <string name="update_later">Later</string>
+    <string name="update_download_started">Downloading the update…</string>
+    <string name="update_download_failed">Could not download the update. Please try again.</string>
     <string name="update_channel_name">App updates</string>
     <string name="update_channel_desc">Notifications about new app versions</string>
     <string name="install_permission_required">Installation permission is required to update the app. Please allow installing unknown apps in settings.</string>

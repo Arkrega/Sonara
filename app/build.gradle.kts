@@ -259,6 +259,17 @@ android {
             // Robolectric needs the merged resources/manifest to render Compose
             // previews for the screenshot tests.
             isIncludeAndroidResources = true
+            all {
+                // Binary resources make Robolectric touch jdk.internal.access,
+                // which JDK 17+ hides from the unnamed module.
+                it.jvmArgs(
+                    "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED",
+                    "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+                    "--add-opens=java.base/java.io=ALL-UNNAMED",
+                    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                    "--add-opens=java.base/java.nio=ALL-UNNAMED",
+                )
+            }
         }
     }
 
