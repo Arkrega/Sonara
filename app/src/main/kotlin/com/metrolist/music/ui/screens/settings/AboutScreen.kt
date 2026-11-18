@@ -355,7 +355,7 @@ fun AboutScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     FilledTonalButton(
-                        onClick = { uriHandler.openUri("https://sonara-iota-three.vercel.app/") },
+                        onClick = { uriHandler.openUri("https://sonara.my.id/") },
                         modifier = Modifier.weight(1f).height(48.dp)
                     ) {
                         Icon(painterResource(R.drawable.language), contentDescription = null)

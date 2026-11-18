@@ -4,7 +4,7 @@
 The website moved, so the in-app links follow it.
 
 ## Highlights
-- About now opens the new site at https://sonara-iota-three.vercel.app
+- About now opens the new site on Vercel
 - The update sheet keeps downloading and installing inside the app
 - Version bump only; no playback, library, or layout changes
 
