@@ -2741,7 +2741,7 @@ fun HomeScreen(
  * so explain that instead of failing silently.
  */
 @Composable
-private fun SonaraGuestNotice(onConnect: () -> Unit) {
+internal fun SonaraGuestNotice(onConnect: () -> Unit) {
     val shape = RoundedCornerShape(10.dp)
     Column(
         modifier =
@@ -2782,7 +2782,7 @@ private fun SonaraGuestNotice(onConnect: () -> Unit) {
  * large piece of editorial type and a single hairline.
  */
 @Composable
-private fun SonaraMasthead(
+internal fun SonaraMasthead(
     accountName: String?,
     onHistory: () -> Unit,
     onStats: () -> Unit,
