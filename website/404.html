@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
     <title>Page not found — SONARA</title>
-    <meta name="description" content="The page you’re looking for could not be found. Return to SONARA’s home page." />
+    <meta name="description" content="The page you're looking for could not be found. Return to SONARA's home page." />
     <link rel="icon" type="image/png" href="/images/icon.png" />
     <link rel="stylesheet" href="/assets/css/styles.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,16 +22,109 @@
       .not-found .section-title { margin-top: 0.5rem; }
       .not-found .section-desc { margin-inline: auto; }
       .not-found .btn { margin-top: 1.5rem; }
+      .not-found-quick { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-top: 1.75rem; }
+      .not-found-quick a {
+        padding: 0.5rem 0.9rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+      }
+      .not-found-quick a:hover { color: var(--text-primary); border-color: var(--text-secondary); }
     </style>
   </head>
   <body>
-    <main class="page not-found">
+    <a href="#main" class="skip-link">Skip to content</a>
+
+    <header class="header" role="banner">
+      <div class="container">
+        <a href="/" class="brand">
+          <img src="/images/icon.png" alt="SONARA" aria-hidden="true" />
+          <span>SONARA</span>
+        </a>
+
+        <nav class="nav-links" role="navigation" aria-label="Primary">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/features" class="nav-link">Features</a>
+          <a href="/download" class="nav-link">Download</a>
+          <a href="/changelog" class="nav-link">Changelog</a>
+          <a href="/about" class="nav-link">About</a>
+          <a
+            href="https://github.com/Arkrega/Sonara"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="github-btn"
+          >
+            GitHub
+          </a>
+        </nav>
+
+        <button
+          class="lang-toggle"
+          id="lang-toggle"
+          type="button"
+          aria-label="Switch language"
+          aria-pressed="false"
+        >
+          <span class="lang-toggle-label">ID</span>
+        </button>
+
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-drawer">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="nav-drawer" id="nav-drawer" role="navigation" aria-label="Mobile">
+      <div class="drawer-lang">
+        <span class="drawer-lang-label" data-en="Language" data-id="Bahasa">Bahasa</span>
+        <button class="lang-toggle lang-toggle--drawer" type="button" aria-label="Switch language">
+          <span class="lang-toggle-label">ID</span>
+        </button>
+      </div>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/features" class="nav-link">Features</a>
+        <a href="/download" class="nav-link">Download</a>
+        <a href="/changelog" class="nav-link">Changelog</a>
+        <a href="/about" class="nav-link">About</a>
+        <a href="/privacy" class="nav-link">Privacy</a>
+        <a
+          href="https://github.com/Arkrega/Sonara"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="github-btn"
+        >
+          GitHub
+        </a>
+      </div>
+    </nav>
+    <div class="nav-backdrop" id="nav-backdrop"></div>
+
+    <main class="page not-found" id="main">
       <div class="container">
         <p class="not-found-code" aria-hidden="true">404</p>
         <h1 class="section-title">This page wandered off.</h1>
-        <p class="section-desc">The address may be out of date, or the page may have moved. Let’s get you back to the music.</p>
+        <p class="section-desc">
+          The address may be out of date, or the page may have moved. Let's get you back to the
+          music.
+        </p>
         <a class="btn btn-primary" href="/">Back to SONARA</a>
+
+        <div class="not-found-quick">
+          <a href="/download">Download</a>
+          <a href="/features">Features</a>
+          <a href="/changelog">Changelog</a>
+          <a href="/about">About</a>
+          <a href="/privacy">Privacy</a>
+        </div>
       </div>
     </main>
+
+    <script src="/assets/js/lang.js"></script>
+    <script src="/assets/js/i18n.js"></script>
+    <script src="/assets/js/nav.js"></script>
   </body>
 </html>

@@ -25,8 +25,19 @@
     document.body.style.overflow = "";
   }
 
+  function isOpen() {
+    return !!drawer && drawer.classList.contains("open");
+  }
+
+  // The same button opens and closes the drawer, so its X state is always clickable.
   if (toggle) {
-    toggle.addEventListener("click", openDrawer);
+    toggle.addEventListener("click", function () {
+      if (isOpen()) {
+        closeDrawer();
+      } else {
+        openDrawer();
+      }
+    });
   }
 
   if (backdrop) {
@@ -46,7 +57,7 @@
   }
 
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && drawer && drawer.classList.contains("open")) {
+    if (e.key === "Escape" && isOpen()) {
       closeDrawer();
     }
   });
