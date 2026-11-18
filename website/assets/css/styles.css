@@ -663,9 +663,19 @@ body {
 }
 
 @media (max-width: 768px) {
-  .nav-links,
-  .github-btn {
+  /* Only the header collapses into the drawer; the drawer itself keeps every
+     link, including GitHub, so nothing is trimmed on mobile. */
+  .header .nav-links,
+  .header .github-btn {
     display: none;
+  }
+
+  .nav-drawer .nav-links {
+    display: flex;
+  }
+
+  .nav-drawer .github-btn {
+    display: flex;
   }
 
   .nav-toggle {
