@@ -62,9 +62,11 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.foundation.shape.CircleShape
@@ -79,6 +81,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -118,6 +121,9 @@ import androidx.core.net.toUri
 import androidx.core.util.Consumer
 import androidx.core.view.WindowCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.lifecycleScope
@@ -227,10 +233,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.File
 import java.time.LocalDate
 import java.util.Locale
 import javax.inject.Inject
@@ -245,6 +253,61 @@ private data class AvailableUpdate(
     val isKmp: Boolean = false,
 ) {
     val dismissalKey = DismissedStandaloneUpdateKey
+}
+
+/** Every step the in-app updater can be in, so the UI can always explain itself. */
+private sealed interface UpdateFlowState {
+    data object PermissionRequired : UpdateFlowState
+    data class Downloading(val progress: Float) : UpdateFlowState
+    data object Verifying : UpdateFlowState
+    data class Failed(val detail: String?) : UpdateFlowState
+}
+
+@Composable
+internal fun UpdateProgressContent(
+    status: String,
+    progress: Float?,
+    hint: String,
+) {
+    Column {
+        Text(text = status, style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(14.dp))
+        if (progress != null) {
+            LinearProgressIndicator(
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = hint,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun UpdateProgressDialog(
+    title: String,
+    status: String,
+    progress: Float?,
+    hint: String,
+    onHide: () -> Unit,
+) {
+    AlertDialog(
+        // A running download must not be lost to a stray tap outside the dialog.
+        onDismissRequest = {},
+        title = { Text(title) },
+        text = { UpdateProgressContent(status = status, progress = progress, hint = hint) },
+        confirmButton = {
+            TextButton(onClick = onHide) {
+                Text(stringResource(R.string.update_hide_progress))
+            }
+        },
+    )
 }
 
 @Suppress("DEPRECATION", "ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -946,6 +1009,115 @@ class MainActivity : FragmentActivity() {
                 }
                 val snackbarHostState = remember { SnackbarHostState() }
 
+                // Offline notice. Shown once per launch when there is no network, with the
+                // connection state coming straight from the player service, and removed
+                // again the moment the device is back online.
+                val connectivityObserver =
+                    remember(playerConnection) { playerConnection?.service?.connectivityObserver }
+                val isOnline by
+                    (connectivityObserver?.networkStatus ?: flowOf(true))
+                        .collectAsState(initial = true)
+
+                var offlineNoticeShown by rememberSaveable { mutableStateOf(false) }
+                LaunchedEffect(isOnline) {
+                    if (!isOnline && !offlineNoticeShown) {
+                        offlineNoticeShown = true
+                        snackbarHostState.showSnackbar(
+                            message = getString(R.string.offline_notice_message),
+                            actionLabel = getString(R.string.close),
+                            withDismissAction = true,
+                            duration = SnackbarDuration.Indefinite,
+                        )
+                    } else if (isOnline && offlineNoticeShown) {
+                        offlineNoticeShown = false
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                    }
+                }
+
+                // In-app updater. Downloading 9 MB silently and then throwing the user at a
+                // system setting is why the update felt broken; every step now has a dialog.
+                var updateFlow by remember { mutableStateOf<UpdateFlowState?>(null) }
+                var pendingUpdate by remember { mutableStateOf<AvailableUpdate?>(null) }
+                var pendingApkFile by remember { mutableStateOf<File?>(null) }
+                var awaitingInstallPermission by remember { mutableStateOf(false) }
+
+                fun downloadAndInstall(update: AvailableUpdate) {
+                    val asset = Updater.getAssetForCurrentVariant(update.release)
+                    if (asset == null) {
+                        updateFlow = UpdateFlowState.Failed(null)
+                        return
+                    }
+                    pendingApkFile = null
+                    updateFlow = UpdateFlowState.Downloading(0f)
+                    lifecycleScope.launch {
+                        AppUpdateDownloader.downloadApk(
+                            context = this@MainActivity,
+                            asset = asset,
+                            sha256SumsUrl = update.release.sha256SumsUrl,
+                            onProgress = { state ->
+                                when (state) {
+                                    is UpdateDownloadState.Downloading ->
+                                        updateFlow =
+                                            UpdateFlowState.Downloading(state.progress.coerceIn(0f, 1f))
+                                    UpdateDownloadState.VerifyingChecksum ->
+                                        updateFlow = UpdateFlowState.Verifying
+                                    is UpdateDownloadState.ReadyToInstall -> {
+                                        // Hand over to the system installer; its own sheet
+                                        // takes over from here, so the dialog can go.
+                                        updateFlow = null
+                                        runOnUiThread {
+                                            AppUpdateDownloader
+                                                .triggerInstall(this@MainActivity, state.apkFile)
+                                                .onFailure { updateFlow = UpdateFlowState.Failed(it.message) }
+                                        }
+                                    }
+                                    is UpdateDownloadState.PermissionRequired -> {
+                                        pendingApkFile = state.apkFile
+                                        updateFlow = UpdateFlowState.PermissionRequired
+                                    }
+                                    is UpdateDownloadState.Failed ->
+                                        updateFlow = UpdateFlowState.Failed(state.error)
+                                    UpdateDownloadState.Idle -> Unit
+                                }
+                            },
+                        )
+                    }
+                }
+
+                // Ask for the install permission *before* downloading, so the user is not
+                // left with a finished file and no way to open it.
+                fun beginUpdate(update: AvailableUpdate) {
+                    pendingUpdate = update
+                    if (AppUpdateDownloader.canInstallPackages(this@MainActivity)) {
+                        downloadAndInstall(update)
+                    } else {
+                        updateFlow = UpdateFlowState.PermissionRequired
+                    }
+                }
+
+                val mainLifecycleOwner = LocalLifecycleOwner.current
+                DisposableEffect(mainLifecycleOwner, awaitingInstallPermission) {
+                    val observer =
+                        LifecycleEventObserver { _, event ->
+                            if (event == Lifecycle.Event.ON_RESUME && awaitingInstallPermission) {
+                                awaitingInstallPermission = false
+                                if (AppUpdateDownloader.canInstallPackages(this@MainActivity)) {
+                                    val apk = pendingApkFile
+                                    if (apk != null) {
+                                        updateFlow = null
+                                        AppUpdateDownloader
+                                            .triggerInstall(this@MainActivity, apk)
+                                            .onFailure { updateFlow = UpdateFlowState.Failed(it.message) }
+                                    } else {
+                                        pendingUpdate?.let { downloadAndInstall(it) }
+                                    }
+                                }
+                            }
+                        }
+                    mainLifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose { mainLifecycleOwner.lifecycle.removeObserver(observer) }
+                }
+
                 LaunchedEffect(Unit) {
                     if (pendingIntent != null) {
                         handleWidgetTargetIntent(pendingIntent!!, navController)
@@ -1042,9 +1214,39 @@ class MainActivity : FragmentActivity() {
                                             }
                                         },
                                         actions = {
+                                            if (!isOnline) {
+                                                // Quiet, always-visible reminder that the app is
+                                                // offline; tapping it repeats the full notice.
+                                                Surface(
+                                                    onClick = {
+                                                        coroutineScope.launch {
+                                                            snackbarHostState.showSnackbar(
+                                                                message = getString(R.string.offline_notice_message),
+                                                                actionLabel = getString(R.string.close),
+                                                                withDismissAction = true,
+                                                                duration = SnackbarDuration.Indefinite,
+                                                            )
+                                                        }
+                                                    },
+                                                    shape = CircleShape,
+                                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier =
+                                                        Modifier
+                                                            .padding(end = 8.dp)
+                                                            .height(32.dp),
+                                                ) {
+                                                    Text(
+                                                        text = stringResource(R.string.offline_badge),
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        modifier = Modifier.padding(horizontal = 12.dp),
+                                                    )
+                                                }
+                                            }
                                             if (currentRoute == Screens.Home.route && availableUpdate != null) {
                                                 Surface(
-                                                    onClick = { showUpdateDialog = true },
+                                                    onClick = { availableUpdate?.let { beginUpdate(it) } },
                                                     shape = CircleShape,
                                                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
                                                     contentColor = MaterialTheme.colorScheme.primary,
@@ -1479,36 +1681,8 @@ class MainActivity : FragmentActivity() {
                                 confirmButton = {
                                     TextButton(
                                         onClick = {
-                                            val currentAsset = Updater.getAssetForCurrentVariant(update.release)
                                             dismissUpdate()
-                                            if (currentAsset != null) {
-                                                lifecycleScope.launch {
-                                                    snackbarHostState.showSnackbar(getString(R.string.update_download_started))
-                                                    AppUpdateDownloader.downloadApk(
-                                                        context = this@MainActivity,
-                                                        asset = currentAsset,
-                                                        sha256SumsUrl = update.release.sha256SumsUrl,
-                                                        onProgress = { state ->
-                                                            if (state is UpdateDownloadState.ReadyToInstall) {
-                                                                AppUpdateDownloader.triggerInstall(this@MainActivity, state.apkFile)
-                                                            } else if (state is UpdateDownloadState.PermissionRequired) {
-                                                                android.widget.Toast.makeText(
-                                                                    this@MainActivity,
-                                                                    getString(R.string.install_permission_required),
-                                                                    android.widget.Toast.LENGTH_LONG
-                                                                ).show()
-                                                                AppUpdateDownloader.openInstallPermissionSettings(this@MainActivity)
-                                                            }
-                                                        }
-                                                    ).onFailure {
-                                                        snackbarHostState.showSnackbar(getString(R.string.update_download_failed))
-                                                    }
-                                                }
-                                            } else {
-                                                lifecycleScope.launch {
-                                                    snackbarHostState.showSnackbar(getString(R.string.update_download_failed))
-                                                }
-                                            }
+                                            beginUpdate(update)
                                         },
                                     ) {
                                         Text(stringResource(R.string.update_now))
@@ -1520,6 +1694,94 @@ class MainActivity : FragmentActivity() {
                                     }
                                 },
                             )
+                        }
+                    }
+
+                    updateFlow?.let { flow ->
+                        val version = pendingUpdate?.release?.versionName ?: ""
+                        when (flow) {
+                            UpdateFlowState.PermissionRequired ->
+                                AlertDialog(
+                                    onDismissRequest = { updateFlow = null },
+                                    title = { Text(stringResource(R.string.update_permission_title)) },
+                                    text = { Text(stringResource(R.string.update_permission_message)) },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                awaitingInstallPermission = true
+                                                AppUpdateDownloader.openInstallPermissionSettings(this@MainActivity)
+                                            },
+                                        ) {
+                                            Text(stringResource(R.string.update_permission_open_settings))
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { updateFlow = null }) {
+                                            Text(stringResource(R.string.update_permission_later))
+                                        }
+                                    },
+                                )
+
+                            is UpdateFlowState.Downloading ->
+                                UpdateProgressDialog(
+                                    title = stringResource(R.string.update_progress_title, version),
+                                    status =
+                                        if (flow.progress > 0f) {
+                                            stringResource(
+                                                R.string.update_downloading_progress,
+                                                (flow.progress * 100).toInt(),
+                                            )
+                                        } else {
+                                            stringResource(R.string.update_downloading_starting)
+                                        },
+                                    progress = flow.progress.takeIf { it > 0f },
+                                    hint = stringResource(R.string.update_install_hint),
+                                    onHide = { updateFlow = null },
+                                )
+
+                            UpdateFlowState.Verifying ->
+                                UpdateProgressDialog(
+                                    title = stringResource(R.string.update_progress_title, version),
+                                    status = stringResource(R.string.update_verifying_download),
+                                    progress = null,
+                                    hint = stringResource(R.string.update_install_hint),
+                                    onHide = { updateFlow = null },
+                                )
+
+                            is UpdateFlowState.Failed ->
+                                AlertDialog(
+                                    onDismissRequest = { updateFlow = null },
+                                    title = { Text(stringResource(R.string.update_available_title)) },
+                                    text = {
+                                        Text(
+                                            text =
+                                                buildString {
+                                                    append(stringResource(R.string.update_download_failed))
+                                                    flow.detail?.takeIf { it.isNotBlank() }?.let {
+                                                        append("\n\n")
+                                                        append(it)
+                                                    }
+                                                },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                        )
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                val retry = pendingUpdate
+                                                updateFlow = null
+                                                retry?.let { beginUpdate(it) }
+                                            },
+                                        ) {
+                                            Text(stringResource(R.string.retry))
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { updateFlow = null }) {
+                                            Text(stringResource(R.string.close))
+                                        }
+                                    },
+                                )
                         }
                     }
                 }
