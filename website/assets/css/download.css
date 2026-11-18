@@ -91,6 +91,7 @@
 
 .coming-soon-notice {
   display: flex;
+  min-width: 0;
   gap: 1rem;
   align-items: flex-start;
   background: var(--charcoal);
@@ -110,7 +111,9 @@
   color: var(--text-secondary);
   line-height: 1.55;
   min-width: 0;
+  flex: 1 1 auto;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .notice-text code {
@@ -121,8 +124,11 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.15em 0.4em;
+  display: inline;
+  max-width: 100%;
   overflow-wrap: anywhere;
   word-break: break-all;
+  white-space: normal;
 }
 
 /* Release plans */
@@ -272,5 +278,28 @@
 
   .btn-large {
     width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .coming-soon-notice {
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+  }
+
+  .cs-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .cs-field-value {
+    font-size: 0.95rem;
+    overflow-wrap: anywhere;
+  }
+
+  .notice-text code {
+    font-size: 0.78em;
+    padding: 0.2em 0.35em;
   }
 }

@@ -864,6 +864,9 @@
     <string name="credits_telegram">Telegram channel</string>
     <string name="credits_view_repo">View repository</string>
     <string name="buy_mo_a_coffee">Buy me a coffee!</string>
+    <string name="support_me">Support the developer</string>
+    <string name="support_qris_desc">Scan this QRIS code with any bank or e-wallet app to send a one-time tip. No subscription, nothing recurring.</string>
+    <string name="support_qris_hint">QRIS · works with GoPay, OVO, DANA, ShopeePay, BCA, Mandiri and more</string>
     <string name="community_and_info">Community &amp; Info</string>
     <string name="metrolist">SONARA</string>
     <string name="wanna_play_favorite_song">Want to play their favorite song?</string>
