@@ -1,3 +1,13 @@
+---v1.3.1
+# SONARA 1.3.1
+
+Bahasa Indonesia, from the first launch screen to the update prompt.
+
+## Highlights
+- Full Indonesian translation: onboarding, Profile, Mood & genres, About and support, Reverb, playback speed, and the new update flow all speak Bahasa Indonesia now
+- Pick it in Settings -> Content -> App language, or let the app follow an Indonesian system language
+- Version bump only; no playback, library, or layout changes
+
 ---v1.3.0
 # SONARA 1.3.0
 
