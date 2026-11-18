@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
@@ -66,6 +67,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -165,6 +167,7 @@ import com.metrolist.music.constants.SlimNavBarHeight
 import com.metrolist.music.constants.SlimNavBarKey
 import com.metrolist.music.constants.StopMusicOnTaskClearKey
 import com.metrolist.music.constants.UpdateNotificationsEnabledKey
+import com.metrolist.music.constants.UpdatePromptDateKey
 import com.metrolist.music.constants.UseNewMiniPlayerDesignKey
 import com.metrolist.music.constants.VideoThumbnailMigrationDoneKey
 import com.metrolist.music.db.MusicDatabase
@@ -228,11 +231,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.time.LocalDate
 import java.util.Locale
 import javax.inject.Inject
 
 import com.metrolist.music.utils.AppUpdateDownloader
 import com.metrolist.music.utils.UpdateDownloadState
+import androidx.compose.ui.text.font.FontWeight
 
 private data class AvailableUpdate(
     val release: ReleaseInfo,
@@ -504,6 +509,8 @@ class MainActivity : FragmentActivity() {
     ) {
         val checkForUpdates by rememberPreference(CheckForUpdatesKey, defaultValue = true)
         var availableUpdate by remember { mutableStateOf<AvailableUpdate?>(null) }
+        // Opened either by the once-a-day prompt or by the "New Update" chip.
+        var showUpdateDialog by remember { mutableStateOf(false) }
 
         if (BuildConfig.UPDATER_AVAILABLE) {
             LaunchedEffect(checkForUpdates) {
@@ -522,12 +529,22 @@ class MainActivity : FragmentActivity() {
                                 }
                             }
                     val update = standaloneUpdate
-                    availableUpdate = update?.takeUnless {
-                        it.release.tagName == preferences[it.dismissalKey]
+                    // Keep the release around: the top bar chip shows it until the
+                    // user actually installs it, however often they dismissed it.
+                    availableUpdate = update
+                    if (update != null) {
+                        val today = LocalDate.now().toEpochDay()
+                        val lastPrompt = preferences[UpdatePromptDateKey] ?: 0L
+                        if (today > lastPrompt) showUpdateDialog = true
                     }
 
                     if (update != null && notificationsEnabled) {
-                        val intent = Intent(Intent.ACTION_VIEW, update.downloadUrl.toUri())
+                        // Open the in-app sheet: the APK is downloaded and installed
+                        // here, no detour through the browser or GitHub.
+                        val intent =
+                            Intent(this@MainActivity, MainActivity::class.java).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            }
                         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                         val pending = PendingIntent.getActivity(this@MainActivity, 1001, intent, flags)
                         val notificationText = update.release.versionName
@@ -1025,6 +1042,35 @@ class MainActivity : FragmentActivity() {
                                             }
                                         },
                                         actions = {
+                                            if (currentRoute == Screens.Home.route && availableUpdate != null) {
+                                                Surface(
+                                                    onClick = { showUpdateDialog = true },
+                                                    shape = CircleShape,
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                                                    contentColor = MaterialTheme.colorScheme.primary,
+                                                    modifier =
+                                                        Modifier
+                                                            .padding(end = 12.dp)
+                                                            .height(32.dp),
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier.padding(horizontal = 12.dp),
+                                                    ) {
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.update),
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(14.dp),
+                                                        )
+                                                        Spacer(Modifier.width(6.dp))
+                                                        Text(
+                                                            text = stringResource(R.string.new_update_badge),
+                                                            style = MaterialTheme.typography.labelMedium,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                        )
+                                                    }
+                                                }
+                                            }
                                             if (showHistoryButton && currentRoute != Screens.Home.route) {
                                                 IconButton(onClick = { navController.navigate("history") }) {
                                                     Icon(
@@ -1390,12 +1436,13 @@ class MainActivity : FragmentActivity() {
                         }
                     }
 
-                    if (!showChangelog.value && onboardingResolved && !launchGateVisible) {
+                    if (showUpdateDialog && !showChangelog.value && onboardingResolved && !launchGateVisible) {
                         availableUpdate?.let { update ->
                             val dismissUpdate: () -> Unit = {
-                                availableUpdate = null
+                                showUpdateDialog = false
                                 lifecycleScope.launch {
                                     safeDataStoreEdit {
+                                        it[UpdatePromptDateKey] = LocalDate.now().toEpochDay()
                                         it[update.dismissalKey] = update.release.tagName
                                     }
                                 }
@@ -1436,6 +1483,7 @@ class MainActivity : FragmentActivity() {
                                             dismissUpdate()
                                             if (currentAsset != null) {
                                                 lifecycleScope.launch {
+                                                    snackbarHostState.showSnackbar(getString(R.string.update_download_started))
                                                     AppUpdateDownloader.downloadApk(
                                                         context = this@MainActivity,
                                                         asset = currentAsset,
@@ -1453,20 +1501,22 @@ class MainActivity : FragmentActivity() {
                                                             }
                                                         }
                                                     ).onFailure {
-                                                        startActivity(Intent(Intent.ACTION_VIEW, update.downloadUrl.toUri()))
+                                                        snackbarHostState.showSnackbar(getString(R.string.update_download_failed))
                                                     }
                                                 }
                                             } else {
-                                                startActivity(Intent(Intent.ACTION_VIEW, update.downloadUrl.toUri()))
+                                                lifecycleScope.launch {
+                                                    snackbarHostState.showSnackbar(getString(R.string.update_download_failed))
+                                                }
                                             }
                                         },
                                     ) {
-                                        Text(stringResource(R.string.update_action))
+                                        Text(stringResource(R.string.update_now))
                                     }
                                 },
                                 dismissButton = {
                                     TextButton(onClick = dismissUpdate) {
-                                        Text(stringResource(R.string.kmp_upgrade_later))
+                                        Text(stringResource(R.string.update_later))
                                     }
                                 },
                             )

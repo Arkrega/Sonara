@@ -1,3 +1,15 @@
+---v1.3.0
+# SONARA 1.3.0
+
+Updates now find you inside the app, once a day, and install without a detour.
+
+## Highlights
+- New **New Update** chip in the top right of Home appears as soon as a newer release exists; tap it to see what changed
+- The update prompt shows at most **once a day**, so a dismissal is respected until tomorrow
+- Updates download and install straight from the app: the APK is verified against its SHA-256 checksum, then the system installer opens — no browser, no GitHub page
+- Tapping the update notification opens the same in-app sheet instead of a web link
+- Download problems are reported in-app with a clear message instead of silently bouncing to a browser
+
 ---v1.2.0
 # SONARA 1.2.0
 

@@ -106,6 +106,8 @@ val CheckForUpdatesKey = booleanPreferencesKey("checkForUpdates")
 val DismissedStandaloneUpdateKey = stringPreferencesKey("dismissedStandaloneUpdate")
 val DismissedKmpUpdateKey = stringPreferencesKey("dismissedKmpUpdate")
 val UpdateNotificationsEnabledKey = booleanPreferencesKey("updateNotifications")
+// Epoch day of the last automatic update popup, so it can be shown once a day.
+val UpdatePromptDateKey = longPreferencesKey("updatePromptDate")
 
 val AudioQualityKey = stringPreferencesKey("audioQuality")
 
