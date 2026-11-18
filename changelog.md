@@ -1,3 +1,14 @@
+---v1.3.4
+# SONARA 1.3.4
+
+Updates now explain themselves, and going offline is no longer a mystery.
+
+## Highlights
+- Opening SONARA without a connection shows a notice, plus a quiet Offline chip until the network is back
+- The update chip asks for the install permission first, with instructions and a shortcut to the setting
+- The download now shows real progress, checksum verification, and clear failures with a retry
+- Songs already downloaded keep playing while offline
+
 ---v1.3.3
 # SONARA 1.3.3
 
