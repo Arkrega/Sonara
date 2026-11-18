@@ -795,3 +795,13 @@ Object.assign(window.SONARA_ID, {
     "Alamatnya mungkin sudah kedaluwarsa, atau halamannya pindah. Yuk balik ke musiknya.",
   "Back to SONARA": "Balik ke SONARA",
 });
+Object.assign(window.SONARA_ID, {
+  /* ---------------- 1.3.3 release notes ---------------- */
+  "Version 1.3.3": "Versi 1.3.3",
+  "The player's home on the web now lives at sonara.my.id.":
+    "Rumah pemutar ini di web sekarang ada di sonara.my.id.",
+  "About opens the official site at sonara.my.id":
+    "Tentang membuka situs resmi di sonara.my.id",
+  "The site is now available in Indonesian and English":
+    "Situsnya sekarang tersedia dalam bahasa Indonesia dan Inggris",
+});
