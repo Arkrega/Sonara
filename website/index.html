@@ -60,6 +60,16 @@
           </a>
         </nav>
 
+        <button
+          class="lang-toggle"
+          id="lang-toggle"
+          type="button"
+          aria-label="Switch language"
+          aria-pressed="false"
+        >
+          <span class="lang-toggle-label">ID</span>
+        </button>
+
         <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-drawer">
           <span></span>
           <span></span>
@@ -69,6 +79,13 @@
     </header>
 
     <nav class="nav-drawer" id="nav-drawer" role="navigation" aria-label="Mobile">
+      <div class="drawer-lang">
+        <span class="drawer-lang-label" data-en="Language" data-id="Bahasa">Bahasa</span>
+        <button class="lang-toggle lang-toggle--drawer" type="button" aria-label="Switch language">
+          <span class="lang-toggle-label">ID</span>
+        </button>
+      </div>
+
       <div class="nav-links">
         <a href="/" class="nav-link">Home</a>
         <a href="/features" class="nav-link">Features</a>
@@ -200,6 +217,108 @@
         </div>
       </section>
 
+      <!-- Key numbers -->
+      <section class="section stats-strip" id="numbers" aria-label="SONARA at a glance">
+        <div class="container">
+          <div class="stats-grid">
+            <div class="stat">
+              <span class="stat-value">1.3.2</span>
+              <span class="stat-label">Latest version</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">8.9 MB</span>
+              <span class="stat-label">Download size</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">Android 8.0+</span>
+              <span class="stat-label">Minimum Android</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">GPL-3.0</span>
+              <span class="stat-label">License</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- What's inside -->
+      <section class="section inside" id="inside">
+        <div class="container">
+          <div class="split">
+            <div class="split-copy">
+              <span class="section-tag">WHAT'S INSIDE</span>
+              <h2 class="section-title">Built on a foundation you can inspect</h2>
+              <p class="section-desc">
+                No mystery binaries and no hidden services. SONARA runs on AndroidX Media3, ships
+                every line of its source, and keeps the extra features optional.
+              </p>
+              <ul class="check-list">
+                <li>No accounts, no analytics, no trackers</li>
+                <li>Every release is signed and checksummed</li>
+                <li>Updates install from inside the app</li>
+                <li>Interface available in English and Indonesian</li>
+              </ul>
+            </div>
+
+            <div class="table-wrap">
+              <table class="spec-table">
+                <caption class="visually-hidden">SONARA technical specifications</caption>
+                <tbody>
+                  <tr>
+                    <th scope="row">Playback engine</th>
+                    <td>AndroidX Media3 · ExoPlayer</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Minimum Android</th>
+                    <td>8.0 Oreo</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">APK size</th>
+                    <td>8.9 MB</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Audio formats</th>
+                    <td>MP3, AAC, FLAC, ALAC, Opus, Vorbis, WAV, AIFF</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Equalizer</th>
+                    <td>10-band parametric with preamp</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Playback speed</th>
+                    <td>0.5× to 2.0× with pitch control</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Lyrics</th>
+                    <td>Line-by-line, timecoded, with translation</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">App languages</th>
+                    <td>English, Indonesian</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">License</th>
+                    <td>GPL-3.0</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Signature</th>
+                    <td>Release key with published SHA-256</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Network use</th>
+                    <td>Online search, lyrics, and update checks only</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Data collection</th>
+                    <td>None</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Feature highlights -->
       <section class="section highlights" id="features">
         <div class="container">
@@ -294,6 +413,281 @@
 
           <div class="text-center" style="margin-top: 3rem;">
             <a href="/features" class="btn">View All Features</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Comparison -->
+      <section class="section compare" id="compare">
+        <div class="container">
+          <span class="section-tag">SIDE BY SIDE</span>
+          <h2 class="section-title">What you get, and what you leave behind</h2>
+          <p class="section-desc">
+            A plain look at how SONARA compares to a typical ad-supported Android player.
+          </p>
+
+          <div class="table-wrap" style="margin-top: 2rem;">
+            <table class="compare-table">
+              <caption class="visually-hidden">SONARA compared with an ad-supported player</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Feature</th>
+                  <th scope="col">SONARA</th>
+                  <th scope="col">Ad-supported player</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Interruption ads</th>
+                  <td class="yes">Never</td>
+                  <td class="no">Banners, video, audio spots</td>
+                </tr>
+                <tr>
+                  <th scope="row">Trackers and analytics</th>
+                  <td class="yes">None</td>
+                  <td class="no">Usually several SDKs</td>
+                </tr>
+                <tr>
+                  <th scope="row">Account needed</th>
+                  <td class="yes">Optional</td>
+                  <td class="no">Almost always</td>
+                </tr>
+                <tr>
+                  <th scope="row">Offline playback</th>
+                  <td class="yes">Local library, always</td>
+                  <td class="no">Cached or paid tier</td>
+                </tr>
+                <tr>
+                  <th scope="row">Equalizer</th>
+                  <td class="yes">10-band parametric</td>
+                  <td class="no">3 to 5 presets, if any</td>
+                </tr>
+                <tr>
+                  <th scope="row">Synced lyrics</th>
+                  <td class="yes">Included, with translation</td>
+                  <td class="no">Behind a subscription</td>
+                </tr>
+                <tr>
+                  <th scope="row">Playback speed</th>
+                  <td class="yes">0.5× to 2.0×</td>
+                  <td class="no">Rarely available</td>
+                </tr>
+                <tr>
+                  <th scope="row">Source code</th>
+                  <td class="yes">Public on GitHub</td>
+                  <td class="no">Closed</td>
+                </tr>
+                <tr>
+                  <th scope="row">Price</th>
+                  <td class="yes">Free, forever</td>
+                  <td class="no">Free with ads, or monthly</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Getting started -->
+      <section class="section start" id="start">
+        <div class="container">
+          <span class="section-tag">GETTING STARTED</span>
+          <h2 class="section-title">Three steps and you're listening</h2>
+
+          <ol class="steps">
+            <li class="step">
+              <span class="step-index">01</span>
+              <h3>Download the APK</h3>
+              <p>
+                Grab the latest signed build from the download page. The SHA-256 checksum is
+                published right beside it so you can verify the file.
+              </p>
+            </li>
+            <li class="step">
+              <span class="step-index">02</span>
+              <h3>Allow the install</h3>
+              <p>
+                Android asks once for permission to install apps from your browser. Approve it,
+                then tap the downloaded file to install.
+              </p>
+            </li>
+            <li class="step">
+              <span class="step-index">03</span>
+              <h3>Open and listen</h3>
+              <p>
+                Pick a folder, let the library scan, and press play. No sign-up, no onboarding
+                quiz, no permission begging.
+              </p>
+            </li>
+          </ol>
+
+          <p class="section-note">
+            New versions arrive as an in-app prompt: SONARA downloads the APK, verifies it, and
+            hands it to the system installer without sending you to a browser.
+          </p>
+        </div>
+      </section>
+
+      <!-- Roadmap -->
+      <section class="section roadmap" id="roadmap">
+        <div class="container">
+          <span class="section-tag">ROADMAP</span>
+          <h2 class="section-title">Where the project is heading</h2>
+
+          <div class="grid grid--3" style="margin-top: 2rem;">
+            <article class="card roadmap-card">
+              <span class="pill pill--live">Shipping now</span>
+              <h3>Solid playback</h3>
+              <ul class="check-list">
+                <li>Immersive now playing</li>
+                <li>Synced lyrics</li>
+                <li>10-band equalizer</li>
+                <li>In-app updates</li>
+                <li>Indonesian interface</li>
+              </ul>
+            </article>
+            <article class="card roadmap-card">
+              <span class="pill">Next up</span>
+              <h3>Library depth</h3>
+              <ul class="check-list">
+                <li>Smarter sorting and filters</li>
+                <li>Import and export playlists</li>
+                <li>Better album artist handling</li>
+                <li>Sleep timer refinements</li>
+              </ul>
+            </article>
+            <article class="card roadmap-card">
+              <span class="pill">Exploring</span>
+              <h3>Beyond the player</h3>
+              <ul class="check-list">
+                <li>Android Auto polish</li>
+                <li>Wear OS companion</li>
+                <li>Desktop-grade audio tools</li>
+                <li>More languages</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="section faq" id="faq">
+        <div class="container">
+          <span class="section-tag">FAQ</span>
+          <h2 class="section-title">Questions people actually ask</h2>
+
+          <div class="faq-list" style="margin-top: 2rem;">
+            <details class="faq-item">
+              <summary>Is SONARA really free?</summary>
+              <p>
+                Yes. There is no paid tier, no trial, and no feature behind a paywall. The project
+                is GPL-3.0, so it stays free.
+              </p>
+            </details>
+            <details class="faq-item">
+              <summary>Do I need an account?</summary>
+              <p>
+                No. You can listen completely anonymously. Signing in only matters if you want
+                synced features that rely on an online account.
+              </p>
+            </details>
+            <details class="faq-item">
+              <summary>Where does the music come from?</summary>
+              <p>
+                From your own device. SONARA scans the audio files you already own; it does not
+                bundle a catalogue or stream anything you did not add.
+              </p>
+            </details>
+            <details class="faq-item">
+              <summary>Why is the APK not on the Play Store?</summary>
+              <p>
+                SONARA is distributed directly by the developer. That keeps the release honest,
+                the signature verifiable, and the project free of store fees.
+              </p>
+            </details>
+            <details class="faq-item">
+              <summary>How do updates work?</summary>
+              <p>
+                The app checks for a new release, shows a prompt at most once a day, and installs
+                the APK itself. A “New Update” chip stays in the top bar until you update.
+              </p>
+            </details>
+            <details class="faq-item">
+              <summary>Is my listening data collected?</summary>
+              <p>
+                No. There is no analytics SDK, no crash telemetry, and no account tracking. Your
+                library stays on your device.
+              </p>
+            </details>
+            <details class="faq-item">
+              <summary>Can I build it myself?</summary>
+              <p>
+                Yes. Clone the repository, run the Gradle build, and you get the same FOSS flavour
+                that ships here.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- Support -->
+      <section class="section support" id="support">
+        <div class="container support-card">
+          <div class="support-copy">
+            <span class="section-tag">SUPPORT</span>
+            <h2 class="section-title">Keep an ad-free player alive</h2>
+            <p class="section-desc">
+              SONARA has no ads and no paid tier, so it runs on time and coffee. If it earned a
+              place on your home screen, you can tip with QRIS right from the app: Settings →
+              About → Support the developer.
+            </p>
+            <ul class="check-list">
+              <li>One-time tip, no subscription</li>
+              <li>Nothing gets locked or unlocked</li>
+              <li>Everything goes back into the project</li>
+            </ul>
+          </div>
+
+          <figure class="support-qr">
+            <img
+              src="/images/qris.png"
+              alt="QRIS code to support SONARA development"
+              width="240"
+              height="240"
+              loading="lazy"
+            />
+            <figcaption>Scan with any QRIS-enabled bank app or e-wallet</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- Community -->
+      <section class="section community" id="community">
+        <div class="container">
+          <span class="section-tag">STAY CLOSE</span>
+          <h2 class="section-title">Follow the project</h2>
+
+          <div class="grid grid--4" style="margin-top: 2rem;">
+            <a class="link-card" href="https://github.com/Arkrega/Sonara" target="_blank" rel="noopener noreferrer">
+              <h3>Source code</h3>
+              <p>Read every line, open a pull request, or fork it for yourself.</p>
+              <span class="link-card-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="link-card" href="https://github.com/Arkrega/Sonara/issues" target="_blank" rel="noopener noreferrer">
+              <h3>Issues</h3>
+              <p>Found a bug or have a request? Report it on the tracker.</p>
+              <span class="link-card-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="link-card" href="https://github.com/Arkrega/Sonara/releases" target="_blank" rel="noopener noreferrer">
+              <h3>Releases</h3>
+              <p>Every signed APK and checksum lives here, version by version.</p>
+              <span class="link-card-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="link-card" href="/changelog">
+              <h3>Changelog</h3>
+              <p>What changed, when it changed, and why it changed.</p>
+              <span class="link-card-arrow" aria-hidden="true">→</span>
+            </a>
           </div>
         </div>
       </section>
@@ -397,6 +791,8 @@
       </div>
     </footer>
 
+    <script src="/assets/js/lang.js"></script>
+    <script src="/assets/js/i18n.js"></script>
     <script src="/assets/js/nav.js"></script>
   </body>
 </html>
