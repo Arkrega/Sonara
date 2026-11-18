@@ -1,3 +1,13 @@
+---v1.3.3
+# SONARA 1.3.3
+
+The player's home on the web now lives at sonara.my.id.
+
+## Highlights
+- About opens the official site at https://sonara.my.id
+- The site is now available in Indonesian and English
+- Version bump only; no playback, library, or layout changes
+
 ---v1.3.2
 # SONARA 1.3.2
 
