@@ -24,6 +24,7 @@ import com.metrolist.innertubex.extraction.YtConfigParserImpl
 import com.metrolist.innertubex.extraction.generateClientPlaybackNonce
 import com.metrolist.innertubex.extraction.strategy.PoTokenProviderKind
 import com.sonara.music.constants.AudioQuality
+import com.sonara.music.constants.VideoQuality
 import com.sonara.music.utils.potoken.PoTokenGenerator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
@@ -36,6 +37,8 @@ object InnerTubeXPlayer {
     private const val TAG = "InnerTubeXPlayer"
     private const val STREAM_CLIENT_FAILURE_TTL_MS = 5 * 60 * 1000L
     private const val DEFAULT_STREAM_TTL_SECONDS = 5 * 60
+    private const val VIDEO_CACHE_SAFETY_MARGIN_MS = 30 * 1000L
+    private const val MAX_VIDEO_CACHE_ENTRIES = 64
 
     @Volatile
     private var applicationContext: Context? = null
@@ -45,6 +48,9 @@ object InnerTubeXPlayer {
 
     private val bundleMutex = Mutex()
     private val streamClientFailures = java.util.concurrent.ConcurrentHashMap<String, FailedStreamClients>()
+    private val videoStreamClientFailures = java.util.concurrent.ConcurrentHashMap<String, FailedStreamClients>()
+    private val videoStreamCache = java.util.concurrent.ConcurrentHashMap<String, CachedVideoPlaybackData>()
+    private val videoExtractionMutexes = java.util.concurrent.ConcurrentHashMap<String, Mutex>()
 
     @Synchronized
     fun initialize(context: Context) {
@@ -104,6 +110,91 @@ object InnerTubeXPlayer {
             Result.failure(error)
         }
 
+    suspend fun videoStreamForPlayback(
+        videoId: String,
+        videoQuality: VideoQuality,
+        connectivityManager: ConnectivityManager,
+        contentHints: ContentHints = ContentHints(),
+        allowBoundedRange: Boolean = true,
+        bypassCache: Boolean = false,
+    ): Result<VideoPlaybackData> {
+        val maxVideoHeight = videoQuality.resolveMaxHeight(connectivityManager.isActiveNetworkMetered)
+        val cacheKey = "$videoId@$maxVideoHeight"
+        val nowMs = System.currentTimeMillis()
+        if (!bypassCache) {
+            videoStreamCache[cacheKey]?.takeIf { it.expiresAtMs - VIDEO_CACHE_SAFETY_MARGIN_MS > nowMs }?.let {
+                return Result.success(it.data)
+            }
+        }
+        val keyMutex = videoExtractionMutexes.computeIfAbsent(cacheKey) { Mutex() }
+        return keyMutex.withLock {
+            val lockedNowMs = System.currentTimeMillis()
+            if (!bypassCache) {
+                videoStreamCache[cacheKey]?.takeIf { it.expiresAtMs - VIDEO_CACHE_SAFETY_MARGIN_MS > lockedNowMs }?.let {
+                    return@withLock Result.success(it.data)
+                }
+            }
+            try {
+                val hints =
+                    contentHints.copy(
+                        wantVideo = true,
+                        maxVideoHeight = maxVideoHeight,
+                    ).withStreamCapabilities(
+                        allowHls = false,
+                        allowSabr = false,
+                        allowBoundedRange = allowBoundedRange,
+                    )
+                val excludedClients = failedVideoStreamClients(videoId).toMutableSet()
+                var resolvedStream: ExtractedStream? = null
+                for (attempt in 0 until 3) {
+                    val candidate =
+                        bundle().extractor.extract(
+                            videoId = videoId,
+                            hints = hints,
+                            excludedClients = excludedClients.toSet(),
+                            audioQuality = InnerTubeXAudioQuality.AUTO,
+                            clientPlaybackNonce = generateClientPlaybackNonce(),
+                        )
+                    if (candidate != null && candidate.sabrVideoBootstrap == null && !candidate.videoUrl.isNullOrBlank()) {
+                        resolvedStream = candidate
+                        break
+                    }
+                    val client = candidate?.clientName
+                    if (client.isNullOrBlank() || !excludedClients.add(client)) {
+                        break
+                    }
+                }
+                val stream = requireNotNull(resolvedStream) { "InnerTubeX returned no playable video stream" }
+                val playbackData = stream.toVideoPlaybackData()
+                val expiresAtMs = lockedNowMs + playbackData.streamExpiresInSeconds.coerceAtLeast(1) * 1000L
+                if (videoStreamCache.size >= MAX_VIDEO_CACHE_ENTRIES) {
+                    videoStreamCache.entries
+                        .filter { it.value.expiresAtMs <= lockedNowMs }
+                        .map { it.key }
+                        .forEach { videoStreamCache.remove(it) }
+                    if (videoStreamCache.size >= MAX_VIDEO_CACHE_ENTRIES) {
+                        videoStreamCache.keys.firstOrNull()?.let { videoStreamCache.remove(it) }
+                    }
+                }
+                videoStreamCache[cacheKey] = CachedVideoPlaybackData(playbackData, expiresAtMs)
+                Result.success(playbackData)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: StreamResolveException) {
+                val cause = error.cause
+                Result.failure(
+                    if (error.reason == StreamResolveException.Reason.NETWORK && cause != null) {
+                        cause
+                    } else {
+                        error
+                    },
+                )
+            } catch (error: Exception) {
+                Result.failure(error)
+            }
+        }
+    }
+
     internal fun markStreamClientFailed(
         videoId: String,
         clientName: String,
@@ -114,8 +205,26 @@ object InnerTubeXPlayer {
         }
     }
 
+    internal fun markVideoStreamClientFailed(
+        videoId: String,
+        clientName: String,
+        nowMs: Long = System.currentTimeMillis(),
+    ) {
+        invalidateVideoStreamCache(videoId)
+        videoStreamClientFailures.compute(videoId) { _, failures ->
+            FailedStreamClients(failures?.clientNames.orEmpty() + clientName, nowMs)
+        }
+    }
+
+    internal fun invalidateVideoStreamCache(videoId: String) {
+        val prefix = "$videoId@"
+        videoStreamCache.keys.filter { it.startsWith(prefix) }.forEach { videoStreamCache.remove(it) }
+    }
+
     fun clearStreamClientFailures() {
         streamClientFailures.clear()
+        videoStreamClientFailures.clear()
+        videoStreamCache.clear()
     }
 
     internal suspend fun <T : Any> resolveWithClientFallback(
@@ -151,12 +260,25 @@ object InnerTubeXPlayer {
         return failures.clientNames
     }
 
+    internal fun failedVideoStreamClients(
+        videoId: String,
+        nowMs: Long = System.currentTimeMillis(),
+    ): Set<String> {
+        val failures = videoStreamClientFailures[videoId] ?: return emptySet()
+        if ((nowMs - failures.failedAtMs) !in 0 until STREAM_CLIENT_FAILURE_TTL_MS) {
+            videoStreamClientFailures.remove(videoId, failures)
+            return emptySet()
+        }
+        return failures.clientNames
+    }
+
     private suspend fun bundle(): ExtractionBundle {
         val transport = YouTube.extractionTransport()
         currentBundle?.takeIf { it.transportGeneration == transport.generation }?.let { return it }
         return bundleMutex.withLock {
             val latestTransport = YouTube.extractionTransport()
             currentBundle?.takeIf { it.transportGeneration == latestTransport.generation }?.let { return@withLock it }
+            videoStreamCache.clear()
             try {
                 currentBundle?.cipherService?.dispose()
             } catch (error: CancellationException) {
@@ -252,6 +374,28 @@ object InnerTubeXPlayer {
         val useRangeChunks: Boolean,
     )
 
+    data class VideoPlaybackData(
+        val videoId: String,
+        val streamUrl: String,
+        val width: Int?,
+        val height: Int?,
+        val mimeType: String?,
+        val codecs: String?,
+        val contentLengthBytes: Long?,
+        val streamExpiresInSeconds: Int,
+        val streamClient: String,
+        val streamHeaders: Map<String, String>,
+        val requireBoundedRange: Boolean,
+        val rangeChunkSizeBytes: Long,
+        val useRangeChunks: Boolean,
+        val musicVideoType: String?,
+    )
+
+    private data class CachedVideoPlaybackData(
+        val data: VideoPlaybackData,
+        val expiresAtMs: Long,
+    )
+
     private data class ExtractionBundle(
         val transportGeneration: Long,
         val cipherService: YouTubeCipherService,
@@ -300,6 +444,33 @@ object InnerTubeXPlayer {
                     this@withEmbeddedConfigFallback.fetchEmbeddedConfig(videoId, useLoginCookies = false)
                 }
         }
+
+    internal fun VideoQuality.resolveMaxHeight(isMetered: Boolean): Int =
+        if (isMetered) maxHeightCellular else maxHeightWifi
+
+    private fun ExtractedStream.toVideoPlaybackData(): VideoPlaybackData {
+        val resolvedVideoUrl = requireNotNull(videoUrl?.takeIf { it.isNotBlank() }) { "Missing video stream URL" }
+        return VideoPlaybackData(
+            videoId = videoId,
+            streamUrl = resolvedVideoUrl,
+            width = videoWidth,
+            height = videoHeight,
+            mimeType = videoMimeType,
+            codecs = videoCodecs,
+            contentLengthBytes = videoContentLengthBytes,
+            streamExpiresInSeconds =
+                expiresAt
+                    ?.let { ((it.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds()) / 1000L).toInt() }
+                    ?.coerceAtLeast(1)
+                    ?: DEFAULT_STREAM_TTL_SECONDS,
+            streamClient = clientName,
+            streamHeaders = headers,
+            requireBoundedRange = this.requireBoundedRange,
+            rangeChunkSizeBytes = this.rangeChunkSizeBytes,
+            useRangeChunks = this.useRangeChunks,
+            musicVideoType = mediaMetadata?.musicVideoType,
+        )
+    }
 
     private fun AudioQuality.toInnerTubeX(connectivityManager: ConnectivityManager): InnerTubeXAudioQuality =
         when (this) {

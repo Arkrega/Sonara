@@ -968,4 +968,14 @@
     <string name="sonara_profile_version">Versi</string>
     <string name="sonara_profile_update">PEMBARUAN</string>
     <string name="sonara_profile_up_to_date">TERBARU</string>
+    <string name="video_playback">Putar video musik</string>
+    <string name="video_playback_desc">Otomatis memutar video di pemutar untuk konten bertipe video</string>
+    <string name="video_quality">Kualitas video</string>
+    <string name="video_quality_auto">Otomatis (720p Wi-Fi / 480p seluler)</string>
+    <string name="video_quality_low">Rendah (360p)</string>
+    <string name="video_quality_medium">Sedang (480p)</string>
+    <string name="video_quality_high">Tinggi (720p)</string>
+    <string name="video_quality_very_high">Full HD (1080p)</string>
+    <string name="player_mode_audio">Audio</string>
+    <string name="player_mode_video">Video</string>
 </resources>

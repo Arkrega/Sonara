@@ -1,3 +1,14 @@
+---v1.4.1
+# SONARA 1.4.1
+
+Native in-player music video playback for YouTube Music video tracks with instant Audio/Video switching and adaptive quality control.
+
+## Highlights
+- Video tracks now play smoothly inside a rounded 16:9 widescreen frame in the player instead of staying frozen on the thumbnail
+- Added a quick Audio / Video segmented toggle right inside the player so you can switch between video and album art anytime without interrupting audio playback
+- Added Play music videos toggle and Video quality selector (Auto 720p Wi-Fi / 480p cellular, 360p, 480p, 720p, 1080p) under Player settings
+- Automatically pauses and releases video decoding when minimized, in Lyrics/Queue view, or when the screen turns off while keeping background audio uninterrupted
+
 ---v1.4.0
 # SONARA 1.4.0
 

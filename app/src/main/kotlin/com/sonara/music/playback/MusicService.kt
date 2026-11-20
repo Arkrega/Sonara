@@ -97,6 +97,7 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.sonara.innertube.YouTube
 import com.sonara.innertube.models.SongItem
 import com.sonara.innertube.models.WatchEndpoint
+import com.sonara.innertube.models.WatchEndpoint.WatchEndpointMusicSupportedConfigs.WatchEndpointMusicConfig.Companion.MUSIC_VIDEO_TYPE_ATV
 import com.metrolist.innertubex.extraction.ContentHints
 import com.sonara.lastfm.LastFM
 import com.sonara.music.MainActivity
@@ -1703,17 +1704,31 @@ class MusicService :
                 )?.lengthSeconds?.toInt()
                 ?: -1
 
+        val resolvedMusicVideoType =
+            playbackData?.videoDetails?.musicVideoType
+                ?: mediaMetadata?.musicVideoType
+        val resolvedIsVideo =
+            when {
+                resolvedMusicVideoType != null -> resolvedMusicVideoType != MUSIC_VIDEO_TYPE_ATV
+                else -> song?.song?.isVideo ?: false
+            }
+
         database.query {
             if (mediaMetadata != null && (song == null || song.orderedArtists.isEmpty())) {
-                insert(mediaMetadata.copy(duration = duration))
+                insert(
+                    mediaMetadata.copy(
+                        duration = duration,
+                        musicVideoType = resolvedMusicVideoType ?: mediaMetadata.musicVideoType,
+                    ),
+                )
             }
             if (song != null) {
                 var updatedSong = song.song
                 if (song.song.duration == -1) {
                     updatedSong = updatedSong.copy(duration = duration)
                 }
-                if (mediaMetadata != null && song.song.isVideo != mediaMetadata.isVideoSong) {
-                    updatedSong = updatedSong.copy(isVideo = mediaMetadata.isVideoSong)
+                if (song.song.isVideo != resolvedIsVideo) {
+                    updatedSong = updatedSong.copy(isVideo = resolvedIsVideo)
                 }
                 if (updatedSong != song.song) {
                     update(updatedSong)

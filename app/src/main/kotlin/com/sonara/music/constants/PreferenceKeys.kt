@@ -117,6 +117,20 @@ enum class AudioQuality {
     HIGH,
 }
 
+val VideoPlaybackEnabledKey = booleanPreferencesKey("videoPlaybackEnabled")
+val VideoQualityKey = stringPreferencesKey("videoQuality")
+
+enum class VideoQuality(
+    val maxHeightWifi: Int,
+    val maxHeightCellular: Int,
+) {
+    AUTO(maxHeightWifi = 720, maxHeightCellular = 480),
+    LOW(maxHeightWifi = 360, maxHeightCellular = 360),
+    MEDIUM(maxHeightWifi = 480, maxHeightCellular = 480),
+    HIGH(maxHeightWifi = 720, maxHeightCellular = 720),
+    VERY_HIGH(maxHeightWifi = 1080, maxHeightCellular = 1080),
+}
+
 val AudioOffload = booleanPreferencesKey("enableOffload")
 val AudioTrackPlaybackParamsKey = booleanPreferencesKey("audioTrackPlaybackParams")
 

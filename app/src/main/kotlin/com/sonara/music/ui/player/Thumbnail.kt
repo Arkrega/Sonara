@@ -6,7 +6,9 @@
 package com.sonara.music.ui.player
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -40,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -82,6 +85,9 @@ import com.sonara.music.constants.PlayerHorizontalPadding
 import com.sonara.music.constants.SeekExtraSeconds
 import com.sonara.music.constants.SwipeThumbnailKey
 import com.sonara.music.constants.ThumbnailCornerRadius
+import com.sonara.music.constants.VideoQuality
+import com.sonara.music.constants.VideoQualityKey
+import com.sonara.music.db.entities.SongEntity
 import com.sonara.music.listentogether.RoomRole
 import com.sonara.music.ui.component.CastButton
 import com.sonara.music.ui.theme.LocalRegaColors
@@ -94,6 +100,8 @@ import kotlinx.coroutines.delay
 @Immutable
 data class ThumbnailDimensions(
     val itemWidth: Dp,
+    val containerWidth: Dp,
+    val containerHeight: Dp,
     val containerSize: Dp,
     val thumbnailSize: Dp,
     val cornerRadius: Dp
@@ -119,6 +127,8 @@ private fun calculateThumbnailDimensions(
     ).coerceAtLeast(0.dp)
     return ThumbnailDimensions(
         itemWidth = containerWidth,
+        containerWidth = containerWidth,
+        containerHeight = containerHeight,
         containerSize = containerWidth,
         thumbnailSize = effectiveSize,
         cornerRadius = (effectiveSize * 0.08f).coerceIn(18.dp, 28.dp)
@@ -184,12 +194,16 @@ fun Thumbnail(
     isPlayerExpanded: () -> Boolean = { true },
     isLandscape: Boolean = false,
     isListenTogetherGuest: Boolean = false,
+    isVideoModeEnabled: Boolean = false,
+    isVideoHostVisible: Boolean = false,
+    onVideoStateChanged: (VideoPlaybackUiState) -> Unit = {},
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val context = LocalContext.current
     val layoutDirection = LocalLayoutDirection.current
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+    val currentSong by playerConnection.currentSong.collectAsStateWithLifecycle()
     val error by playerConnection.error.collectAsState()
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsStateWithLifecycle()
     val canSkipNext by playerConnection.canSkipNext.collectAsStateWithLifecycle()
@@ -198,6 +212,7 @@ fun Thumbnail(
     val swipeThumbnail = swipeThumbnailPref && !isListenTogetherGuest
     val hidePlayerThumbnail by rememberPreference(HidePlayerThumbnailKey, false)
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
+    val videoQuality by rememberEnumPreference(VideoQualityKey, defaultValue = VideoQuality.AUTO)
     val playerBackground by rememberEnumPreference(
         key = PlayerBackgroundStyleKey,
         defaultValue = PlayerBackgroundStyle.DEFAULT
@@ -268,7 +283,12 @@ fun Thumbnail(
     Box(
         modifier = modifier
             .graphicsLayer {
-                compositingStrategy = CompositingStrategy.Offscreen
+                compositingStrategy =
+                    if (isVideoModeEnabled && !hidePlayerThumbnail) {
+                        CompositingStrategy.Auto
+                    } else {
+                        CompositingStrategy.Offscreen
+                    }
             }
     ) {
         AnimatedVisibility(
@@ -330,11 +350,7 @@ fun Thumbnail(
                         rows = GridCells.Fixed(1),
                         flingBehavior = rememberSnapFlingBehavior(thumbnailSnapLayoutInfoProvider),
                         userScrollEnabled = isScrollEnabled,
-                        modifier = if (isLandscape) {
-                            Modifier.size(dimensions.thumbnailSize + (PlayerHorizontalPadding * 2))
-                        } else {
-                            Modifier.fillMaxSize()
-                        }
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         items(
                             items = mediaItems,
@@ -355,7 +371,12 @@ fun Thumbnail(
                                 isLandscape = isLandscape,
                                 isListenTogetherGuest = isListenTogetherGuest,
                                 currentMediaId = mediaMetadata?.id,
-                                currentMediaThumbnail = mediaMetadata?.thumbnailUrl
+                                currentMediaThumbnail = mediaMetadata?.thumbnailUrl,
+                                currentSongEntity = currentSong?.song,
+                                isVideoModeEnabled = isVideoModeEnabled,
+                                isVideoHostVisible = isVideoHostVisible,
+                                videoQuality = videoQuality,
+                                onVideoStateChanged = onVideoStateChanged,
                             )
                         }
                     }
@@ -396,12 +417,52 @@ private fun ThumbnailItem(
     isListenTogetherGuest: Boolean = false,
     currentMediaId: String? = null,
     currentMediaThumbnail: String? = null,
+    currentSongEntity: SongEntity? = null,
+    isVideoModeEnabled: Boolean = false,
+    isVideoHostVisible: Boolean = false,
+    videoQuality: VideoQuality = VideoQuality.AUTO,
+    onVideoStateChanged: (VideoPlaybackUiState) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val incrementalSeekSkipEnabled by rememberPreference(SeekExtraSeconds, defaultValue = false)
     var skipMultiplier by remember { mutableIntStateOf(1) }
     var lastTapTime by remember { mutableLongStateOf(0L) }
     val isCurrent = currentMediaId == null || item.mediaId == currentMediaId
+    val showVideoFrame = isCurrent && isVideoModeEnabled && !hidePlayerThumbnail
+    var videoAspectRatio by remember(item.mediaId) { mutableFloatStateOf(16f / 9f) }
+    var videoUiState by remember(item.mediaId, showVideoFrame) { mutableStateOf(VideoPlaybackUiState.IDLE) }
+
+    val clampedVideoRatio = videoAspectRatio.coerceIn(0.75f, 2.1f)
+    val videoHorizontalPadding = if (isLandscape) 12.dp else 16.dp
+    val maxVideoWidth = (dimensions.containerWidth - (videoHorizontalPadding * 2)).coerceAtLeast(120.dp)
+    val maxVideoHeight = (dimensions.containerHeight - 12.dp).coerceAtLeast(100.dp)
+    val fittedVideoWidth = minOf(maxVideoWidth, maxVideoHeight * clampedVideoRatio)
+    val fittedVideoHeight = (fittedVideoWidth / clampedVideoRatio).coerceAtMost(maxVideoHeight)
+
+    val targetCardWidth = if (showVideoFrame) fittedVideoWidth else dimensions.thumbnailSize
+    val targetCardHeight = if (showVideoFrame) fittedVideoHeight else dimensions.thumbnailSize
+    val targetCornerRadius =
+        if (showVideoFrame) {
+            (minOf(fittedVideoWidth, fittedVideoHeight) * 0.085f).coerceIn(14.dp, 22.dp)
+        } else {
+            dimensions.cornerRadius
+        }
+
+    val cardWidth by animateDpAsState(
+        targetValue = targetCardWidth,
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 360f),
+        label = "artworkWidth",
+    )
+    val cardHeight by animateDpAsState(
+        targetValue = targetCardHeight,
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 360f),
+        label = "artworkHeight",
+    )
+    val cardCornerRadius by animateDpAsState(
+        targetValue = targetCornerRadius,
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 360f),
+        label = "artworkCornerRadius",
+    )
     val artworkScale by animateFloatAsState(
         targetValue = if (isCurrent) 1f else 0.9f,
         animationSpec = tween(durationMillis = 260),
@@ -412,21 +473,23 @@ private fun ThumbnailItem(
         animationSpec = tween(durationMillis = 260),
         label = "artworkAlpha",
     )
+    val thumbnailOverlayAlpha by animateFloatAsState(
+        targetValue = if (showVideoFrame && isVideoHostVisible && videoUiState == VideoPlaybackUiState.PLAYING) 0f else 1f,
+        animationSpec = tween(durationMillis = 260),
+        label = "thumbnailOverlayAlpha",
+    )
 
     Box(
         modifier = modifier
-            .then(
-                if (isLandscape) {
-                    Modifier.size(dimensions.thumbnailSize + (PlayerHorizontalPadding * 2))
-                } else {
-                    Modifier
-                        .width(dimensions.itemWidth)
-                        .fillMaxSize()
-                }
-            )
-            .padding(horizontal = PlayerHorizontalPadding)
+            .width(dimensions.itemWidth)
+            .fillMaxSize()
             .graphicsLayer {
-                compositingStrategy = CompositingStrategy.Offscreen
+                compositingStrategy =
+                    if (showVideoFrame) {
+                        CompositingStrategy.Auto
+                    } else {
+                        CompositingStrategy.Offscreen
+                    }
             }
             .pointerInput(Unit) {
                 detectTapGestures(
@@ -461,17 +524,17 @@ private fun ThumbnailItem(
             },
         contentAlignment = Alignment.Center
     ) {
-        val artworkShape = RoundedCornerShape(dimensions.cornerRadius)
+        val artworkShape = RoundedCornerShape(cardCornerRadius)
         Box(
             modifier = Modifier
-                .size(dimensions.thumbnailSize)
+                .size(width = cardWidth, height = cardHeight)
                 .graphicsLayer {
                     scaleX = artworkScale
                     scaleY = artworkScale
                     alpha = artworkAlpha
                 }
-                .blurToFocus(key = item.mediaId)
-                .artworkInteraction()
+                .blurToFocus(key = item.mediaId, enabled = !showVideoFrame)
+                .artworkInteraction(enabled = !showVideoFrame)
                 .shadow(
                     elevation = 14.dp,
                     shape = artworkShape,
@@ -494,10 +557,34 @@ private fun ThumbnailItem(
                     item.mediaMetadata.artworkUri?.toString()
                 }
 
-                ThumbnailImage(
-                    artworkUri = artworkUriToUse,
-                    cropArtwork = cropAlbumArt
-                )
+                if (showVideoFrame) {
+                    SyncedVideoPlayerSurface(
+                        videoId = item.mediaId,
+                        isExplicit = currentSongEntity?.explicit,
+                        isUploaded = currentSongEntity?.isUploaded,
+                        mainPlayer = playerConnection.player,
+                        videoQuality = videoQuality,
+                        isActive = showVideoFrame && isVideoHostVisible,
+                        onVideoAspectRatioChanged = { ratio ->
+                            videoAspectRatio = ratio
+                        },
+                        onVideoStateChanged = { state ->
+                            videoUiState = state
+                            onVideoStateChanged(state)
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                if (thumbnailOverlayAlpha > 0.01f) {
+                    ThumbnailImage(
+                        artworkUri = artworkUriToUse,
+                        cropArtwork = if (showVideoFrame) true else cropAlbumArt,
+                        modifier = Modifier.graphicsLayer {
+                            alpha = thumbnailOverlayAlpha
+                        },
+                    )
+                }
             }
             
             CastButton(

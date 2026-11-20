@@ -23,6 +23,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
@@ -82,6 +83,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
@@ -179,6 +181,7 @@ import com.sonara.music.constants.SliderStyleKey
 import com.sonara.music.constants.SquigglySliderKey
 import com.sonara.music.constants.ThumbnailCornerRadius
 import com.sonara.music.constants.UseNewPlayerDesignKey
+import com.sonara.music.constants.VideoPlaybackEnabledKey
 import com.sonara.music.db.entities.LyricsEntity
 import com.sonara.music.extensions.metadata
 import com.sonara.music.extensions.togglePlayPause
@@ -265,6 +268,18 @@ fun BottomSheetPlayer(
     val (hidePlayerThumbnail, onHidePlayerThumbnailChange) = rememberPreference(HidePlayerThumbnailKey, false)
     val (hideStatusBarOnFullscreen) = rememberPreference(HideStatusBarOnFullscreenKey, false)
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
+    val videoPlaybackEnabled by rememberPreference(VideoPlaybackEnabledKey, defaultValue = true)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isPlayerForeground by remember(lifecycleOwner) {
+        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+    }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, _ ->
+            isPlayerForeground = lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     var viewMode by rememberSaveable {
         mutableStateOf(NowPlayingViewMode.MAIN)
@@ -1312,6 +1327,22 @@ fun BottomSheetPlayer(
             }
         }
 
+        val isCurrentTrackVideo = remember(mediaMetadata, currentSong?.song) {
+            isVideoTrack(mediaMetadata, currentSong?.song)
+        }
+        var videoModeOverride by remember(mediaMetadata?.id, videoPlaybackEnabled) {
+            mutableStateOf<Boolean?>(null)
+        }
+        val isVideoModeActive = isCurrentTrackVideo && (videoModeOverride ?: videoPlaybackEnabled)
+        var videoUiState by remember(mediaMetadata?.id, isVideoModeActive) {
+            mutableStateOf(VideoPlaybackUiState.IDLE)
+        }
+        val isVideoHostVisible =
+            isPlayerForeground &&
+                !isCasting &&
+                viewMode == NowPlayingViewMode.MAIN &&
+                (state.isExpanded || state.progress > 0.25f)
+
         CompositionLocalProvider(LocalRegaBackdrop provides playerBackdropState) {
             AnimatedContent(
                 targetState = viewMode,
@@ -1376,23 +1407,49 @@ fun BottomSheetPlayer(
                                             .fillMaxSize()
                                             .padding(bottom = 8.dp),
                                     ) {
-                                        Box(
-                                            contentAlignment = Alignment.Center,
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center,
                                             modifier = Modifier
                                                 .weight(0.95f)
                                                 .fillMaxSize()
                                                 .nestedScroll(state.preUpPostDownNestedScrollConnection),
                                         ) {
-                                            val currentSliderPosition by rememberUpdatedState(sliderPosition)
-                                            val sliderPositionProvider = remember { { currentSliderPosition } }
-                                            val isExpandedProvider = remember(state) { { state.isExpanded } }
-                                            Thumbnail(
-                                                sliderPositionProvider = sliderPositionProvider,
-                                                modifier = Modifier.animateContentSize(),
-                                                isPlayerExpanded = isExpandedProvider,
-                                                isLandscape = true,
-                                                isListenTogetherGuest = isListenTogetherGuest,
-                                            )
+                                            AnimatedVisibility(
+                                                visible = isCurrentTrackVideo && !hidePlayerThumbnail,
+                                                enter = fadeIn() + expandVertically(),
+                                                exit = fadeOut() + shrinkVertically(),
+                                            ) {
+                                                PlayerVideoModeToggle(
+                                                    isVideoMode = isVideoModeActive,
+                                                    isLoading = videoUiState == VideoPlaybackUiState.LOADING,
+                                                    textColor = TextBackgroundColor,
+                                                    onSelectVideoMode = { enableVideo ->
+                                                        videoModeOverride = enableVideo
+                                                    },
+                                                    modifier = Modifier.padding(bottom = 6.dp),
+                                                )
+                                            }
+                                            Box(
+                                                contentAlignment = Alignment.Center,
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .fillMaxWidth(),
+                                            ) {
+                                                val currentSliderPosition by rememberUpdatedState(sliderPosition)
+                                                val sliderPositionProvider = remember { { currentSliderPosition } }
+                                                val isExpandedProvider = remember(state) { { state.isExpanded } }
+                                                Thumbnail(
+                                                    sliderPositionProvider = sliderPositionProvider,
+                                                    modifier = Modifier.animateContentSize(),
+                                                    isPlayerExpanded = isExpandedProvider,
+                                                    isLandscape = true,
+                                                    isListenTogetherGuest = isListenTogetherGuest,
+                                                    isVideoModeEnabled = isVideoModeActive,
+                                                    isVideoHostVisible = isVideoHostVisible,
+                                                    onVideoStateChanged = { videoUiState = it },
+                                                )
+                                            }
                                         }
 
                                         BoxWithConstraints(
@@ -1424,6 +1481,8 @@ fun BottomSheetPlayer(
                                     val coverSize = (maxWidth - 48.dp)
                                         .coerceAtMost(if (isCompactHeight) 240.dp else 320.dp)
                                         .coerceAtLeast(160.dp)
+                                    val videoIdealHeight =
+                                        (((maxWidth - 48.dp) * 9f / 16f) + 20.dp).coerceIn(170.dp, coverSize)
                                     val scrollState = rememberScrollState()
                                     val coverPx = with(LocalDensity.current) { coverSize.toPx() }
 
@@ -1469,12 +1528,33 @@ fun BottomSheetPlayer(
                                             val currentSliderPosition by rememberUpdatedState(sliderPosition)
                                             val sliderPositionProvider = remember { { currentSliderPosition } }
                                             val isExpandedProvider = remember(state) { { state.isExpanded } }
+                                            val artworkContainerHeight by animateDpAsState(
+                                                targetValue = if (isVideoModeActive && !hidePlayerThumbnail) videoIdealHeight else coverSize,
+                                                animationSpec = spring(dampingRatio = 0.85f, stiffness = 360f),
+                                                label = "artworkContainerHeight",
+                                            )
+
+                                            AnimatedVisibility(
+                                                visible = isCurrentTrackVideo && !hidePlayerThumbnail,
+                                                enter = fadeIn() + expandVertically(),
+                                                exit = fadeOut() + shrinkVertically(),
+                                            ) {
+                                                PlayerVideoModeToggle(
+                                                    isVideoMode = isVideoModeActive,
+                                                    isLoading = videoUiState == VideoPlaybackUiState.LOADING,
+                                                    textColor = TextBackgroundColor,
+                                                    onSelectVideoMode = { enableVideo ->
+                                                        videoModeOverride = enableVideo
+                                                    },
+                                                    modifier = Modifier.padding(top = 2.dp, bottom = 6.dp),
+                                                )
+                                            }
 
                                             Box(
                                                 contentAlignment = Alignment.Center,
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .height(coverSize)
+                                                    .height(artworkContainerHeight)
                                                     .graphicsLayer {
                                                         val shrink =
                                                             (scrollState.value / coverPx).coerceIn(0f, 1f)
@@ -1492,6 +1572,9 @@ fun BottomSheetPlayer(
                                                         .nestedScroll(state.preUpPostDownNestedScrollConnection),
                                                     isPlayerExpanded = isExpandedProvider,
                                                     isListenTogetherGuest = isListenTogetherGuest,
+                                                    isVideoModeEnabled = isVideoModeActive,
+                                                    isVideoHostVisible = isVideoHostVisible,
+                                                    onVideoStateChanged = { videoUiState = it },
                                                 )
                                             }
 

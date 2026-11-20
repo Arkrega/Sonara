@@ -1109,4 +1109,14 @@
     <string name="sonara_profile_version">Version</string>
     <string name="sonara_profile_update">UPDATE</string>
     <string name="sonara_profile_up_to_date">UP TO DATE</string>
+    <string name="video_playback">Play music videos</string>
+    <string name="video_playback_desc">Automatically play video in the player for video tracks</string>
+    <string name="video_quality">Video quality</string>
+    <string name="video_quality_auto">Auto (720p Wi-Fi / 480p cellular)</string>
+    <string name="video_quality_low">Low (360p)</string>
+    <string name="video_quality_medium">Medium (480p)</string>
+    <string name="video_quality_high">High (720p)</string>
+    <string name="video_quality_very_high">Full HD (1080p)</string>
+    <string name="player_mode_audio">Audio</string>
+    <string name="player_mode_video">Video</string>
 </resources>

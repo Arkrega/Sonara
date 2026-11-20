@@ -68,6 +68,9 @@ import com.sonara.music.constants.SkipSilenceInstantKey
 import com.sonara.music.constants.SkipSilenceKey
 import com.sonara.music.constants.StopMusicOnTaskClearKey
 import com.sonara.music.constants.VarispeedKey
+import com.sonara.music.constants.VideoPlaybackEnabledKey
+import com.sonara.music.constants.VideoQuality
+import com.sonara.music.constants.VideoQualityKey
 import com.sonara.music.ui.component.DefaultDialog
 import com.sonara.music.ui.component.EnumDialog
 import com.sonara.music.ui.component.IconButton
@@ -98,6 +101,14 @@ fun PlayerSettings(
     val (audioQuality, onAudioQualityChange) = rememberEnumPreference(
         AudioQualityKey,
         defaultValue = AudioQuality.AUTO
+    )
+    val (videoPlaybackEnabled, onVideoPlaybackEnabledChange) = rememberPreference(
+        VideoPlaybackEnabledKey,
+        defaultValue = true
+    )
+    val (videoQuality, onVideoQualityChange) = rememberEnumPreference(
+        VideoQualityKey,
+        defaultValue = VideoQuality.AUTO
     )
     val (crossfadeEnabled, onCrossfadeEnabledChange) = rememberPreference(
         CrossfadeEnabledKey,
@@ -227,6 +238,10 @@ fun PlayerSettings(
         mutableStateOf(false)
     }
 
+    var showVideoQualityDialog by remember {
+        mutableStateOf(false)
+    }
+
     var showLoudnessLevelDialog by remember {
         mutableStateOf(false)
     }
@@ -246,6 +261,28 @@ fun PlayerSettings(
                     AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
                     AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
                     AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
+                }
+            }
+        )
+    }
+
+    if (showVideoQualityDialog) {
+        EnumDialog(
+            onDismiss = { showVideoQualityDialog = false },
+            onSelect = {
+                onVideoQualityChange(it)
+                showVideoQualityDialog = false
+            },
+            title = stringResource(R.string.video_quality),
+            current = videoQuality,
+            values = VideoQuality.entries,
+            valueText = {
+                when (it) {
+                    VideoQuality.AUTO -> stringResource(R.string.video_quality_auto)
+                    VideoQuality.LOW -> stringResource(R.string.video_quality_low)
+                    VideoQuality.MEDIUM -> stringResource(R.string.video_quality_medium)
+                    VideoQuality.HIGH -> stringResource(R.string.video_quality_high)
+                    VideoQuality.VERY_HIGH -> stringResource(R.string.video_quality_very_high)
                 }
             }
         )
@@ -299,6 +336,43 @@ fun PlayerSettings(
                         )
                     },
                     onClick = { showAudioQualityDialog = true }
+                ))
+                add(Material3SettingsItem(
+                    icon = painterResource(R.drawable.smart_display),
+                    title = { Text(stringResource(R.string.video_playback)) },
+                    description = { Text(stringResource(R.string.video_playback_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = videoPlaybackEnabled,
+                            onCheckedChange = onVideoPlaybackEnabledChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (videoPlaybackEnabled) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { onVideoPlaybackEnabledChange(!videoPlaybackEnabled) }
+                ))
+                add(Material3SettingsItem(
+                    icon = painterResource(R.drawable.hd),
+                    title = { Text(stringResource(R.string.video_quality)) },
+                    description = {
+                        Text(
+                            when (videoQuality) {
+                                VideoQuality.AUTO -> stringResource(R.string.video_quality_auto)
+                                VideoQuality.LOW -> stringResource(R.string.video_quality_low)
+                                VideoQuality.MEDIUM -> stringResource(R.string.video_quality_medium)
+                                VideoQuality.HIGH -> stringResource(R.string.video_quality_high)
+                                VideoQuality.VERY_HIGH -> stringResource(R.string.video_quality_very_high)
+                            }
+                        )
+                    },
+                    onClick = { showVideoQualityDialog = true }
                 ))
                 add(Material3SettingsItem(
                     icon = painterResource(R.drawable.equalizer),
