@@ -1,3 +1,14 @@
+---v1.4.0
+# SONARA 1.4.0
+
+Full SONARA rebrand across the codebase, instant history tracking for every play, and two-way YouTube Music personalization.
+
+## Highlights
+- Completed full internal rebrand from legacy Metrolist packages, styles, widgets, resources, and shortcuts to SONARA
+- Every played song now enters History immediately even when skipped or not finished, while still updating actual listening duration when playback completes
+- Added automatic two-way listen history sync with YouTube Music when signed in to a Google account
+- Upgraded Home personalization across Quick Picks, Daily Discover, Keep Listening, Similar Recommendations, and Community Playlists so recommendations adapt directly from recent plays both locally and with Google login
+
 ---v1.3.4
 # SONARA 1.3.4
 
