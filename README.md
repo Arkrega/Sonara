@@ -23,11 +23,11 @@
 
 <div align="center">
 
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_1.png" width="19%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_2.png" width="19%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_3.png" width="19%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_4.png" width="19%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_5.png" width="19%" />
+<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_1.png" alt="Home feed" width="19%" />
+<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_2.png" alt="Search results" width="19%" />
+<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_3.png" alt="Now playing" width="19%" />
+<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_4.png" alt="Synced lyrics" width="19%" />
+<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_5.png" alt="Playback queue" width="19%" />
 
 </div>
 

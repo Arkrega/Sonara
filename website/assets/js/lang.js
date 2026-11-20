@@ -804,4 +804,25 @@ Object.assign(window.SONARA_ID, {
     "Tentang membuka situs resmi di sonara.my.id",
   "The site is now available in Indonesian and English":
     "Situsnya sekarang tersedia dalam bahasa Indonesia dan Inggris",
+  "Version 1.3.4": "Versi 1.3.4",
+  "Updates now explain themselves, and going offline is no longer a mystery.":
+    "Pembaruan kini lebih jelas, dan kondisi offline tidak lagi membingungkan.",
+  "Opening SONARA without a connection shows a notice plus an Offline chip until the network is back":
+    "Membuka SONARA tanpa koneksi menampilkan pemberitahuan serta chip Offline sampai jaringan kembali",
+  "In-app update sheet asks for install permission first and shows real download progress with checksum verification":
+    "Lembar pembaruan di aplikasi meminta izin pasang lebih dulu dan menampilkan progres unduhan beserta verifikasi checksum",
+  "Songs already downloaded keep playing while offline":
+    "Lagu yang sudah diunduh tetap bisa diputar saat offline",
+  "Version 1.4.0": "Versi 1.4.0",
+  "Full SONARA rebrand across the codebase, instant history tracking for every play, and two-way YouTube Music personalization.":
+    "Rebrand penuh ke SONARA di seluruh kode, pencatatan riwayat instan untuk setiap lagu yang diputar, dan personalisasi dua arah dengan YouTube Music.",
+  "Completed full internal rebrand across packages, styles, widgets, resources, and shortcuts to SONARA":
+    "Rebrand internal penuh ke SONARA pada package, style, widget, resource, dan shortcut",
+  "Every played song now enters History immediately even when skipped or not finished":
+    "Setiap lagu yang diputar langsung masuk ke Riwayat meskipun dilewati atau belum selesai",
+  "Added automatic two-way listen history sync with YouTube Music when signed in to a Google account":
+    "Sinkronisasi riwayat dengar dua arah otomatis dengan YouTube Music saat login akun Google",
+  "Upgraded Home personalization across Quick Picks, Daily Discover, Keep Listening, Similar Recommendations, and Community Playlists":
+    "Peningkatan personalisasi Beranda di Pilihan Cepat, Penemuan Harian, Lanjutkan Mendengarkan, Rekomendasi Serupa, dan Playlist Komunitas",
+  "Download SONARA 1.4.0": "Unduh SONARA 1.4.0",
 });
