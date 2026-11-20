@@ -31,11 +31,7 @@ fun resolveOriginRepo(): Pair<String, String>? {
         if (parts.size < 2) return@runCatching null
         val owner = parts[0]
         val repo = parts[1]
-        if (owner.equals("MetrolistGroup", ignoreCase = true) && repo.equals("Metrolist", ignoreCase = true)) {
-            null
-        } else {
-            owner to repo
-        }
+        owner to repo
     }.getOrNull()
 }
 
@@ -63,29 +59,25 @@ val applicationIdOverride = System.getenv("SONARA_APPLICATION_ID")
 val appNameOverride = System.getenv("SONARA_APP_NAME")
     ?: System.getenv("REGA_APP_NAME")
 val buildCommit =
-    (System.getenv("SONARA_BUILD_COMMIT") ?: System.getenv("REGA_BUILD_COMMIT") ?: System.getenv("METROLIST_BUILD_COMMIT"))
+    (System.getenv("SONARA_BUILD_COMMIT") ?: System.getenv("REGA_BUILD_COMMIT"))
         ?.trim()
         ?.takeIf { it.matches(Regex("[0-9a-fA-F]{7,40}")) }
         ?.take(7)
         ?.lowercase()
 val debugKeystorePathOverride =
     System.getenv("SONARA_DEBUG_KEYSTORE_PATH")
-        ?: System.getenv("REGA_DEBUG_KEYSTORE_PATH")
-        ?: System.getenv("METROLIST_DEBUG_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("REGA_DEBUG_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
 val debugKeystorePassword =
     System.getenv("SONARA_DEBUG_KEYSTORE_PASSWORD")
-        ?: System.getenv("REGA_DEBUG_KEYSTORE_PASSWORD")
-        ?: System.getenv("METROLIST_DEBUG_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("REGA_DEBUG_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
         ?: "android"
 val debugKeyAlias =
     System.getenv("SONARA_DEBUG_KEY_ALIAS")
-        ?: System.getenv("REGA_DEBUG_KEY_ALIAS")
-        ?: System.getenv("METROLIST_DEBUG_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("REGA_DEBUG_KEY_ALIAS")?.takeIf { it.isNotBlank() }
         ?: "androiddebugkey"
 val debugKeyPassword =
     System.getenv("SONARA_DEBUG_KEY_PASSWORD")
-        ?: System.getenv("REGA_DEBUG_KEY_PASSWORD")
-        ?: System.getenv("METROLIST_DEBUG_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("REGA_DEBUG_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
         ?: "android"
 // Debug installs are shipped through CI and installed on phones as the regular
 // app, so by default they are shrunk to the same size class as release. Pass
@@ -105,7 +97,7 @@ plugins {
 }
 
 android {
-    namespace = "com.metrolist.music"
+    namespace = "com.sonara.music"
     compileSdk = 37
 
     defaultConfig {
@@ -328,7 +320,7 @@ protobuf {
 }
 
 val cleanLegacyProtoSources = tasks.register<Delete>("cleanLegacyProtoSources") {
-    delete(layout.projectDirectory.dir("src/main/java/com/metrolist/music/listentogether/proto"))
+    delete(layout.projectDirectory.dir("src/main/java/com/sonara/music/listentogether/proto"))
 }
 
 tasks.named("preBuild") {

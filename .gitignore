@@ -102,7 +102,7 @@ core.*
 *.so
 *.bin
 .env
-app/src/main/java/com/metrolist/music/listentogether/proto/*
+app/src/main/java/com/sonara/music/listentogether/proto/*
 
 # FFTW third-party library build artifacts
 .build-fftw

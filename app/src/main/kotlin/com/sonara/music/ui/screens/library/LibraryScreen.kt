@@ -1,0 +1,119 @@
+/**
+ * Metrolist Project (C) 2026
+ * Licensed under GPL-3.0 | See git history for contributors
+ */
+
+package com.sonara.music.ui.screens.library
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import com.sonara.music.LocalNavController
+import com.sonara.music.R
+import com.sonara.music.constants.AlbumViewTypeKey
+import com.sonara.music.constants.ChipSortTypeKey
+import com.sonara.music.constants.LibraryFilter
+import com.sonara.music.constants.LibraryViewType
+import com.sonara.music.constants.PlaylistViewTypeKey
+import com.sonara.music.ui.component.ChipsRow
+import com.sonara.music.utils.rememberEnumPreference
+
+@Composable
+fun LibraryScreen() {
+    val navController = LocalNavController.current
+    var filterType by rememberEnumPreference(ChipSortTypeKey, LibraryFilter.LIBRARY)
+    var libraryViewType by rememberEnumPreference(AlbumViewTypeKey, LibraryViewType.GRID)
+    var playlistViewType by rememberEnumPreference(PlaylistViewTypeKey, LibraryViewType.GRID)
+
+    val filterContent = @Composable {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.sonara_logo_horizontal),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.height(22.dp),
+                )
+                Text(
+                    text = stringResource(R.string.sonara_library_label),
+                    style = com.sonara.music.ui.theme.SonaraLabelStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Row {
+            ChipsRow(
+                chips = listOf(
+                    LibraryFilter.PLAYLISTS to stringResource(R.string.filter_playlists),
+                    LibraryFilter.SONGS to stringResource(R.string.filter_songs),
+                    LibraryFilter.ALBUMS to stringResource(R.string.filter_albums),
+                    LibraryFilter.ARTISTS to stringResource(R.string.filter_artists),
+                    LibraryFilter.PODCASTS to stringResource(R.string.filter_podcasts),
+                ),
+                currentValue = filterType,
+                onValueUpdate = {
+                    filterType = if (filterType == it) LibraryFilter.LIBRARY else it
+                },
+                modifier = Modifier.weight(1f),
+            )
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (filterType) {
+            LibraryFilter.LIBRARY -> LibraryMixScreen(
+                navController = navController,
+                filterContent = filterContent,
+                viewType = libraryViewType,
+                onViewTypeChange = { libraryViewType = it },
+            )
+            LibraryFilter.PLAYLISTS -> LibraryPlaylistsScreen(
+                navController = navController,
+                filterContent = filterContent,
+                viewType = playlistViewType,
+                onViewTypeChange = { playlistViewType = it },
+            )
+            LibraryFilter.SONGS -> LibrarySongsScreen(
+                navController,
+                { filterType = LibraryFilter.LIBRARY },
+            )
+            LibraryFilter.ALBUMS -> LibraryAlbumsScreen(
+                navController,
+                { filterType = LibraryFilter.LIBRARY },
+            )
+            LibraryFilter.ARTISTS -> LibraryArtistsScreen(
+                navController,
+                { filterType = LibraryFilter.LIBRARY },
+            )
+            LibraryFilter.PODCASTS -> LibraryPodcastsScreen(
+                navController,
+                { filterType = LibraryFilter.LIBRARY },
+            )
+        }
+    }
+}
