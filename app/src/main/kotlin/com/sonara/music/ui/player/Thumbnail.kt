@@ -78,7 +78,9 @@ import com.sonara.music.LocalListenTogetherManager
 import com.sonara.music.LocalPlayerConnection
 import com.sonara.music.R
 import com.sonara.music.constants.CropAlbumArtKey
+import com.sonara.music.constants.EnableVideoCacheKey
 import com.sonara.music.constants.HidePlayerThumbnailKey
+import com.sonara.music.constants.MaxVideoCacheSizeKey
 import com.sonara.music.constants.PlayerBackgroundStyle
 import com.sonara.music.constants.PlayerBackgroundStyleKey
 import com.sonara.music.constants.PlayerHorizontalPadding
@@ -213,6 +215,8 @@ fun Thumbnail(
     val hidePlayerThumbnail by rememberPreference(HidePlayerThumbnailKey, false)
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
     val videoQuality by rememberEnumPreference(VideoQualityKey, defaultValue = VideoQuality.AUTO)
+    val enableVideoCache by rememberPreference(EnableVideoCacheKey, defaultValue = true)
+    val maxVideoCacheSize by rememberPreference(MaxVideoCacheSizeKey, defaultValue = 512)
     val playerBackground by rememberEnumPreference(
         key = PlayerBackgroundStyleKey,
         defaultValue = PlayerBackgroundStyle.DEFAULT
@@ -376,6 +380,8 @@ fun Thumbnail(
                                 isVideoModeEnabled = isVideoModeEnabled,
                                 isVideoHostVisible = isVideoHostVisible,
                                 videoQuality = videoQuality,
+                                enableVideoCache = enableVideoCache,
+                                maxVideoCacheSize = maxVideoCacheSize,
                                 onVideoStateChanged = onVideoStateChanged,
                             )
                         }
@@ -421,6 +427,8 @@ private fun ThumbnailItem(
     isVideoModeEnabled: Boolean = false,
     isVideoHostVisible: Boolean = false,
     videoQuality: VideoQuality = VideoQuality.AUTO,
+    enableVideoCache: Boolean = true,
+    maxVideoCacheSize: Int = 512,
     onVideoStateChanged: (VideoPlaybackUiState) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -572,6 +580,9 @@ private fun ThumbnailItem(
                             videoUiState = state
                             onVideoStateChanged(state)
                         },
+                        videoCache = playerConnection.service.videoCache,
+                        enableVideoCache = enableVideoCache,
+                        maxVideoCacheSizeMb = maxVideoCacheSize,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

@@ -1119,4 +1119,16 @@
     <string name="video_quality_very_high">Full HD (1080p)</string>
     <string name="player_mode_audio">Audio</string>
     <string name="player_mode_video">Video</string>
+    <string name="auto_clear_cache">Auto-clear cache</string>
+    <string name="auto_clear_cache_desc">Automatically remove cached songs, videos, and images unused for the selected period</string>
+    <string name="auto_clear_cache_off">Off</string>
+    <string name="auto_clear_cache_days">Every %d days</string>
+    <string name="clear_all_cache">Clear all cache</string>
+    <string name="clear_all_cache_dialog">Are you sure you want to clear all song, video, and image cache? Downloaded songs will not be affected.</string>
+    <string name="video_cache">Video Cache</string>
+    <string name="enable_video_cache">Enable video cache</string>
+    <string name="enable_video_cache_desc">Cache music videos on device so repeated plays start without buffering</string>
+    <string name="max_video_cache_size">Max video cache size</string>
+    <string name="clear_video_cache">Clear video cache</string>
+    <string name="clear_video_cache_dialog">Are you sure you want to clear all cached videos?</string>
 </resources>

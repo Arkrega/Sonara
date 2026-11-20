@@ -176,6 +176,7 @@ import com.sonara.music.db.entities.RelatedSongMap
 import com.sonara.music.db.entities.Song
 import com.sonara.music.di.DownloadCache
 import com.sonara.music.di.PlayerCache
+import com.sonara.music.di.VideoCache
 import com.sonara.music.eq.EqualizerService
 import com.sonara.music.eq.audio.CustomEqualizerAudioProcessor
 import com.sonara.music.eq.audio.RegaReverbAudioProcessor
@@ -397,6 +398,10 @@ class MusicService :
     @Inject
     @PlayerCache
     lateinit var playerCache: Cache
+
+    @Inject
+    @VideoCache
+    lateinit var videoCache: Cache
 
     @Inject
     @DownloadCache

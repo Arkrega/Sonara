@@ -50,11 +50,17 @@ import com.sonara.music.LocalDatabase
 import com.sonara.music.LocalPlayerAwareWindowInsets
 import com.sonara.music.LocalPlayerConnection
 import com.sonara.music.R
+import com.sonara.music.constants.CacheAutoClearDaysKey
+import com.sonara.music.constants.CacheAutoClearInterval
 import com.sonara.music.constants.EnableSongCacheKey
+import com.sonara.music.constants.EnableVideoCacheKey
 import com.sonara.music.constants.MaxImageCacheSizeKey
 import com.sonara.music.constants.MaxSongCacheSizeKey
+import com.sonara.music.constants.MaxVideoCacheSizeKey
 import com.sonara.music.extensions.tryOrNull
+import com.sonara.music.playback.CacheCleanupManager
 import com.sonara.music.ui.component.ActionPromptDialog
+import com.sonara.music.ui.component.EnumDialog
 import com.sonara.music.ui.component.IconButton
 import com.sonara.music.ui.component.Material3SettingsGroup
 import com.sonara.music.ui.component.Material3SettingsItem
@@ -79,10 +85,12 @@ fun StorageSettings(
     val database = LocalDatabase.current
     val imageDiskCache = context.imageLoader.diskCache ?: return
     val playerCache = LocalPlayerConnection.current?.service?.playerCache ?: return
+    val videoCache = LocalPlayerConnection.current?.service?.videoCache ?: return
     val downloadCache = LocalPlayerConnection.current?.service?.downloadCache ?: return
 
     val coroutineScope = rememberCoroutineScope()
     val songCacheString = stringResource(R.string.song_cache).lowercase()
+    val videoCacheString = stringResource(R.string.video_cache).lowercase()
     val imageCacheString = stringResource(R.string.image_cache).lowercase()
     val (maxImageCacheSize, onMaxImageCacheSizeChange) = rememberPreference(
         key = MaxImageCacheSizeKey,
@@ -96,10 +104,26 @@ fun StorageSettings(
         key = EnableSongCacheKey,
         defaultValue = true
     )
+    val (maxVideoCacheSize, onMaxVideoCacheSizeChange) = rememberPreference(
+        key = MaxVideoCacheSizeKey,
+        defaultValue = 512
+    )
+    val (enableVideoCache, onEnableVideoCacheChange) = rememberPreference(
+        key = EnableVideoCacheKey,
+        defaultValue = true
+    )
+    val (cacheAutoClearDays, onCacheAutoClearDaysChange) = rememberPreference(
+        key = CacheAutoClearDaysKey,
+        defaultValue = CacheCleanupManager.DEFAULT_AUTO_CLEAR_DAYS
+    )
+    val autoClearInterval = CacheAutoClearInterval.fromDays(cacheAutoClearDays)
 
     var clearDownloads by remember { mutableStateOf(false) }
     var clearCacheDialog by remember { mutableStateOf(false) }
+    var clearVideoCacheDialog by remember { mutableStateOf(false) }
     var clearImageCacheDialog by remember { mutableStateOf(false) }
+    var clearAllCacheDialog by remember { mutableStateOf(false) }
+    var showAutoClearDialog by remember { mutableStateOf(false) }
 
     // State for the confirmation dialog
     var showCacheWarningDialog by remember { mutableStateOf(false) }
@@ -112,6 +136,9 @@ fun StorageSettings(
     }
     var playerCacheSize by remember {
         androidx.compose.runtime.mutableLongStateOf(tryOrNull { playerCache.cacheSpace } ?: 0)
+    }
+    var videoCacheSize by remember {
+        androidx.compose.runtime.mutableLongStateOf(tryOrNull { videoCache.cacheSpace } ?: 0)
     }
     var downloadCacheSize by remember {
         mutableLongStateOf(tryOrNull { downloadCache.cacheSpace } ?: 0)
@@ -132,6 +159,15 @@ fun StorageSettings(
             ),
         label = "playerCacheProgress",
     )
+    val videoCacheProgress by animateFloatAsState(
+        targetValue =
+            if (maxVideoCacheSize <= 0) {
+                0f
+            } else {
+                (videoCacheSize.toFloat() / (maxVideoCacheSize * 1024 * 1024L)).coerceIn(0f, 1f)
+            },
+        label = "videoCacheProgress",
+    )
 
     LaunchedEffect(maxImageCacheSize) {
         SingletonImageLoader.reset()
@@ -150,6 +186,15 @@ fun StorageSettings(
             }
         }
     }
+    LaunchedEffect(maxVideoCacheSize) {
+        if (maxVideoCacheSize == 0) {
+            coroutineScope.launch(Dispatchers.IO) {
+                videoCache.keys.toList().forEach { key ->
+                    videoCache.removeResource(key)
+                }
+            }
+        }
+    }
 
     LaunchedEffect(imageDiskCache) {
         while (isActive) {
@@ -161,6 +206,12 @@ fun StorageSettings(
         while (isActive) {
             delay(500)
             playerCacheSize = tryOrNull { playerCache.cacheSpace } ?: 0
+        }
+    }
+    LaunchedEffect(videoCache) {
+        while (isActive) {
+            delay(500)
+            videoCacheSize = tryOrNull { videoCache.cacheSpace } ?: 0
         }
     }
     LaunchedEffect(downloadCache) {
@@ -194,8 +245,20 @@ fun StorageSettings(
             onDismiss = { clearCacheDialog = false },
             onConfirm = {
                 coroutineScope.launch(Dispatchers.IO) {
-                    playerCache.keys.forEach { key ->
+                    val keys = playerCache.keys.toList()
+                    keys.forEach { key ->
                         playerCache.removeResource(key)
+                    }
+                    if (keys.isNotEmpty()) {
+                        database.query {
+                            keys.forEach { songId ->
+                                getSongByIdBlocking(songId)?.let { song ->
+                                    if (!song.song.isDownloaded && song.song.dateDownload != null) {
+                                        update(song.song.copy(dateDownload = null))
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 clearCacheDialog = false
@@ -203,6 +266,64 @@ fun StorageSettings(
             onCancel = { clearCacheDialog = false },
             content = {
                 Text(text = stringResource(R.string.clear_song_cache_dialog))
+            },
+        )
+    }
+    if (clearVideoCacheDialog) {
+        ActionPromptDialog(
+            title = stringResource(R.string.clear_video_cache),
+            onDismiss = { clearVideoCacheDialog = false },
+            onConfirm = {
+                coroutineScope.launch(Dispatchers.IO) {
+                    videoCache.keys.toList().forEach { key ->
+                        videoCache.removeResource(key)
+                    }
+                }
+                clearVideoCacheDialog = false
+            },
+            onCancel = { clearVideoCacheDialog = false },
+            content = {
+                Text(text = stringResource(R.string.clear_video_cache_dialog))
+            },
+        )
+    }
+    if (clearAllCacheDialog) {
+        ActionPromptDialog(
+            title = stringResource(R.string.clear_all_cache),
+            onDismiss = { clearAllCacheDialog = false },
+            onConfirm = {
+                coroutineScope.launch(Dispatchers.IO) {
+                    CacheCleanupManager.clearAllCaches(
+                        context = context,
+                        database = database,
+                        playerCache = playerCache,
+                        videoCache = videoCache,
+                    )
+                }
+                clearAllCacheDialog = false
+            },
+            onCancel = { clearAllCacheDialog = false },
+            content = {
+                Text(text = stringResource(R.string.clear_all_cache_dialog))
+            },
+        )
+    }
+    if (showAutoClearDialog) {
+        EnumDialog(
+            onDismiss = { showAutoClearDialog = false },
+            onSelect = { selected ->
+                onCacheAutoClearDaysChange(selected.days)
+                showAutoClearDialog = false
+            },
+            title = stringResource(R.string.auto_clear_cache),
+            current = autoClearInterval,
+            values = CacheAutoClearInterval.entries,
+            valueText = { interval ->
+                if (interval.days <= 0) {
+                    stringResource(R.string.auto_clear_cache_off)
+                } else {
+                    stringResource(R.string.auto_clear_cache_days, interval.days)
+                }
             },
         )
     }
@@ -314,6 +435,38 @@ fun StorageSettings(
                             clearDownloads = true
                         },
                     ),
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.timer),
+                        title = { Text(stringResource(R.string.auto_clear_cache)) },
+                        description = {
+                            Text(
+                                text =
+                                    if (autoClearInterval.days <= 0) {
+                                        stringResource(R.string.auto_clear_cache_off)
+                                    } else {
+                                        stringResource(R.string.auto_clear_cache_days, autoClearInterval.days)
+                                    },
+                            )
+                        },
+                        onClick = {
+                            showAutoClearDialog = true
+                        },
+                    ),
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.delete),
+                        title = { Text(stringResource(R.string.clear_all_cache)) },
+                        description = {
+                            Text(
+                                text = Formatter.formatShortFileSize(
+                                    context,
+                                    playerCacheSize + videoCacheSize + imageCacheSize,
+                                ),
+                            )
+                        },
+                        onClick = {
+                            clearAllCacheDialog = true
+                        },
+                    ),
                 ),
         )
 
@@ -409,6 +562,88 @@ fun StorageSettings(
                         },
                     ),
                 ),
+        )
+
+        Material3SettingsGroup(
+            title = stringResource(R.string.video_cache),
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.smart_display),
+                    title = { Text(stringResource(R.string.enable_video_cache)) },
+                    description = { Text(stringResource(R.string.enable_video_cache_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = enableVideoCache,
+                            onCheckedChange = onEnableVideoCacheChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (enableVideoCache) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { onEnableVideoCacheChange(!enableVideoCache) }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.cached),
+                    title = { Text(stringResource(R.string.max_video_cache_size)) },
+                    enabled = enableVideoCache,
+                    description = {
+                        val videoCacheValues =
+                            remember { listOf(0, 128, 256, 512, 1024, 2048, 4096) }
+                        val currentIndex = videoCacheValues.indexOf(maxVideoCacheSize).takeIf { it >= 0 } ?: 3
+                        Column {
+                            Text(
+                                text = when (maxVideoCacheSize) {
+                                    0 -> stringResource(R.string.disable)
+                                    else -> Formatter.formatShortFileSize(context, maxVideoCacheSize * 1024 * 1024L)
+                                }
+                            )
+                            Slider(
+                                value = currentIndex.toFloat(),
+                                enabled = enableVideoCache,
+                                onValueChange = {
+                                    val newValue = videoCacheValues[it.roundToInt()]
+                                    val newLimitInBytes = newValue * 1024 * 1024L
+                                    if (newLimitInBytes < videoCacheSize) {
+                                        cacheUsage = videoCacheSize
+                                        cacheType = videoCacheString
+                                        onConfirmAction = { onMaxVideoCacheSizeChange(newValue) }
+                                        showCacheWarningDialog = true
+                                    } else {
+                                        onMaxVideoCacheSizeChange(newValue)
+                                    }
+                                },
+                                steps = videoCacheValues.size - 2,
+                                valueRange = 0f..(videoCacheValues.size - 1).toFloat(),
+                            )
+                            LinearProgressIndicator(
+                                progress = { videoCacheProgress },
+                                modifier = Modifier.fillMaxWidth(),
+                                strokeCap = StrokeCap.Round,
+                            )
+                            Spacer(modifier = Modifier.padding(2.dp))
+                            Text(
+                                text = "${Formatter.formatShortFileSize(context, videoCacheSize)} / ${
+                                    Formatter.formatShortFileSize(context, maxVideoCacheSize * 1024 * 1024L)
+                                }",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    },
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.clear_all),
+                    title = { Text(stringResource(R.string.clear_video_cache)) },
+                    onClick = {
+                        clearVideoCacheDialog = true
+                    },
+                ),
+            ),
         )
 
         Material3SettingsGroup(

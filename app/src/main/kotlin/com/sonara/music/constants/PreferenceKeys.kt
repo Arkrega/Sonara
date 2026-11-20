@@ -182,6 +182,23 @@ val CrossfadeGaplessKey = booleanPreferencesKey("crossfadeGapless")
 val MaxImageCacheSizeKey = intPreferencesKey("maxImageCacheSize")
 val MaxSongCacheSizeKey = intPreferencesKey("maxSongCacheSize")
 val EnableSongCacheKey = booleanPreferencesKey("enableSongCache")
+val MaxVideoCacheSizeKey = intPreferencesKey("maxVideoCacheSize")
+val EnableVideoCacheKey = booleanPreferencesKey("enableVideoCache")
+val CacheAutoClearDaysKey = intPreferencesKey("cacheAutoClearDays")
+
+enum class CacheAutoClearInterval(val days: Int) {
+    OFF(0),
+    DAYS_3(3),
+    DAYS_7(7),
+    DAYS_14(14),
+    DAYS_30(30),
+    ;
+
+    companion object {
+        fun fromDays(days: Int): CacheAutoClearInterval =
+            entries.find { it.days == days } ?: DAYS_7
+    }
+}
 
 val PauseListenHistoryKey = booleanPreferencesKey("pauseListenHistory")
 val PauseSearchHistoryKey = booleanPreferencesKey("pauseSearchHistory")

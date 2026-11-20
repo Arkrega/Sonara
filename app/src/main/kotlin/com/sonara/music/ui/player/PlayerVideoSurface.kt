@@ -54,6 +54,10 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.cache.Cache
+import androidx.media3.datasource.cache.CacheDataSink
+import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
@@ -69,11 +73,13 @@ import com.sonara.music.R
 import com.sonara.music.constants.VideoQuality
 import com.sonara.music.db.entities.SongEntity
 import com.sonara.music.models.MediaMetadata
+import com.sonara.music.playback.CacheCleanupManager
 import com.sonara.music.playback.ChunkedRangeDataSource
 import com.sonara.music.ui.component.glass.RegaPillShape
 import com.sonara.music.ui.component.glass.regaGlassSpecular
 import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.utils.InnerTubeXPlayer
+import com.sonara.music.utils.InnerTubeXPlayer.resolveMaxHeight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -244,6 +250,9 @@ fun SyncedVideoPlayerSurface(
     onVideoAspectRatioChanged: (Float) -> Unit,
     onVideoStateChanged: (VideoPlaybackUiState) -> Unit,
     modifier: Modifier = Modifier,
+    videoCache: Cache? = null,
+    enableVideoCache: Boolean = true,
+    maxVideoCacheSizeMb: Int = 512,
 ) {
     val context = LocalContext.current
     val latestOnAspectRatio by rememberUpdatedState(onVideoAspectRatioChanged)
@@ -254,6 +263,8 @@ fun SyncedVideoPlayerSurface(
     var isFirstFrameRendered by remember(videoId, videoQuality, isActive) { mutableStateOf(false) }
     var retryGeneration by remember(videoId, videoQuality) { mutableIntStateOf(0) }
     var activeStreamClient by remember(videoId, videoQuality) { mutableStateOf<String?>(null) }
+    var activeDiskCacheKey by remember(videoId, videoQuality) { mutableStateOf<String?>(null) }
+    var playedFromDiskCache by remember(videoId, videoQuality, retryGeneration) { mutableStateOf(false) }
 
     val videoPlayer = remember(isActive) {
         if (!isActive) {
@@ -328,9 +339,14 @@ fun SyncedVideoPlayerSurface(
                     Timber.tag("PlayerVideoSurface").w(error, "Video playback failed for %s", videoId)
                     isFirstFrameRendered = false
                     textureViewRef?.keepScreenOn = false
-                    activeStreamClient?.let { client ->
-                        InnerTubeXPlayer.markVideoStreamClientFailed(videoId, client)
-                    } ?: InnerTubeXPlayer.invalidateVideoStreamCache(videoId)
+                    if (playedFromDiskCache && activeDiskCacheKey != null && videoCache != null) {
+                        val staleKey = activeDiskCacheKey!!
+                        runCatching { videoCache.removeResource(staleKey) }
+                    } else {
+                        activeStreamClient?.let { client ->
+                            InnerTubeXPlayer.markVideoStreamClientFailed(videoId, client)
+                        } ?: InnerTubeXPlayer.invalidateVideoStreamCache(videoId)
+                    }
                     if (retryGeneration < 1) {
                         retryGeneration++
                     } else {
@@ -393,7 +409,7 @@ fun SyncedVideoPlayerSurface(
         }
     }
 
-    LaunchedEffect(videoPlayer, videoId, videoQuality, isActive, retryGeneration) {
+    LaunchedEffect(videoPlayer, videoId, videoQuality, isActive, retryGeneration, enableVideoCache, maxVideoCacheSizeMb) {
         val vp = videoPlayer
         if (!isActive || vp == null) {
             isFirstFrameRendered = false
@@ -407,51 +423,128 @@ fun SyncedVideoPlayerSurface(
         vp.clearMediaItems()
 
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val streamResult = withContext(Dispatchers.IO) {
-            InnerTubeXPlayer.videoStreamForPlayback(
-                videoId = videoId,
-                videoQuality = videoQuality,
-                connectivityManager = connectivityManager,
-                contentHints = ContentHints(
-                    isExplicit = isExplicit,
-                    isUploaded = isUploaded,
-                ),
-                bypassCache = retryGeneration > 0,
-            )
-        }
+        val preferredMaxHeight = videoQuality.resolveMaxHeight(connectivityManager.isActiveNetworkMetered)
+        val useDiskCache = enableVideoCache && maxVideoCacheSizeMb != 0 && videoCache != null
 
-        val playbackData = streamResult.getOrNull()
-        if (playbackData == null) {
-            Timber.tag("PlayerVideoSurface").w(streamResult.exceptionOrNull(), "Could not resolve video stream for %s", videoId)
-            latestOnStateChanged(VideoPlaybackUiState.FAILED)
-            return@LaunchedEffect
-        }
+        val completeCachedKey =
+            if (useDiskCache && retryGeneration == 0) {
+                withContext(Dispatchers.IO) {
+                    CacheCleanupManager.findCompleteCachedVideoKey(
+                        cache = videoCache!!,
+                        videoId = videoId,
+                        preferredMaxHeight = preferredMaxHeight,
+                    )
+                }
+            } else {
+                null
+            }
 
-        activeStreamClient = playbackData.streamClient
-        val width = playbackData.width
-        val height = playbackData.height
-        if (width != null && height != null && width > 0 && height > 0) {
-            val resolvedRatio = width.toFloat() / height.toFloat()
-            if (resolvedRatio.isFinite() && resolvedRatio > 0f) {
-                videoAspectRatio = resolvedRatio
-                latestOnAspectRatio(resolvedRatio)
-                textureViewRef?.let { applyAspectFitTransform(it, resolvedRatio) }
+        val dataSourceFactory: DataSource.Factory
+        val mediaItem: MediaItem
+
+        if (completeCachedKey != null && videoCache != null) {
+            activeDiskCacheKey = completeCachedKey
+            playedFromDiskCache = true
+            activeStreamClient = null
+            dataSourceFactory =
+                CacheDataSource
+                    .Factory()
+                    .setCache(videoCache)
+                    .setCacheWriteDataSinkFactory(null)
+                    .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+            mediaItem =
+                MediaItem
+                    .Builder()
+                    .setUri("https://sonara.local/video/$completeCachedKey")
+                    .setCustomCacheKey(completeCachedKey)
+                    .build()
+        } else {
+            playedFromDiskCache = false
+            val streamResult = withContext(Dispatchers.IO) {
+                InnerTubeXPlayer.videoStreamForPlayback(
+                    videoId = videoId,
+                    videoQuality = videoQuality,
+                    connectivityManager = connectivityManager,
+                    contentHints = ContentHints(
+                        isExplicit = isExplicit,
+                        isUploaded = isUploaded,
+                    ),
+                    bypassCache = retryGeneration > 0,
+                )
+            }
+
+            val playbackData = streamResult.getOrNull()
+            if (playbackData == null) {
+                Timber.tag("PlayerVideoSurface").w(streamResult.exceptionOrNull(), "Could not resolve video stream for %s", videoId)
+                latestOnStateChanged(VideoPlaybackUiState.FAILED)
+                return@LaunchedEffect
+            }
+
+            activeStreamClient = playbackData.streamClient
+            val width = playbackData.width
+            val height = playbackData.height
+            if (width != null && height != null && width > 0 && height > 0) {
+                val resolvedRatio = width.toFloat() / height.toFloat()
+                if (resolvedRatio.isFinite() && resolvedRatio > 0f) {
+                    videoAspectRatio = resolvedRatio
+                    latestOnAspectRatio(resolvedRatio)
+                    textureViewRef?.let { applyAspectFitTransform(it, resolvedRatio) }
+                }
+            }
+
+            val okHttpClient = buildVideoOkHttpClient()
+            val upstreamFactory =
+                ChunkedRangeDataSource.Factory(
+                    upstreamFactory = OkHttpDataSource.Factory(okHttpClient),
+                    playbackData = playbackData,
+                )
+            if (useDiskCache && videoCache != null) {
+                val cacheKey =
+                    CacheCleanupManager.videoCacheKey(
+                        videoId = videoId,
+                        height = playbackData.height ?: preferredMaxHeight,
+                        itag = playbackData.itag ?: 0,
+                    )
+                activeDiskCacheKey = cacheKey
+                withContext(Dispatchers.IO) {
+                    CacheCleanupManager.clearStalePartialVideoEntry(
+                        cache = videoCache,
+                        cacheKey = cacheKey,
+                        expectedContentLength = playbackData.contentLengthBytes,
+                    )
+                }
+                dataSourceFactory =
+                    CacheDataSource
+                        .Factory()
+                        .setCache(videoCache)
+                        .setUpstreamDataSourceFactory(upstreamFactory)
+                        .setCacheWriteDataSinkFactory(
+                            CacheDataSink
+                                .Factory()
+                                .setCache(videoCache)
+                                .setFragmentSize(2 * 1024 * 1024L),
+                        )
+                        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+                mediaItem =
+                    MediaItem
+                        .Builder()
+                        .setUri(playbackData.streamUrl)
+                        .setCustomCacheKey(cacheKey)
+                        .build()
+            } else {
+                activeDiskCacheKey = null
+                dataSourceFactory = upstreamFactory
+                mediaItem = MediaItem.fromUri(playbackData.streamUrl)
             }
         }
 
-        val okHttpClient = buildVideoOkHttpClient()
-        val dataSourceFactory =
-            ChunkedRangeDataSource.Factory(
-                upstreamFactory = OkHttpDataSource.Factory(okHttpClient),
-                playbackData = playbackData,
-            )
         val mediaSource =
             DefaultMediaSourceFactory(
                 dataSourceFactory,
                 ExtractorsFactory {
                     arrayOf(MatroskaExtractor(), FragmentedMp4Extractor(), Mp4Extractor())
                 },
-            ).createMediaSource(MediaItem.fromUri(playbackData.streamUrl))
+            ).createMediaSource(mediaItem)
 
         vp.setMediaSource(mediaSource)
         vp.setPlaybackSpeed(mainPlayer.playbackParameters.speed)

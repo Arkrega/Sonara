@@ -1,3 +1,13 @@
+---v1.4.2
+# SONARA 1.4.2
+
+Smart 7-day automatic cache cleanup and dedicated music video disk caching for zero-buffering replays.
+
+## Highlights
+- Added automatic cache expiration (default: 7 days, configurable to Off / 3 / 7 / 14 / 30 days) under Storage settings that removes unused cached songs, videos, and images while keeping frequently played tracks and offline downloads untouched
+- Added a dedicated Music Video disk cache (512 MB default, configurable up to 4 GB) so replayed music videos start immediately without re-buffering
+- Added one-tap Clear all cache and Clear video cache actions in Storage settings alongside existing song and image cache controls
+
 ---v1.4.1
 # SONARA 1.4.1
 

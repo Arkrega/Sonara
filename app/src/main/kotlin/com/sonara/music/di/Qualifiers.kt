@@ -13,6 +13,10 @@ annotation class PlayerCache
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
+annotation class VideoCache
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
 annotation class DownloadCache
 
 @Qualifier

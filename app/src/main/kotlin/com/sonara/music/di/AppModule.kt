@@ -13,6 +13,7 @@ import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.NoOpCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import com.sonara.music.constants.MaxSongCacheSizeKey
+import com.sonara.music.constants.MaxVideoCacheSizeKey
 import com.sonara.music.db.InternalDatabase
 import com.sonara.music.db.MusicDatabase
 import com.sonara.music.listentogether.ListenTogetherClient
@@ -78,6 +79,22 @@ object AppModule {
         }
         return SimpleCache(
             context.filesDir.resolve("exoplayer"),
+            evictor,
+            databaseProvider,
+        )
+    }
+
+    @Singleton
+    @Provides
+    @VideoCache
+    fun provideVideoCache(
+        @ApplicationContext context: Context,
+        databaseProvider: DatabaseProvider,
+    ): Cache {
+        val cacheSize = context.dataStore[MaxVideoCacheSizeKey] ?: 512
+        val evictor = LeastRecentlyUsedCacheEvictor(cacheSize.coerceAtLeast(0) * 1024 * 1024L)
+        return SimpleCache(
+            context.filesDir.resolve("exoplayer_video"),
             evictor,
             databaseProvider,
         )

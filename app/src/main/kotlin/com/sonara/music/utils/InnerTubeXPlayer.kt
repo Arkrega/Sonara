@@ -377,6 +377,7 @@ object InnerTubeXPlayer {
     data class VideoPlaybackData(
         val videoId: String,
         val streamUrl: String,
+        val itag: Int?,
         val width: Int?,
         val height: Int?,
         val mimeType: String?,
@@ -453,6 +454,7 @@ object InnerTubeXPlayer {
         return VideoPlaybackData(
             videoId = videoId,
             streamUrl = resolvedVideoUrl,
+            itag = videoItag,
             width = videoWidth,
             height = videoHeight,
             mimeType = videoMimeType,

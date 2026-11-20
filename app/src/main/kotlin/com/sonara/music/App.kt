@@ -27,11 +27,16 @@ import com.sonara.innertube.models.ArtistConjunctions
 import com.sonara.innertube.models.YouTubeLocale
 import com.sonara.kugou.KuGou
 import com.sonara.lastfm.LastFM
+import androidx.media3.datasource.cache.Cache
 import com.sonara.music.BuildConfig
 import com.sonara.music.constants.*
+import com.sonara.music.db.MusicDatabase
 import com.sonara.music.di.ApplicationScope
+import com.sonara.music.di.PlayerCache
+import com.sonara.music.di.VideoCache
 import com.sonara.music.extensions.toEnum
 import com.sonara.music.extensions.toInetSocketAddress
+import com.sonara.music.playback.CacheCleanupManager
 import com.sonara.music.utils.CrashHandler
 import com.sonara.music.utils.ArtistNameAliases
 import com.sonara.music.utils.InnerTubeXPlayer
@@ -42,6 +47,7 @@ import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -65,6 +71,17 @@ class App :
     @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
+
+    @Inject
+    @PlayerCache
+    lateinit var playerCacheProvider: dagger.Lazy<Cache>
+
+    @Inject
+    @VideoCache
+    lateinit var videoCacheProvider: dagger.Lazy<Cache>
+
+    @Inject
+    lateinit var databaseProvider: dagger.Lazy<MusicDatabase>
 
     override fun onCreate() {
         super.onCreate()
@@ -288,6 +305,32 @@ class App :
                                     ?: effectiveAppLocale.language.takeIf { it in LanguageCodeToName }
                                     ?: "en",
                         )
+                }
+        }
+
+        applicationScope.launch(Dispatchers.IO) {
+            var isFirstEmission = true
+            dataStore.data
+                .map { it[CacheAutoClearDaysKey] ?: CacheCleanupManager.DEFAULT_AUTO_CLEAR_DAYS }
+                .distinctUntilChanged()
+                .collectLatest { days ->
+                    if (isFirstEmission) {
+                        isFirstEmission = false
+                        delay(4_000L)
+                    }
+                    if (days <= 0) return@collectLatest
+                    while (true) {
+                        runCatching {
+                            CacheCleanupManager.cleanupExpiredCaches(
+                                context = this@App,
+                                database = databaseProvider.get(),
+                                playerCache = playerCacheProvider.get(),
+                                videoCache = videoCacheProvider.get(),
+                                maxAgeDays = days,
+                            )
+                        }
+                        delay(12L * 60L * 60L * 1000L)
+                    }
                 }
         }
     }

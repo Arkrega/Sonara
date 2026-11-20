@@ -978,4 +978,16 @@
     <string name="video_quality_very_high">Full HD (1080p)</string>
     <string name="player_mode_audio">Audio</string>
     <string name="player_mode_video">Video</string>
+    <string name="auto_clear_cache">Bersihkan cache otomatis</string>
+    <string name="auto_clear_cache_desc">Hapus otomatis cache lagu, video, dan gambar yang tidak dipakai melewati batas waktu</string>
+    <string name="auto_clear_cache_off">Mati</string>
+    <string name="auto_clear_cache_days">Setiap %d hari</string>
+    <string name="clear_all_cache">Bersihkan semua cache</string>
+    <string name="clear_all_cache_dialog">Yakin ingin menghapus semua cache lagu, video, dan gambar? Lagu yang sudah diunduh tidak akan terhapus.</string>
+    <string name="video_cache">Cache Video</string>
+    <string name="enable_video_cache">Aktifkan cache video</string>
+    <string name="enable_video_cache_desc">Simpan cache video musik di perangkat agar putar ulang langsung jalan tanpa buffering</string>
+    <string name="max_video_cache_size">Ukuran maksimal cache video</string>
+    <string name="clear_video_cache">Bersihkan cache video</string>
+    <string name="clear_video_cache_dialog">Yakin ingin menghapus semua cache video?</string>
 </resources>
