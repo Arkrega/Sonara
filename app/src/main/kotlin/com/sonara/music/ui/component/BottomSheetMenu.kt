@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -42,6 +43,10 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.RegaGlassMaterial
+import com.sonara.music.ui.component.glass.RegaGlassStyle
+import com.sonara.music.ui.component.glass.RegaLiquidGlass
 import com.sonara.music.ui.theme.LocalRegaColors
 
 val LocalMenuState = compositionLocalOf { MenuState() }
@@ -84,6 +89,7 @@ fun AnimatedBottomSheet(
 ) {
     var lastContent by remember { mutableStateOf(content) }
     val regaColors = LocalRegaColors.current
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
 
     LaunchedEffect(content) {
         if (isVisible) {
@@ -100,6 +106,49 @@ fun AnimatedBottomSheet(
     }
 
     if (!sheetState.isVisible && !isVisible) {
+        return
+    }
+
+    if (liquidGlassEnabled) {
+        ModalBottomSheet(
+            onDismissRequest = onDismissRequest,
+            modifier = modifier,
+            sheetState = sheetState,
+            sheetMaxWidth = sheetMaxWidth,
+            shape = shape,
+            containerColor = Color.Transparent,
+            contentColor = contentColor,
+            tonalElevation = 0.dp,
+            scrimColor = Color.Black.copy(alpha = 0.28f),
+            dragHandle = null,
+            contentWindowInsets = contentWindowInsets,
+            properties = properties,
+        ) {
+            RegaLiquidGlass(
+                modifier = Modifier.fillMaxWidth(),
+                shape = shape,
+                borderColor = regaColors.glassBorder,
+                style = RegaGlassStyle.preset(
+                    material = RegaGlassMaterial.Thin,
+                    tint = containerColor,
+                    borderRadius = 28.dp,
+                    elevation = 0.dp,
+                ),
+                contentAlignment = Alignment.TopStart,
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    dragHandle?.let { handle ->
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            handle()
+                        }
+                    }
+                    lastContent()
+                }
+            }
+        }
         return
     }
 

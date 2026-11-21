@@ -193,6 +193,7 @@ import com.sonara.music.ui.component.BottomSheetState
 import com.sonara.music.ui.component.DefaultDialog
 import com.sonara.music.ui.component.LocalBottomSheetPageState
 import com.sonara.music.ui.component.LocalMenuState
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
 import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.component.glass.RegaGlassMaterial
 import com.sonara.music.ui.component.glass.RegaGlassStyle
@@ -204,6 +205,7 @@ import com.sonara.music.ui.component.glass.RegaPlayButton
 import com.sonara.music.ui.component.glass.RegaSquircleShape
 import com.sonara.music.ui.component.glass.regaGlassSpecular
 import com.sonara.music.ui.component.glass.rememberRegaBackdropState
+import com.sonara.music.ui.component.glass.resolveLiquidGlassShape
 import com.sonara.music.ui.component.ExperimentalLyrics
 import com.sonara.music.ui.component.OriginalLyrics
 import com.sonara.music.ui.theme.LocalRegaColors
@@ -1092,6 +1094,7 @@ fun BottomSheetPlayer(
                 ) {
                     Spacer(Modifier.height(if (compactMode) 6.dp else 12.dp))
 
+                    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1108,15 +1111,15 @@ fun BottomSheetPlayer(
                             enabled = !isListenTogetherGuest,
                             size = if (compactMode) 36.dp else 42.dp,
                             shape = CircleShape,
-                            containerColor = if (shuffleModeEnabled) {
-                                TextBackgroundColor.copy(alpha = 0.14f)
-                            } else {
-                                Color.Transparent
+                            containerColor = when {
+                                shuffleModeEnabled -> TextBackgroundColor.copy(alpha = 0.14f)
+                                liquidGlassEnabled -> TextBackgroundColor.copy(alpha = 0.06f)
+                                else -> Color.Transparent
                             },
-                            borderColor = if (shuffleModeEnabled) {
-                                TextBackgroundColor.copy(alpha = 0.35f)
-                            } else {
-                                Color.Transparent
+                            borderColor = when {
+                                shuffleModeEnabled -> TextBackgroundColor.copy(alpha = 0.35f)
+                                liquidGlassEnabled -> TextBackgroundColor.copy(alpha = 0.16f)
+                                else -> Color.Transparent
                             },
                             contentColor = TextBackgroundColor,
                             contentDescription = stringResource(R.string.shuffle),
@@ -1204,15 +1207,15 @@ fun BottomSheetPlayer(
                             enabled = !isListenTogetherGuest,
                             size = if (compactMode) 36.dp else 42.dp,
                             shape = CircleShape,
-                            containerColor = if (repeatMode != Player.REPEAT_MODE_OFF) {
-                                TextBackgroundColor.copy(alpha = 0.14f)
-                            } else {
-                                Color.Transparent
+                            containerColor = when {
+                                repeatMode != Player.REPEAT_MODE_OFF -> TextBackgroundColor.copy(alpha = 0.14f)
+                                liquidGlassEnabled -> TextBackgroundColor.copy(alpha = 0.06f)
+                                else -> Color.Transparent
                             },
-                            borderColor = if (repeatMode != Player.REPEAT_MODE_OFF) {
-                                TextBackgroundColor.copy(alpha = 0.35f)
-                            } else {
-                                Color.Transparent
+                            borderColor = when {
+                                repeatMode != Player.REPEAT_MODE_OFF -> TextBackgroundColor.copy(alpha = 0.35f)
+                                liquidGlassEnabled -> TextBackgroundColor.copy(alpha = 0.16f)
+                                else -> Color.Transparent
                             },
                             contentColor = TextBackgroundColor,
                             contentDescription = stringResource(
@@ -1726,16 +1729,17 @@ private fun PlayerTopBar(
 
             if (sleepTimerRemainingMs != null) {
                 Spacer(Modifier.height(3.dp))
+                val sleepPillShape = resolveLiquidGlassShape(RegaPillShape, LocalLiquidGlassEnabled.current)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier
                         .regaGlassSpecular(
-                            shape = RegaPillShape,
+                            shape = sleepPillShape,
                             tintColor = LocalRegaColors.current.glassTint,
                             borderColor = LocalRegaColors.current.glassBorder,
                         )
-                        .clip(RegaPillShape)
+                        .clip(sleepPillShape)
                         .clickable(onClick = onClearSleepTimer)
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                 ) {
@@ -1776,15 +1780,17 @@ private fun PlayerLyricsPanel(
     isDarkSurface: Boolean,
     content: @Composable () -> Unit,
 ) {
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
     val tint = if (isDarkSurface) Color(0x470B0B0F) else Color(0x52FFFFFF)
     val border = if (isDarkSurface) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.10f)
     RegaGlassSurface(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = PlayerHorizontalPadding, vertical = 8.dp),
-        shape = RoundedCornerShape(8.dp),
+        shape = if (liquidGlassEnabled) RoundedCornerShape(22.dp) else RoundedCornerShape(8.dp),
         tintColor = tint,
         borderColor = border,
+        material = if (liquidGlassEnabled) RegaGlassMaterial.Clear else RegaGlassMaterial.Regular,
     ) {
         content()
     }
@@ -1803,6 +1809,7 @@ private fun PlayerDockButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val haptics = LocalHapticFeedback.current
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) 0.90f else 1.0f,
@@ -1818,11 +1825,58 @@ private fun PlayerDockButton(
         targetValue = when {
             !enabled -> contentColor.copy(alpha = 0.30f)
             active -> activeColor
-            else -> contentColor.copy(alpha = 0.72f)
+            else -> contentColor.copy(alpha = 0.78f)
         },
         animationSpec = tween(180),
         label = "dockTint",
     )
+
+    if (liquidGlassEnabled) {
+        RegaLiquidGlass(
+            modifier = Modifier
+                .minimumInteractiveComponentSize()
+                .size(size)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
+            shape = CircleShape,
+            borderColor = if (active) activeColor.copy(alpha = 0.42f) else contentColor.copy(alpha = 0.16f),
+            style = RegaGlassStyle.preset(
+                material = if (active) RegaGlassMaterial.Thin else RegaGlassMaterial.Clear,
+                tint = if (active) activeColor.copy(alpha = 0.16f) else contentColor.copy(alpha = 0.06f),
+                borderRadius = size / 2,
+                elevation = 0.dp,
+            ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .clickable(
+                        enabled = enabled,
+                        role = Role.Button,
+                        interactionSource = interactionSource,
+                        indication = ripple(bounded = true, radius = size / 2),
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            onClick()
+                        },
+                    )
+                    .semantics { this.contentDescription = contentDescription },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painter,
+                    contentDescription = null,
+                    tint = resolvedTint,
+                    modifier = Modifier.size(21.dp),
+                )
+            }
+        }
+        return
+    }
 
     Box(
         modifier = Modifier

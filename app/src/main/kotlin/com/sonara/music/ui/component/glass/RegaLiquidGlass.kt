@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -53,16 +54,16 @@ enum class RegaGlassQuality {
 data class RegaGlassStyle(
     val material: RegaGlassMaterial = RegaGlassMaterial.Regular,
     val tint: Color? = null,
-    val blurRadius: Dp = 14.dp,
+    val blurRadius: Dp = 2.5.dp,
     val refractionStrength: Float = 14f,
     val bezelWidth: Dp = 26.dp,
     val thickness: Dp = 20.dp,
     val ior: Float = 1.5f,
-    val chromaticAberration: Float = 0.14f,
+    val chromaticAberration: Float = 0.22f,
     val saturation: Float = 1.45f,
     val borderRadius: Dp = 24.dp,
-    val highlightIntensity: Float = 0.45f,
-    val rimLighting: Float = 0.52f,
+    val highlightIntensity: Float = 0.72f,
+    val rimLighting: Float = 0.65f,
     val elevation: Dp = 8.dp,
     val appearance: RegaGlassAppearance = RegaGlassAppearance.Auto,
     val quality: RegaGlassQuality = RegaGlassQuality.High,
@@ -74,8 +75,8 @@ data class RegaGlassStyle(
             borderRadius: Dp = 24.dp,
             appearance: RegaGlassAppearance = RegaGlassAppearance.Auto,
             quality: RegaGlassQuality = RegaGlassQuality.High,
-            highlightIntensity: Float = 0.45f,
-            rimLighting: Float = 0.52f,
+            highlightIntensity: Float = 0.72f,
+            rimLighting: Float = 0.65f,
             elevation: Dp = 8.dp,
         ): RegaGlassStyle = RegaGlassStyle(
             material = material,
@@ -111,15 +112,29 @@ internal fun resolveLiquidGlassSurfaceTint(
     supportsBlur: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
 ): Color {
     if (baseTint.alpha <= 0.01f) return Color.Transparent
-    val blurAlpha =
+    val crystalAlpha =
         when (material) {
-            RegaGlassMaterial.Clear -> if (isDark) 0.24f else 0.34f
-            RegaGlassMaterial.Thin -> if (isDark) 0.36f else 0.48f
-            RegaGlassMaterial.Regular -> if (isDark) 0.44f else 0.56f
-            RegaGlassMaterial.Thick -> if (isDark) 0.58f else 0.68f
+            RegaGlassMaterial.Clear -> if (isDark) 0.06f else 0.10f
+            RegaGlassMaterial.Thin -> if (isDark) 0.10f else 0.14f
+            RegaGlassMaterial.Regular -> if (isDark) 0.14f else 0.20f
+            RegaGlassMaterial.Thick -> if (isDark) 0.20f else 0.26f
         }
-    val effectiveMaxAlpha = if (supportsBlur) blurAlpha else (blurAlpha + 0.26f).coerceAtMost(0.88f)
+    val effectiveMaxAlpha = if (supportsBlur) crystalAlpha else (crystalAlpha + 0.22f).coerceAtMost(0.56f)
     return baseTint.copy(alpha = minOf(baseTint.alpha, effectiveMaxAlpha))
+}
+
+internal fun resolveLiquidGlassShape(
+    shape: Shape,
+    liquidGlassEnabled: Boolean,
+): Shape {
+    if (!liquidGlassEnabled) return shape
+    return when (shape) {
+        RegaPillShape -> CircleShape
+        RegaSquircleShape -> RoundedCornerShape(16.dp)
+        RegaCardShape -> RoundedCornerShape(20.dp)
+        RegaDialogShape -> RoundedCornerShape(26.dp)
+        else -> shape
+    }
 }
 
 @Composable
@@ -161,6 +176,7 @@ fun RegaLiquidGlass(
         return
     }
 
+    val glassShape = resolveLiquidGlassShape(shape, liquidGlassEnabled = true)
     val resolvedTint = resolveLiquidGlassSurfaceTint(
         baseTint = baseSurface,
         material = style.material,
@@ -170,41 +186,41 @@ fun RegaLiquidGlass(
         if (borderColor != null && borderColor.alpha <= 0.01f) {
             Color.Transparent
         } else {
-            val sheenColor = if (colors.isDark) Color.White.copy(alpha = 0.20f) else Color.White.copy(alpha = 0.58f)
-            if (borderColor != null) lerp(borderColor, sheenColor, 0.35f) else sheenColor
+            val sheenColor = if (colors.isDark) Color.White.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.68f)
+            if (borderColor != null) lerp(borderColor, sheenColor, 0.45f) else sheenColor
         }
 
     if (backdropState != null && backdropState.enabled) {
         val targetBlurDp = when (style.material) {
-            RegaGlassMaterial.Clear -> 10.dp
-            RegaGlassMaterial.Thin -> 14.dp
-            RegaGlassMaterial.Regular -> 18.dp
-            RegaGlassMaterial.Thick -> 22.dp
+            RegaGlassMaterial.Clear -> 1.5.dp
+            RegaGlassMaterial.Thin -> 2.dp
+            RegaGlassMaterial.Regular -> 2.5.dp
+            RegaGlassMaterial.Thick -> 3.5.dp
         }
         val targetRefractionHeightDp = when (style.material) {
-            RegaGlassMaterial.Clear -> 10.dp
+            RegaGlassMaterial.Clear -> 12.dp
             RegaGlassMaterial.Thin -> 14.dp
             RegaGlassMaterial.Regular -> 16.dp
             RegaGlassMaterial.Thick -> 18.dp
         }
         val targetRefractionAmountDp = when (style.material) {
-            RegaGlassMaterial.Clear -> 18.dp
-            RegaGlassMaterial.Thin -> 24.dp
-            RegaGlassMaterial.Regular -> 28.dp
-            RegaGlassMaterial.Thick -> 32.dp
+            RegaGlassMaterial.Clear -> 22.dp
+            RegaGlassMaterial.Thin -> 26.dp
+            RegaGlassMaterial.Regular -> 30.dp
+            RegaGlassMaterial.Thick -> 34.dp
         }
 
         Box(
             modifier = modifier
                 .drawBackdrop(
                     backdrop = backdropState.kyantBackdrop,
-                    shape = { shape },
+                    shape = { glassShape },
                     effects = {
                         vibrancy()
                         blur(targetBlurDp.toPx())
                         val maxLens = (size.minDimension * 0.42f).coerceAtLeast(0f)
                         val safeHeight = minOf(targetRefractionHeightDp.toPx(), maxLens)
-                        val safeAmount = minOf(targetRefractionAmountDp.toPx(), maxLens * 1.6f)
+                        val safeAmount = minOf(targetRefractionAmountDp.toPx(), maxLens * 1.65f)
                         if (safeHeight >= 1f && safeAmount >= 1f) {
                             lens(
                                 refractionHeight = safeHeight,
@@ -216,14 +232,14 @@ fun RegaLiquidGlass(
                     },
                     highlight = {
                         Highlight.Default.copy(
-                            alpha = style.highlightIntensity.coerceIn(0.25f, 0.85f),
+                            alpha = style.highlightIntensity.coerceIn(0.45f, 0.90f),
                         )
                     },
                     shadow = {
                         if (style.elevation > 0.dp) {
                             Shadow(
-                                radius = style.elevation * 1.8f,
-                                color = Color.Black.copy(alpha = if (colors.isDark) 0.32f else 0.14f),
+                                radius = style.elevation * 1.6f,
+                                color = Color.Black.copy(alpha = if (colors.isDark) 0.24f else 0.12f),
                             )
                         } else {
                             null
@@ -237,7 +253,7 @@ fun RegaLiquidGlass(
                 )
                 .then(
                     if (luminousBorder.alpha > 0.005f) {
-                        Modifier.border(width = 0.75.dp, color = luminousBorder, shape = shape)
+                        Modifier.border(width = 0.75.dp, color = luminousBorder, shape = glassShape)
                     } else {
                         Modifier
                     },
@@ -252,16 +268,16 @@ fun RegaLiquidGlass(
             isDark = colors.isDark,
             supportsBlur = false,
         )
-        val topHighlight = lerp(fallbackTint, Color.White, if (colors.isDark) 0.14f else 0.32f)
+        val topHighlight = lerp(fallbackTint, Color.White, if (colors.isDark) 0.12f else 0.34f)
         Box(
             modifier = modifier
-                .clip(shape)
+                .clip(glassShape)
                 .background(
                     Brush.verticalGradient(
                         listOf(topHighlight, fallbackTint),
                     ),
                 )
-                .border(width = 0.75.dp, color = luminousBorder, shape = shape),
+                .border(width = 0.75.dp, color = luminousBorder, shape = glassShape),
             contentAlignment = contentAlignment,
             content = content,
         )

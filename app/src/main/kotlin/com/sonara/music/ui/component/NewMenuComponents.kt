@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
 import com.sonara.music.ui.component.glass.regaGlassSpecular
 import com.sonara.music.ui.theme.LocalRegaColors
 
@@ -70,7 +71,7 @@ private fun NewActionButton(
         }
     }
 
-    val shape = RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(if (LocalLiquidGlassEnabled.current) 18.dp else 8.dp)
     Box(
         modifier =
             modifier

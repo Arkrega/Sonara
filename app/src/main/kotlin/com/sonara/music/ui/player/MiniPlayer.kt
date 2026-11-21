@@ -295,9 +295,9 @@ private fun NewMiniPlayer(
         }
     }
 
-    // Memoize colors
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
     val backgroundColor = when (miniPlayerBackground) {
-        MiniPlayerBackgroundStyle.DEFAULT    -> if (pureBlack && isSystemInDarkTheme()) Color.Black else LocalRegaColors.current.glassTint
+        MiniPlayerBackgroundStyle.DEFAULT    -> if (pureBlack && isSystemInDarkTheme() && !liquidGlassEnabled) Color.Black else LocalRegaColors.current.glassTint
         MiniPlayerBackgroundStyle.TRANSPARENT -> Color.Black.copy(alpha = 0.25f)
         MiniPlayerBackgroundStyle.BLUR       -> MaterialTheme.colorScheme.surfaceContainer
         MiniPlayerBackgroundStyle.GRADIENT   -> MaterialTheme.colorScheme.surfaceContainer
@@ -382,7 +382,6 @@ private fun NewMiniPlayer(
                 },
     ) {
         val interactionSource = remember { MutableInteractionSource() }
-        val liquidGlassEnabled = LocalLiquidGlassEnabled.current
         val miniPlayerCornerRadius = if (liquidGlassEnabled) 22.dp else 16.dp
         val miniPlayerShape = RoundedCornerShape(miniPlayerCornerRadius)
         RegaLiquidGlass(
@@ -400,9 +399,13 @@ private fun NewMiniPlayer(
                     )
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) },
             shape = miniPlayerShape,
-            borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.09f),
+            borderColor = if (liquidGlassEnabled) {
+                Color.White.copy(alpha = if (useDarkTheme) 0.28f else 0.62f)
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.09f)
+            },
             style = RegaGlassStyle.preset(
-                material = RegaGlassMaterial.Thin,
+                material = if (liquidGlassEnabled) RegaGlassMaterial.Clear else RegaGlassMaterial.Thin,
                 tint = backgroundColor,
                 borderRadius = miniPlayerCornerRadius,
                 elevation = 0.dp,
@@ -793,6 +796,7 @@ private fun LegacyMiniPlayer(
 
     val interactionSource = remember { MutableInteractionSource() }
 
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
     val legacyShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     RegaLiquidGlass(
         modifier =
@@ -803,8 +807,8 @@ private fun LegacyMiniPlayer(
         shape = legacyShape,
         borderColor = LocalRegaColors.current.glassBorder,
         style = RegaGlassStyle.preset(
-            material = RegaGlassMaterial.Regular,
-            tint = if (pureBlack && isSystemInDarkTheme()) Color.Black.copy(alpha = 0.85f) else LocalRegaColors.current.glassTint,
+            material = if (liquidGlassEnabled) RegaGlassMaterial.Clear else RegaGlassMaterial.Regular,
+            tint = if (pureBlack && isSystemInDarkTheme() && !liquidGlassEnabled) Color.Black.copy(alpha = 0.85f) else LocalRegaColors.current.glassTint,
             borderRadius = 20.dp,
             elevation = 10.dp,
         ),

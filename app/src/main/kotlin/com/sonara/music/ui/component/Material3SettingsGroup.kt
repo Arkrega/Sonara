@@ -6,6 +6,7 @@
 package com.sonara.music.ui.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,21 +33,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.RegaGlassMaterial
+import com.sonara.music.ui.component.glass.RegaGlassStyle
+import com.sonara.music.ui.component.glass.RegaLiquidGlass
+import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.ui.theme.SonaraHairline
 import com.sonara.music.ui.theme.SonaraLabelStyle
 import com.sonara.music.ui.theme.SonaraSpacing
 
-/**
- * A Material 3 Expressive style settings group component
- * @param title The title of the settings group
- * @param items List of settings items to display
- */
 @Composable
 fun Material3SettingsGroup(
     title: String? = null,
     items: List<Material3SettingsItem>,
     useLowContrast: Boolean = false
 ) {
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -61,39 +63,60 @@ fun Material3SettingsGroup(
             )
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(10.dp)
-                )
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(10.dp)
-                )
-                .clip(RoundedCornerShape(10.dp))
-        ) {
-            items.forEachIndexed { index, item ->
-                if (index > 0) {
-                    SonaraHairline(
-                        modifier = Modifier.padding(start = 52.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
+        val groupContent: @Composable () -> Unit = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                items.forEachIndexed { index, item ->
+                    if (index > 0) {
+                        SonaraHairline(
+                            modifier = Modifier.padding(start = 52.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+                    Material3SettingsItemRow(item = item, liquidGlassEnabled = liquidGlassEnabled)
                 }
-                Material3SettingsItemRow(item = item)
+            }
+        }
+
+        if (liquidGlassEnabled) {
+            RegaLiquidGlass(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                borderColor = LocalRegaColors.current.glassBorder,
+                style = RegaGlassStyle.preset(
+                    material = RegaGlassMaterial.Clear,
+                    tint = MaterialTheme.colorScheme.surface,
+                    borderRadius = 18.dp,
+                    elevation = 0.dp,
+                ),
+                contentAlignment = Alignment.TopStart,
+            ) {
+                groupContent()
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .clip(RoundedCornerShape(10.dp))
+            ) {
+                groupContent()
             }
         }
     }
 }
 
-/**
- * Individual settings item row with Material 3 styling
- */
 @Composable
 private fun Material3SettingsItemRow(
-    item: Material3SettingsItem
+    item: Material3SettingsItem,
+    liquidGlassEnabled: Boolean,
 ) {
     Row(
         modifier = Modifier
@@ -109,12 +132,24 @@ private fun Material3SettingsItemRow(
             item.leadingContent.invoke()
             Spacer(modifier = Modifier.width(SonaraSpacing.md))
         } else if (item.icon != null) {
+            val iconShape = if (liquidGlassEnabled) CircleShape else RoundedCornerShape(8.dp)
             Box(
                 modifier = Modifier
                     .size(28.dp)
                     .background(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
-                        shape = RoundedCornerShape(8.dp)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (liquidGlassEnabled) 0.08f else 0.06f),
+                        shape = iconShape
+                    )
+                    .then(
+                        if (liquidGlassEnabled) {
+                            Modifier.border(
+                                width = 0.75.dp,
+                                color = LocalRegaColors.current.glassBorder,
+                                shape = iconShape,
+                            )
+                        } else {
+                            Modifier
+                        },
                     ),
                 contentAlignment = Alignment.Center
             ) {

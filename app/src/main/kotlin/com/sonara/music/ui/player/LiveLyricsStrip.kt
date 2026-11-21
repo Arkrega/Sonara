@@ -78,6 +78,10 @@ import com.sonara.music.lyrics.LyricsUtils
 import com.sonara.music.lyrics.WordTimestamp
 import com.sonara.music.lyrics.rememberLyricsPlayhead
 import com.sonara.music.playback.PlayerConnection
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.RegaGlassMaterial
+import com.sonara.music.ui.component.glass.RegaGlassStyle
+import com.sonara.music.ui.component.glass.RegaLiquidGlass
 
 @Composable
 internal fun LiveLyricsStrip(
@@ -134,21 +138,22 @@ internal fun LiveLyricsStrip(
     }
 
     val interactionSource = remember { MutableInteractionSource() }
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+    val cardRadius = if (compactMode) 16.dp else 20.dp
+    val cardShape = RoundedCornerShape(cardRadius)
 
-    val cardShape = RoundedCornerShape(if (compactMode) 16.dp else 20.dp)
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(cardShape)
-            .background(textColor.copy(alpha = 0.055f))
-            .border(1.dp, textColor.copy(alpha = 0.075f), cardShape)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = ripple(color = textColor.copy(alpha = 0.12f)),
-                onClick = onOpenLyrics,
-            )
-            .padding(horizontal = if (compactMode) 14.dp else 16.dp, vertical = if (compactMode) 12.dp else 14.dp),
-    ) {
+    val stripContent: @Composable () -> Unit = {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(cardShape)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = ripple(color = textColor.copy(alpha = 0.12f)),
+                    onClick = onOpenLyrics,
+                )
+                .padding(horizontal = if (compactMode) 14.dp else 16.dp, vertical = if (compactMode) 12.dp else 14.dp),
+        ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -301,6 +306,34 @@ internal fun LiveLyricsStrip(
                         }
                     }
                 }
+        }
+        }
+    }
+
+    if (liquidGlassEnabled) {
+        RegaLiquidGlass(
+            modifier = modifier.fillMaxWidth(),
+            shape = cardShape,
+            borderColor = textColor.copy(alpha = 0.18f),
+            style = RegaGlassStyle.preset(
+                material = RegaGlassMaterial.Clear,
+                tint = textColor.copy(alpha = 0.06f),
+                borderRadius = cardRadius,
+                elevation = 0.dp,
+            ),
+            contentAlignment = Alignment.TopStart,
+        ) {
+            stripContent()
+        }
+    } else {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .clip(cardShape)
+                .background(textColor.copy(alpha = 0.055f))
+                .border(1.dp, textColor.copy(alpha = 0.075f), cardShape),
+        ) {
+            stripContent()
         }
     }
 }

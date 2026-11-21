@@ -24,35 +24,61 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.RegaGlassMaterial
+import com.sonara.music.ui.component.glass.RegaGlassStyle
+import com.sonara.music.ui.component.glass.RegaLiquidGlass
+import com.sonara.music.ui.theme.LocalRegaColors
 
 @Composable
 fun Material3MenuGroup(
     items: List<Material3MenuItemData>
 ) {
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         items.forEachIndexed { index, item ->
             val shape = when {
-                items.size == 1 -> RoundedCornerShape(8.dp)
+                items.size == 1 -> RoundedCornerShape(if (liquidGlassEnabled) 20.dp else 8.dp)
                 index == 0 -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp)
                 index == items.size - 1 -> RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
                 else -> RoundedCornerShape(6.dp)
             }
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .animateContentSize(),
-                shape = shape,
-                colors = item.cardColors ?: CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Material3MenuItemRow(item = item)
+            if (liquidGlassEnabled) {
+                RegaLiquidGlass(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(),
+                    shape = shape,
+                    borderColor = LocalRegaColors.current.glassBorder,
+                    style = RegaGlassStyle.preset(
+                        material = RegaGlassMaterial.Clear,
+                        tint = item.cardColors?.containerColor ?: MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
+                        borderRadius = 20.dp,
+                        elevation = 0.dp,
+                    ),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Material3MenuItemRow(item = item, shape = shape)
+                }
+            } else {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(),
+                    shape = shape,
+                    colors = item.cardColors ?: CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Material3MenuItemRow(item = item, shape = shape)
+                }
             }
         }
     }
@@ -60,11 +86,13 @@ fun Material3MenuGroup(
 
 @Composable
 private fun Material3MenuItemRow(
-    item: Material3MenuItemData
+    item: Material3MenuItemData,
+    shape: RoundedCornerShape,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(shape)
             .clickable(
                 enabled = item.onClick != null,
                 onClick = { item.onClick?.invoke() }

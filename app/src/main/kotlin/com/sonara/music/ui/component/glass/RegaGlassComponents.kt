@@ -167,6 +167,55 @@ fun RegaPrimaryButton(
         label = "primaryButtonScale",
     )
 
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+    val resolvedShape = resolveLiquidGlassShape(shape, liquidGlassEnabled)
+
+    if (liquidGlassEnabled) {
+        val glassContentColor = if (enabled) containerColor else containerColor.copy(alpha = 0.45f)
+        RegaLiquidGlass(
+            modifier = modifier
+                .minimumInteractiveComponentSize()
+                .defaultMinSize(minHeight = 50.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
+            shape = resolvedShape,
+            borderColor = if (enabled) containerColor.copy(alpha = 0.50f) else containerColor.copy(alpha = 0.20f),
+            style = RegaGlassStyle.preset(
+                material = RegaGlassMaterial.Thin,
+                tint = if (enabled) containerColor.copy(alpha = 0.16f) else containerColor.copy(alpha = 0.08f),
+                borderRadius = 25.dp,
+                elevation = if (enabled) 8.dp else 0.dp,
+            ),
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(resolvedShape)
+                    .clickable(
+                        enabled = enabled,
+                        role = Role.Button,
+                        interactionSource = interactionSource,
+                        indication = ripple(bounded = true, color = glassContentColor.copy(alpha = 0.22f)),
+                        onClick = onClick,
+                    )
+                    .padding(horizontal = contentPadding, vertical = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                CompositionLocalProvider(LocalContentColor provides glassContentColor) {
+                    ProvideTextStyle(value = MaterialTheme.typography.labelLarge) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            content = content,
+                        )
+                    }
+                }
+            }
+        }
+        return
+    }
+
     Box(
         modifier = modifier
             .minimumInteractiveComponentSize()
@@ -219,6 +268,8 @@ fun RegaSecondaryButton(
         label = "secondaryButtonScale",
     )
 
+    val resolvedShape = resolveLiquidGlassShape(shape, LocalLiquidGlassEnabled.current)
+
     RegaLiquidGlass(
         modifier = modifier
             .minimumInteractiveComponentSize()
@@ -227,10 +278,10 @@ fun RegaSecondaryButton(
                 scaleX = scale
                 scaleY = scale
             },
-        shape = shape,
+        shape = resolvedShape,
         borderColor = if (enabled) borderColor else borderColor.copy(alpha = 0.38f),
         style = RegaGlassStyle.preset(
-            material = RegaGlassMaterial.Thin,
+            material = RegaGlassMaterial.Clear,
             tint = if (enabled) containerColor else containerColor.copy(alpha = 0.38f),
             borderRadius = 24.dp,
             elevation = if (enabled) 6.dp else 0.dp,
@@ -238,7 +289,7 @@ fun RegaSecondaryButton(
     ) {
         Box(
             modifier = Modifier
-                .clip(shape)
+                .clip(resolvedShape)
                 .clickable(
                     enabled = enabled,
                     role = Role.Button,
@@ -284,6 +335,8 @@ fun RegaIconButton(
         label = "iconButtonScale",
     )
 
+    val resolvedShape = resolveLiquidGlassShape(shape, LocalLiquidGlassEnabled.current)
+
     RegaLiquidGlass(
         modifier = modifier
             .minimumInteractiveComponentSize()
@@ -292,7 +345,7 @@ fun RegaIconButton(
                 scaleX = scale
                 scaleY = scale
             },
-        shape = shape,
+        shape = resolvedShape,
         borderColor = if (enabled) borderColor else borderColor.copy(alpha = 0.25f),
         style = RegaGlassStyle.preset(
             material = RegaGlassMaterial.Clear,
@@ -304,7 +357,7 @@ fun RegaIconButton(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(shape)
+                .clip(resolvedShape)
                 .clickable(
                     enabled = enabled,
                     role = Role.Button,
@@ -350,7 +403,67 @@ fun RegaPlayButton(
         label = "playButtonScale",
     )
     val isDark = LocalRegaColors.current.isDark
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
     val resolvedDescription = contentDescription ?: stringResource(R.string.play_pause)
+
+    if (liquidGlassEnabled) {
+        val glassIconColor = if (enabled) containerColor else containerColor.copy(alpha = 0.4f)
+        RegaLiquidGlass(
+            modifier = modifier
+                .minimumInteractiveComponentSize()
+                .size(size)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
+            shape = CircleShape,
+            borderColor = if (enabled) containerColor.copy(alpha = if (isDark) 0.42f else 0.55f) else containerColor.copy(alpha = 0.16f),
+            style = RegaGlassStyle.preset(
+                material = RegaGlassMaterial.Thin,
+                tint = if (enabled) containerColor.copy(alpha = 0.14f) else containerColor.copy(alpha = 0.06f),
+                borderRadius = size / 2,
+                elevation = if (enabled) 10.dp else 0.dp,
+            ),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .clickable(
+                        enabled = enabled,
+                        role = Role.Button,
+                        interactionSource = interactionSource,
+                        indication = ripple(bounded = false, radius = size / 2, color = glassIconColor.copy(alpha = 0.25f)),
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            onClick()
+                        },
+                    )
+                    .semantics {
+                        this.contentDescription = resolvedDescription
+                        this.role = Role.Button
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                AnimatedContent(
+                    targetState = isPlaying,
+                    transitionSpec = {
+                        (scaleIn(initialScale = 0.6f) + fadeIn(tween(durationMillis = 110))) togetherWith
+                            (scaleOut(targetScale = 0.6f) + fadeOut(tween(durationMillis = 90)))
+                    },
+                    label = "playPauseIcon",
+                ) { playing ->
+                    Icon(
+                        painter = painterResource(if (playing) R.drawable.pause else R.drawable.play),
+                        contentDescription = null,
+                        tint = glassIconColor,
+                        modifier = Modifier.size(size * 0.44f),
+                    )
+                }
+            }
+        }
+        return
+    }
 
     Box(
         modifier = modifier
@@ -424,6 +537,8 @@ fun RegaGlassFab(
         label = "glassFabScale",
     )
 
+    val resolvedShape = resolveLiquidGlassShape(shape, LocalLiquidGlassEnabled.current)
+
     RegaLiquidGlass(
         modifier = modifier
             .minimumInteractiveComponentSize()
@@ -432,10 +547,10 @@ fun RegaGlassFab(
                 scaleX = scale
                 scaleY = scale
             },
-        shape = shape,
+        shape = resolvedShape,
         borderColor = if (enabled) borderColor else borderColor.copy(alpha = 0.25f),
         style = RegaGlassStyle.preset(
-            material = RegaGlassMaterial.Regular,
+            material = RegaGlassMaterial.Clear,
             tint = if (enabled) containerColor else containerColor.copy(alpha = 0.38f),
             borderRadius = 18.dp,
             elevation = if (enabled) 10.dp else 0.dp,
@@ -444,7 +559,7 @@ fun RegaGlassFab(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(shape)
+                .clip(resolvedShape)
                 .clickable(
                     enabled = enabled,
                     role = Role.Button,
@@ -487,20 +602,34 @@ fun RegaGlassChip(
         label = "chipScale",
     )
 
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+
     val containerColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.primary else LocalRegaColors.current.glassTint,
+        targetValue = when {
+            selected && liquidGlassEnabled -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+            selected -> MaterialTheme.colorScheme.primary
+            else -> LocalRegaColors.current.glassTint
+        },
         animationSpec = tween(durationMillis = 200),
         label = "chipContainer",
     )
 
     val contentColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.onPrimary else LocalRegaColors.current.textSecondary,
+        targetValue = when {
+            selected && liquidGlassEnabled -> MaterialTheme.colorScheme.onSurface
+            selected -> MaterialTheme.colorScheme.onPrimary
+            else -> LocalRegaColors.current.textSecondary
+        },
         animationSpec = tween(durationMillis = 200),
         label = "chipContent",
     )
 
     val borderColor by animateColorAsState(
-        targetValue = if (selected) Color.Transparent else LocalRegaColors.current.glassBorder,
+        targetValue = when {
+            selected && liquidGlassEnabled -> MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+            selected -> Color.Transparent
+            else -> LocalRegaColors.current.glassBorder
+        },
         animationSpec = tween(durationMillis = 200),
         label = "chipBorder",
     )
@@ -516,7 +645,7 @@ fun RegaGlassChip(
         shape = CircleShape,
         borderColor = borderColor,
         style = RegaGlassStyle.preset(
-            material = if (selected) RegaGlassMaterial.Thick else RegaGlassMaterial.Clear,
+            material = if (selected) RegaGlassMaterial.Thin else RegaGlassMaterial.Clear,
             tint = containerColor,
             borderRadius = 19.dp,
             elevation = if (selected) 4.dp else 0.dp,
@@ -673,39 +802,40 @@ fun Modifier.regaGlassSpecular(
             .border(borderWidth, actualBorder, shape)
     }
 
+    val glassShape = resolveLiquidGlassShape(shape, liquidGlassEnabled = true)
     val glassTint = resolveLiquidGlassSurfaceTint(
         baseTint = actualTint,
-        material = RegaGlassMaterial.Thin,
+        material = RegaGlassMaterial.Clear,
         isDark = colors.isDark,
     )
     val luminousBorder =
         if (actualBorder.alpha <= 0.01f) {
             Color.Transparent
         } else {
-            val sheen = if (colors.isDark) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.56f)
-            lerp(actualBorder, sheen, 0.35f)
+            val sheen = if (colors.isDark) Color.White.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.65f)
+            lerp(actualBorder, sheen, 0.45f)
         }
 
     if (backdropState != null && backdropState.enabled) {
         this
             .drawPrismalGlass(
                 backdrop = backdropState.prismalBackdrop,
-                shape = { shape },
+                shape = { glassShape },
                 specular = { PrismalSpecular.Default },
                 depthShadow = null,
                 effects = {
                     val maxLens = (size.minDimension * 0.42f).coerceAtLeast(0f)
-                    val safeHeight = minOf(with(density) { 10.dp.toPx() }, maxLens)
-                    val safeAmount = minOf(with(density) { 18.dp.toPx() }, maxLens * 1.5f)
+                    val safeHeight = minOf(with(density) { 12.dp.toPx() }, maxLens)
+                    val safeAmount = minOf(with(density) { 24.dp.toPx() }, maxLens * 1.6f)
                     applyPrismalGlassEffects(
                         density = density,
                         adaptiveLuminance = false,
                         luminance = if (colors.isDark) 0.25f else 0.78f,
-                        blurRadiusPx = with(density) { 12.dp.toPx() },
+                        blurRadiusPx = with(density) { 2.dp.toPx() },
                         refractionHeightPx = safeHeight,
                         refractionAmountPx = safeAmount,
                         depthEffect = true,
-                        chromaticAberration = 0.18f,
+                        chromaticAberration = 0.24f,
                         useVibrancy = true,
                     )
                 },
@@ -717,7 +847,7 @@ fun Modifier.regaGlassSpecular(
             )
             .then(
                 if (luminousBorder.alpha > 0.005f) {
-                    Modifier.border(0.75.dp, luminousBorder, shape)
+                    Modifier.border(0.75.dp, luminousBorder, glassShape)
                 } else {
                     Modifier
                 },
@@ -729,11 +859,11 @@ fun Modifier.regaGlassSpecular(
             isDark = colors.isDark,
             supportsBlur = false,
         )
-        val topHighlight = lerp(fallbackTint, Color.White, if (colors.isDark) 0.14f else 0.30f)
+        val topHighlight = lerp(fallbackTint, Color.White, if (colors.isDark) 0.12f else 0.32f)
         this
-            .clip(shape)
+            .clip(glassShape)
             .background(Brush.verticalGradient(listOf(topHighlight, fallbackTint)))
-            .border(0.75.dp, luminousBorder, shape)
+            .border(0.75.dp, luminousBorder, glassShape)
     }
 }
 

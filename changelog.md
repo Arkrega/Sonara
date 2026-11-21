@@ -1,3 +1,13 @@
+---v1.5.1
+# SONARA 1.5.1
+
+Crystal-clear transparent Liquid Glass tuning and complete app-wide Liquid Glass coverage across every surface.
+
+## Highlights
+- Re-tuned Liquid Glass clarity with ultra-light micro-blur (1.5dp-3.5dp), crystal-transparent glass tinting, sharp edge lens refraction, and luminous specular rims so background content stays crisp and clearly visible
+- Extended Liquid Glass across the entire app when enabled: TopAppBar and status badges, floating bottom dock with zero-blur chromatic droplet, navigation rail, mini-player, all player controls and dock buttons, live lyrics strip, lyrics/queue panels, search bar, filter/choice chips, settings groups, integration cards, release notes, modal bottom sheets, action grids, menus, FABs, switches, and all dialogs
+- Improved contrast on Liquid Glass Play button, primary buttons, and selected chips while preserving full monochrome flat UI whenever Liquid Glass is toggled off
+
 ---v1.5.0
 # SONARA 1.5.0
 

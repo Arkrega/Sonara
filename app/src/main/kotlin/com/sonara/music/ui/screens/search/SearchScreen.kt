@@ -70,6 +70,11 @@ import com.sonara.music.constants.SearchSourceKey
 import com.sonara.music.db.entities.SearchHistory
 import com.sonara.music.playback.queues.YouTubeQueue
 import com.sonara.music.ui.component.HideOnScrollFAB
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.RegaGlassMaterial
+import com.sonara.music.ui.component.glass.RegaGlassStyle
+import com.sonara.music.ui.component.glass.RegaLiquidGlass
+import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.utils.SearchRoutes
 import com.sonara.music.utils.rememberEnumPreference
 import com.sonara.music.utils.rememberPreference
@@ -167,29 +172,16 @@ fun SearchScreen(
 
     val onSearchFromSuggestion: (String) -> Unit = { searchQuery -> handleSearch(searchQuery) }
 
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(end = 8.dp)
-                            .height(52.dp)
-                            .background(
-                                color = Color.Transparent,
-                                shape = RoundedCornerShape(8.dp),
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = if (query.text.isNotEmpty()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
-                                shape = RoundedCornerShape(8.dp),
-                            )
-                            .padding(horizontal = 12.dp),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
+                    val searchBarContent: @Composable () -> Unit = {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
@@ -274,6 +266,45 @@ fun SearchScreen(
                                     modifier = Modifier.size(18.dp),
                                 )
                             }
+                        }
+                    }
+
+                    if (liquidGlassEnabled) {
+                        RegaLiquidGlass(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(end = 8.dp)
+                                .height(48.dp),
+                            shape = CircleShape,
+                            borderColor = if (query.text.isNotEmpty()) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f) else LocalRegaColors.current.glassBorder,
+                            style = RegaGlassStyle.preset(
+                                material = RegaGlassMaterial.Clear,
+                                tint = LocalRegaColors.current.glassTint,
+                                borderRadius = 24.dp,
+                                elevation = 0.dp,
+                            ),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            searchBarContent()
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(end = 8.dp)
+                                .height(52.dp)
+                                .background(
+                                    color = Color.Transparent,
+                                    shape = RoundedCornerShape(8.dp),
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (query.text.isNotEmpty()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
+                                    shape = RoundedCornerShape(8.dp),
+                                ),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            searchBarContent()
                         }
                     }
                 },

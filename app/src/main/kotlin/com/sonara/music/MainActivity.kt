@@ -198,6 +198,7 @@ import com.sonara.music.ui.component.rememberBottomSheetState
 import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
 import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.regaGlassSpecular
 import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.menu.YouTubeSongMenu
 import com.sonara.music.ui.player.BottomSheetPlayer
@@ -208,6 +209,7 @@ import com.sonara.music.ui.screens.settings.ChangelogScreen
 import com.sonara.music.ui.screens.settings.DarkMode
 import com.sonara.music.ui.screens.settings.NavigationTab
 import com.sonara.music.ui.theme.DefaultThemeColor
+import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.ui.theme.SonaraMotion
 import com.sonara.music.ui.theme.SonaraTheme
 import com.sonara.music.ui.utils.appBarScrollBehavior
@@ -1218,8 +1220,6 @@ class MainActivity : FragmentActivity() {
                                         },
                                         actions = {
                                             if (!isOnline) {
-                                                // Quiet, always-visible reminder that the app is
-                                                // offline; tapping it repeats the full notice.
                                                 Surface(
                                                     onClick = {
                                                         coroutineScope.launch {
@@ -1232,31 +1232,55 @@ class MainActivity : FragmentActivity() {
                                                         }
                                                     },
                                                     shape = CircleShape,
-                                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                    color = if (enableLiquidGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHighest,
                                                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                                     modifier =
                                                         Modifier
                                                             .padding(end = 8.dp)
-                                                            .height(32.dp),
+                                                            .height(32.dp)
+                                                            .then(
+                                                                if (enableLiquidGlass) {
+                                                                    Modifier.regaGlassSpecular(
+                                                                        shape = CircleShape,
+                                                                        tintColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                                        borderColor = LocalRegaColors.current.glassBorder,
+                                                                    )
+                                                                } else {
+                                                                    Modifier
+                                                                },
+                                                            ),
                                                 ) {
-                                                    Text(
-                                                        text = stringResource(R.string.offline_badge),
-                                                        style = MaterialTheme.typography.labelMedium,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        modifier = Modifier.padding(horizontal = 12.dp),
-                                                    )
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Text(
+                                                            text = stringResource(R.string.offline_badge),
+                                                            style = MaterialTheme.typography.labelMedium,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            modifier = Modifier.padding(horizontal = 12.dp),
+                                                        )
+                                                    }
                                                 }
                                             }
                                             if (currentRoute == Screens.Home.route && availableUpdate != null) {
                                                 Surface(
                                                     onClick = { availableUpdate?.let { beginUpdate(it) } },
                                                     shape = CircleShape,
-                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                                                    color = if (enableLiquidGlass) Color.Transparent else MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
                                                     contentColor = MaterialTheme.colorScheme.primary,
                                                     modifier =
                                                         Modifier
                                                             .padding(end = 12.dp)
-                                                            .height(32.dp),
+                                                            .height(32.dp)
+                                                            .then(
+                                                                if (enableLiquidGlass) {
+                                                                    Modifier.regaGlassSpecular(
+                                                                        shape = CircleShape,
+                                                                        tintColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                                                                        borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.42f),
+                                                                    )
+                                                                } else {
+                                                                    Modifier
+                                                                },
+                                                            ),
                                                 ) {
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
@@ -1302,21 +1326,41 @@ class MainActivity : FragmentActivity() {
                                         scrollBehavior = topAppBarScrollBehavior,
                                         colors =
                                             TopAppBarDefaults.topAppBarColors(
-                                                containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.background,
-                                                scrolledContainerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.background,
+                                                containerColor = when {
+                                                    enableLiquidGlass -> Color.Transparent
+                                                    pureBlack -> Color.Black
+                                                    else -> MaterialTheme.colorScheme.background
+                                                },
+                                                scrolledContainerColor = when {
+                                                    enableLiquidGlass -> Color.Transparent
+                                                    pureBlack -> Color.Black
+                                                    else -> MaterialTheme.colorScheme.background
+                                                },
                                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                                                 actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                                                 navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
                                             ),
                                         modifier =
-                                            Modifier.windowInsetsPadding(
-                                                if (showRail) {
-                                                    WindowInsets(left = NavigationBarHeight)
-                                                        .add(cutoutInsets.only(WindowInsetsSides.Start))
-                                                } else {
-                                                    cutoutInsets.only(WindowInsetsSides.Start + WindowInsetsSides.End)
-                                                },
-                                            ),
+                                            Modifier
+                                                .then(
+                                                    if (enableLiquidGlass) {
+                                                        Modifier.regaGlassSpecular(
+                                                            shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp),
+                                                            tintColor = baseBg.copy(alpha = 0.14f),
+                                                            borderColor = LocalRegaColors.current.glassBorder,
+                                                        )
+                                                    } else {
+                                                        Modifier
+                                                    },
+                                                )
+                                                .windowInsetsPadding(
+                                                    if (showRail) {
+                                                        WindowInsets(left = NavigationBarHeight)
+                                                            .add(cutoutInsets.only(WindowInsetsSides.Start))
+                                                    } else {
+                                                        cutoutInsets.only(WindowInsetsSides.Start + WindowInsetsSides.End)
+                                                    },
+                                                ),
                                     )
                                 }
                             }
@@ -1466,11 +1510,10 @@ class MainActivity : FragmentActivity() {
                                             .fillMaxWidth()
                                             .align(Alignment.BottomCenter)
                                             .height(bottomInsetDp)
-                                            // Use graphicsLayer for background color changes
                                             .graphicsLayer {
                                                 val progress = playerBottomSheetState.progress
                                                 alpha =
-                                                    if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar)) 0f else 1f
+                                                    if (enableLiquidGlass || progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar)) 0f else 1f
                                             }.background(baseBg),
                                 )
                             }

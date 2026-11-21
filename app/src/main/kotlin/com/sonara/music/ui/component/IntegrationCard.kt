@@ -33,22 +33,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.RegaGlassMaterial
+import com.sonara.music.ui.component.glass.RegaGlassStyle
+import com.sonara.music.ui.component.glass.RegaLiquidGlass
+import com.sonara.music.ui.theme.LocalRegaColors
 
-/**
- * A Material 3 Expressive style settings group component
- * @param title The title of the settings group
- * @param items List of settings items to display
- */
 @Composable
 fun IntegrationCard(
     title: String? = null,
     items: List<IntegrationCardItem>
 ) {
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
     ) {
-        // Section title
         title?.let {
             Text(
                 text = it,
@@ -58,30 +58,48 @@ fun IntegrationCard(
             )
         }
 
-        // Settings items
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items.forEachIndexed { index, item ->
                 val shape = when {
-                    items.size == 1 -> RoundedCornerShape(8.dp)
+                    items.size == 1 -> RoundedCornerShape(if (liquidGlassEnabled) 20.dp else 8.dp)
                     index == 0 -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp)
                     index == items.size - 1 -> RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
                     else -> RoundedCornerShape(6.dp)
                 }
 
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateContentSize(),
-                    shape = shape,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    IntegrationCardItemRow(item = item)
+                if (liquidGlassEnabled) {
+                    RegaLiquidGlass(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateContentSize(),
+                        shape = shape,
+                        borderColor = LocalRegaColors.current.glassBorder,
+                        style = RegaGlassStyle.preset(
+                            material = RegaGlassMaterial.Clear,
+                            tint = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
+                            borderRadius = 20.dp,
+                            elevation = 0.dp,
+                        ),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        IntegrationCardItemRow(item = item)
+                    }
+                } else {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateContentSize(),
+                        shape = shape,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    ) {
+                        IntegrationCardItemRow(item = item)
+                    }
                 }
             }
         }

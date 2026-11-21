@@ -56,11 +56,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.sonara.music.LocalNavController
 import com.sonara.music.R
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
 import com.sonara.music.ui.component.glass.RegaDialogShape
 import com.sonara.music.ui.component.glass.RegaGlassMaterial
 import com.sonara.music.ui.component.glass.RegaGlassStyle
 import com.sonara.music.ui.component.glass.RegaLiquidGlass
 import com.sonara.music.ui.component.glass.regaGlassSpecular
+import com.sonara.music.ui.component.glass.resolveLiquidGlassShape
 import com.sonara.music.ui.screens.settings.AccountSettings
 import com.sonara.music.ui.theme.LocalRegaColors
 import kotlinx.coroutines.delay
@@ -79,12 +81,13 @@ fun DefaultDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        val liquidGlassEnabled = LocalLiquidGlassEnabled.current
         RegaLiquidGlass(
             modifier = Modifier.padding(24.dp),
             shape = RegaDialogShape,
             borderColor = LocalRegaColors.current.glassBorder,
             style = RegaGlassStyle.preset(
-                material = RegaGlassMaterial.Thick,
+                material = if (liquidGlassEnabled) RegaGlassMaterial.Thin else RegaGlassMaterial.Thick,
                 tint = LocalRegaColors.current.glassModal,
                 borderRadius = 28.dp,
                 elevation = 14.dp,
@@ -167,18 +170,19 @@ fun AccountSettingsDialog(
                     },
             contentAlignment = Alignment.TopCenter,
         ) {
+            val dialogShape = resolveLiquidGlassShape(RegaDialogShape, LocalLiquidGlassEnabled.current)
             Surface(
                 modifier =
                     Modifier
                         .fillMaxWidth()
                         .padding(top = 72.dp, start = 16.dp, end = 16.dp)
                         .regaGlassSpecular(
-                            shape = RegaDialogShape,
+                            shape = dialogShape,
                             tintColor = LocalRegaColors.current.glassModal,
                             borderColor = LocalRegaColors.current.glassBorder,
                         )
-                        .clip(RegaDialogShape),
-                shape = RegaDialogShape,
+                        .clip(dialogShape),
+                shape = dialogShape,
                 color = Color.Transparent,
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 tonalElevation = 0.dp,
@@ -261,16 +265,17 @@ fun ListDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        val dialogShape = resolveLiquidGlassShape(RegaDialogShape, LocalLiquidGlassEnabled.current)
         Surface(
             modifier = Modifier
                 .padding(24.dp)
                 .regaGlassSpecular(
-                    shape = RegaDialogShape,
+                    shape = dialogShape,
                     tintColor = LocalRegaColors.current.glassModal,
                     borderColor = LocalRegaColors.current.glassBorder,
                 )
-                .clip(RegaDialogShape),
-            shape = RegaDialogShape,
+                .clip(dialogShape),
+            shape = dialogShape,
             color = Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 0.dp,
