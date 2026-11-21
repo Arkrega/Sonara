@@ -11,6 +11,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,7 +37,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.component.glass.RegaGlassFab
+import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -51,6 +55,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -503,9 +508,14 @@ fun AutoPlaylistScreen(
                     },
                 ),
     ) {
+        val screenBackdrop = rememberRegaBackdropState()
         LazyColumn(
             state = state,
             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+            modifier = Modifier
+                .fillMaxSize()
+                .regaBackdropSource(screenBackdrop)
+                .background(MaterialTheme.colorScheme.background),
         ) {
             if (songs != null) {
                 if (songs!!.isEmpty()) {
@@ -671,39 +681,40 @@ fun AutoPlaylistScreen(
             )
         }
 
-        // Upload FAB for uploaded playlist - positioned above mini player
         if (playlistType == PlaylistType.UPLOADED) {
-            androidx.compose.animation.AnimatedVisibility(
-                visible = state.isScrollingUp(),
-                enter = androidx.compose.animation.slideInVertically { it },
-                exit = androidx.compose.animation.slideOutVertically { it },
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .windowInsetsPadding(
-                            LocalPlayerAwareWindowInsets.current
-                                .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
-                        ).padding(16.dp),
-            ) {
-                RegaGlassFab(
-                    onClick = {
-                        filePickerLauncher.launch(
-                            arrayOf(
-                                "audio/mpeg",
-                                "audio/mp4",
-                                "audio/x-m4a",
-                                "audio/flac",
-                                "audio/ogg",
-                                "audio/x-ms-wma",
-                            ),
-                        )
-                    },
-                    contentDescription = stringResource(R.string.upload_songs),
+            CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = state.isScrollingUp(),
+                    enter = androidx.compose.animation.slideInVertically { it },
+                    exit = androidx.compose.animation.slideOutVertically { it },
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .windowInsetsPadding(
+                                LocalPlayerAwareWindowInsets.current
+                                    .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
+                            ).padding(16.dp),
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.upload),
-                        contentDescription = null,
-                    )
+                    RegaGlassFab(
+                        onClick = {
+                            filePickerLauncher.launch(
+                                arrayOf(
+                                    "audio/mpeg",
+                                    "audio/mp4",
+                                    "audio/x-m4a",
+                                    "audio/flac",
+                                    "audio/ogg",
+                                    "audio/x-ms-wma",
+                                ),
+                            )
+                        },
+                        contentDescription = stringResource(R.string.upload_songs),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.upload),
+                            contentDescription = null,
+                        )
+                    }
                 }
             }
         }

@@ -189,6 +189,26 @@ fun RegaLiquidGlass(
             val sheenColor = if (colors.isDark) Color.White.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.68f)
             if (borderColor != null) lerp(borderColor, sheenColor, 0.45f) else sheenColor
         }
+    val specularRimBrush =
+        if (luminousBorder.alpha > 0.005f) {
+            Brush.linearGradient(
+                colors = if (colors.isDark) {
+                    listOf(
+                        Color.White.copy(alpha = 0.46f),
+                        luminousBorder.copy(alpha = 0.14f),
+                        Color.White.copy(alpha = 0.26f),
+                    )
+                } else {
+                    listOf(
+                        Color.White.copy(alpha = 0.88f),
+                        luminousBorder.copy(alpha = 0.30f),
+                        Color.White.copy(alpha = 0.62f),
+                    )
+                },
+            )
+        } else {
+            null
+        }
 
     if (backdropState != null && backdropState.enabled) {
         val targetBlurDp = when (style.material) {
@@ -249,11 +269,19 @@ fun RegaLiquidGlass(
                         if (resolvedTint.alpha > 0.005f) {
                             drawRect(resolvedTint)
                         }
+                        drawRect(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = if (colors.isDark) 0.10f else 0.28f),
+                                    Color.Transparent,
+                                ),
+                            ),
+                        )
                     },
                 )
                 .then(
-                    if (luminousBorder.alpha > 0.005f) {
-                        Modifier.border(width = 0.75.dp, color = luminousBorder, shape = glassShape)
+                    if (specularRimBrush != null) {
+                        Modifier.border(width = 0.85.dp, brush = specularRimBrush, shape = glassShape)
                     } else {
                         Modifier
                     },
@@ -262,22 +290,23 @@ fun RegaLiquidGlass(
             content = content,
         )
     } else {
-        val fallbackTint = resolveLiquidGlassSurfaceTint(
-            baseTint = baseSurface,
-            material = style.material,
-            isDark = colors.isDark,
-            supportsBlur = false,
-        )
-        val topHighlight = lerp(fallbackTint, Color.White, if (colors.isDark) 0.12f else 0.34f)
+        val topSheen = lerp(resolvedTint, Color.White, if (colors.isDark) 0.16f else 0.58f)
+        val bottomSheen = lerp(resolvedTint, Color.White, if (colors.isDark) 0.06f else 0.32f)
         Box(
             modifier = modifier
                 .clip(glassShape)
                 .background(
                     Brush.verticalGradient(
-                        listOf(topHighlight, fallbackTint),
+                        listOf(topSheen, resolvedTint, bottomSheen),
                     ),
                 )
-                .border(width = 0.75.dp, color = luminousBorder, shape = glassShape),
+                .then(
+                    if (specularRimBrush != null) {
+                        Modifier.border(width = 0.85.dp, brush = specularRimBrush, shape = glassShape)
+                    } else {
+                        Modifier
+                    },
+                ),
             contentAlignment = contentAlignment,
             content = content,
         )

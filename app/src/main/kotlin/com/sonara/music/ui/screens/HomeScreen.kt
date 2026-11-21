@@ -62,6 +62,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -144,6 +145,14 @@ import com.sonara.music.ui.component.HideOnScrollFAB
 import com.sonara.music.ui.component.LocalBottomSheetPageState
 import com.sonara.music.ui.component.LocalMenuState
 import com.sonara.music.ui.component.NavigationTitle
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
+import com.sonara.music.ui.component.glass.RegaGlassMaterial
+import com.sonara.music.ui.component.glass.RegaGlassStyle
+import com.sonara.music.ui.component.glass.RegaLiquidGlass
+import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
+import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.ui.theme.SonaraLabelStyle
 import com.sonara.music.ui.theme.SonaraLink
 import com.sonara.music.ui.theme.SonaraSpacing
@@ -1221,6 +1230,7 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.TopStart,
         ) {
+            val screenBackdrop = rememberRegaBackdropState()
             val horizontalLazyGridItemWidthFactor = if (maxWidth * 0.475f >= 320.dp) 0.475f else 0.9f
             val horizontalLazyGridItemWidth = maxWidth * horizontalLazyGridItemWidthFactor
             val quickPicksSnapLayoutInfoProvider =
@@ -1245,6 +1255,10 @@ fun HomeScreen(
             LazyColumn(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .regaBackdropSource(screenBackdrop)
+                    .background(MaterialTheme.colorScheme.background),
             ) {
                 item(key = "sonara_masthead") {
                     SonaraMasthead(
@@ -2652,127 +2666,155 @@ fun HomeScreen(
                 }
             }
 
-            HideOnScrollFAB(
-                visible = allLocalItems.isNotEmpty() || allYtItems.isNotEmpty(),
-                lazyListState = lazylistState,
-                icon = R.drawable.shuffle,
-                onClick = {
-                    if (!isListenTogetherGuest) {
-                        val local =
-                            when {
-                                allLocalItems.isNotEmpty() && allYtItems.isNotEmpty() -> Random.nextFloat() < 0.5
-                                allLocalItems.isNotEmpty() -> true
-                                else -> false
-                            }
-                        scope.launch(Dispatchers.Main) {
-                            if (local) {
-                                when (val luckyItem = allLocalItems.random()) {
-                                    is Song -> {
-                                        playerConnection.playQueue(YouTubeQueue.radio(luckyItem.toMediaMetadata()))
-                                    }
-
-                                    is Album -> {
-                                        val albumWithSongs =
-                                            withContext(Dispatchers.IO) {
-                                                database.albumWithSongs(luckyItem.id).first()
-                                            }
-                                        albumWithSongs?.let {
-                                            playerConnection.playQueue(LocalAlbumRadio(it))
-                                        }
-                                    }
-
-                                    is Artist -> {}
-
-                                    is Playlist -> {}
+            CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+                HideOnScrollFAB(
+                    visible = allLocalItems.isNotEmpty() || allYtItems.isNotEmpty(),
+                    lazyListState = lazylistState,
+                    icon = R.drawable.shuffle,
+                    onClick = {
+                        if (!isListenTogetherGuest) {
+                            val local =
+                                when {
+                                    allLocalItems.isNotEmpty() && allYtItems.isNotEmpty() -> Random.nextFloat() < 0.5
+                                    allLocalItems.isNotEmpty() -> true
+                                    else -> false
                                 }
-                            } else {
-                                when (val luckyItem = allYtItems.random()) {
-                                    is SongItem -> {
-                                        playerConnection.playQueue(YouTubeQueue.radio(luckyItem.toMediaMetadata()))
-                                    }
-
-                                    is AlbumItem -> {
-                                        playerConnection.playQueue(YouTubeAlbumRadio(luckyItem.playlistId))
-                                    }
-
-                                    is ArtistItem -> {
-                                        luckyItem.radioEndpoint?.let {
-                                            playerConnection.playQueue(YouTubeQueue(it))
+                            scope.launch(Dispatchers.Main) {
+                                if (local) {
+                                    when (val luckyItem = allLocalItems.random()) {
+                                        is Song -> {
+                                            playerConnection.playQueue(YouTubeQueue.radio(luckyItem.toMediaMetadata()))
                                         }
-                                    }
 
-                                    is PlaylistItem -> {
-                                        luckyItem.playEndpoint?.let {
-                                            playerConnection.playQueue(YouTubeQueue(it))
+                                        is Album -> {
+                                            val albumWithSongs =
+                                                withContext(Dispatchers.IO) {
+                                                    database.albumWithSongs(luckyItem.id).first()
+                                                }
+                                            albumWithSongs?.let {
+                                                playerConnection.playQueue(LocalAlbumRadio(it))
+                                            }
                                         }
-                                    }
 
-                                    is PodcastItem -> {
-                                        luckyItem.playEndpoint?.let {
-                                            playerConnection.playQueue(YouTubeQueue(it))
+                                        is Artist -> {}
+
+                                        is Playlist -> {}
+                                    }
+                                } else {
+                                    when (val luckyItem = allYtItems.random()) {
+                                        is SongItem -> {
+                                            playerConnection.playQueue(YouTubeQueue.radio(luckyItem.toMediaMetadata()))
                                         }
-                                    }
 
-                                    is EpisodeItem -> {
-                                        playerConnection.playQueue(
-                                            ListQueue(
-                                                title = luckyItem.title,
-                                                items = listOf(luckyItem.toMediaMetadata().toMediaItem()),
-                                            ),
-                                        )
+                                        is AlbumItem -> {
+                                            playerConnection.playQueue(YouTubeAlbumRadio(luckyItem.playlistId))
+                                        }
+
+                                        is ArtistItem -> {
+                                            luckyItem.radioEndpoint?.let {
+                                                playerConnection.playQueue(YouTubeQueue(it))
+                                            }
+                                        }
+
+                                        is PlaylistItem -> {
+                                            luckyItem.playEndpoint?.let {
+                                                playerConnection.playQueue(YouTubeQueue(it))
+                                            }
+                                        }
+
+                                        is PodcastItem -> {
+                                            luckyItem.playEndpoint?.let {
+                                                playerConnection.playQueue(YouTubeQueue(it))
+                                            }
+                                        }
+
+                                        is EpisodeItem -> {
+                                            playerConnection.playQueue(
+                                                ListQueue(
+                                                    title = luckyItem.title,
+                                                    items = listOf(luckyItem.toMediaMetadata().toMediaItem()),
+                                                ),
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                },
-                onRecognitionClick = {
-                    navController.navigate("recognition")
-                },
-            )
+                    },
+                    onRecognitionClick = {
+                        navController.navigate("recognition")
+                    },
+                )
+            }
         }
     }
 }
 
 
-/**
- * Guest mode is a real mode: local library, playlists, playback, equalizer,
- * reverb and downloads work. Only online catalogue features need a session,
- * so explain that instead of failing silently.
- */
 @Composable
 internal fun SonaraGuestNotice(onConnect: () -> Unit) {
-    val shape = RoundedCornerShape(10.dp)
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = SonaraSpacing.gutter, vertical = SonaraSpacing.xxs)
-                .clip(shape)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
-                    shape = shape,
-                )
-                .padding(SonaraSpacing.md),
-    ) {
-        Text(
-            text = stringResource(R.string.sonara_guest_notice_title),
-            style = SonaraLabelStyle.copy(fontSize = 9.sp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(SonaraSpacing.xs))
-        Text(
-            text = stringResource(R.string.sonara_guest_notice_body),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(SonaraSpacing.sm))
-        SonaraLink(
-            text = stringResource(R.string.sonara_guest_notice_action),
-            onClick = onConnect,
-        )
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+    val noticeContent: @Composable () -> Unit = {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(SonaraSpacing.md),
+        ) {
+            Text(
+                text = stringResource(R.string.sonara_guest_notice_title),
+                style = SonaraLabelStyle.copy(fontSize = 9.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(SonaraSpacing.xs))
+            Text(
+                text = stringResource(R.string.sonara_guest_notice_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(SonaraSpacing.sm))
+            SonaraLink(
+                text = stringResource(R.string.sonara_guest_notice_action),
+                onClick = onConnect,
+            )
+        }
+    }
+
+    if (liquidGlassEnabled) {
+        RegaLiquidGlass(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = SonaraSpacing.gutter, vertical = SonaraSpacing.xxs),
+            shape = RoundedCornerShape(18.dp),
+            borderColor = LocalRegaColors.current.glassBorder,
+            style = RegaGlassStyle.preset(
+                material = RegaGlassMaterial.Clear,
+                tint = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
+                borderRadius = 18.dp,
+                elevation = 0.dp,
+            ),
+            contentAlignment = Alignment.TopStart,
+        ) {
+            noticeContent()
+        }
+    } else {
+        val shape = RoundedCornerShape(10.dp)
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = SonaraSpacing.gutter, vertical = SonaraSpacing.xxs)
+                    .clip(shape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                        shape = shape,
+                    ),
+        ) {
+            noticeContent()
+        }
     }
 }
 

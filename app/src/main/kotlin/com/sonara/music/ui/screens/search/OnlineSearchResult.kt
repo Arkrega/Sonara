@@ -37,6 +37,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
@@ -101,6 +102,9 @@ import com.sonara.music.playback.queues.YouTubeQueue
 import com.sonara.music.ui.component.ChipsRow
 import com.sonara.music.ui.component.EmptyPlaceholder
 import com.sonara.music.ui.component.HideOnScrollFAB
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
+import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.component.LocalMenuState
 import com.sonara.music.ui.component.NavigationTitle
 import com.sonara.music.ui.component.YouTubeListItem
@@ -438,10 +442,13 @@ fun OnlineSearchResult(
                     },
         )
 
-        // Main content area below search bar
         Box(modifier = Modifier.weight(1f)) {
+            val screenBackdrop = rememberRegaBackdropState()
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .regaBackdropSource(screenBackdrop)
+                    .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.background),
             ) {
                 val visibleChips =
                     listOf(
@@ -557,11 +564,13 @@ fun OnlineSearchResult(
                     pureBlack = pureBlack,
                 )
             }
-            HideOnScrollFAB(
-                lazyListState = lazyListState,
-                icon = R.drawable.mic,
-                onClick = { navController.navigate("recognition") },
-            )
+            CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+                HideOnScrollFAB(
+                    lazyListState = lazyListState,
+                    icon = R.drawable.mic,
+                    onClick = { navController.navigate("recognition") },
+                )
+            }
         }
     }
 }

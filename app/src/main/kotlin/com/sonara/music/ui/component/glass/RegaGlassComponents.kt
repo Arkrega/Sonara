@@ -537,7 +537,15 @@ fun RegaGlassFab(
         label = "glassFabScale",
     )
 
-    val resolvedShape = resolveLiquidGlassShape(shape, LocalLiquidGlassEnabled.current)
+    val colors = LocalRegaColors.current
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+    val resolvedShape = if (liquidGlassEnabled) CircleShape else resolveLiquidGlassShape(shape, liquidGlassEnabled = false)
+    val resolvedBorder =
+        if (liquidGlassEnabled) {
+            if (enabled) Color.White.copy(alpha = if (colors.isDark) 0.38f else 0.76f) else borderColor.copy(alpha = 0.20f)
+        } else {
+            if (enabled) borderColor else borderColor.copy(alpha = 0.25f)
+        }
 
     RegaLiquidGlass(
         modifier = modifier
@@ -548,11 +556,12 @@ fun RegaGlassFab(
                 scaleY = scale
             },
         shape = resolvedShape,
-        borderColor = if (enabled) borderColor else borderColor.copy(alpha = 0.25f),
+        borderColor = resolvedBorder,
         style = RegaGlassStyle.preset(
             material = RegaGlassMaterial.Clear,
             tint = if (enabled) containerColor else containerColor.copy(alpha = 0.38f),
-            borderRadius = 18.dp,
+            borderRadius = if (liquidGlassEnabled) size / 2 else 18.dp,
+            highlightIntensity = if (liquidGlassEnabled) 0.86f else 0.72f,
             elevation = if (enabled) 10.dp else 0.dp,
         ),
     ) {
@@ -815,6 +824,26 @@ fun Modifier.regaGlassSpecular(
             val sheen = if (colors.isDark) Color.White.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.65f)
             lerp(actualBorder, sheen, 0.45f)
         }
+    val specularRimBrush =
+        if (luminousBorder.alpha > 0.005f) {
+            Brush.linearGradient(
+                colors = if (colors.isDark) {
+                    listOf(
+                        Color.White.copy(alpha = 0.46f),
+                        luminousBorder.copy(alpha = 0.14f),
+                        Color.White.copy(alpha = 0.26f),
+                    )
+                } else {
+                    listOf(
+                        Color.White.copy(alpha = 0.88f),
+                        luminousBorder.copy(alpha = 0.30f),
+                        Color.White.copy(alpha = 0.62f),
+                    )
+                },
+            )
+        } else {
+            null
+        }
 
     if (backdropState != null && backdropState.enabled) {
         this
@@ -843,27 +872,36 @@ fun Modifier.regaGlassSpecular(
                     if (glassTint.alpha > 0.005f) {
                         drawRect(glassTint)
                     }
+                    drawRect(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = if (colors.isDark) 0.10f else 0.28f),
+                                Color.Transparent,
+                            ),
+                        ),
+                    )
                 },
             )
             .then(
-                if (luminousBorder.alpha > 0.005f) {
-                    Modifier.border(0.75.dp, luminousBorder, glassShape)
+                if (specularRimBrush != null) {
+                    Modifier.border(0.85.dp, specularRimBrush, glassShape)
                 } else {
                     Modifier
                 },
             )
     } else {
-        val fallbackTint = resolveLiquidGlassSurfaceTint(
-            baseTint = actualTint,
-            material = RegaGlassMaterial.Thin,
-            isDark = colors.isDark,
-            supportsBlur = false,
-        )
-        val topHighlight = lerp(fallbackTint, Color.White, if (colors.isDark) 0.12f else 0.32f)
+        val topSheen = lerp(glassTint, Color.White, if (colors.isDark) 0.16f else 0.58f)
+        val bottomSheen = lerp(glassTint, Color.White, if (colors.isDark) 0.06f else 0.32f)
         this
             .clip(glassShape)
-            .background(Brush.verticalGradient(listOf(topHighlight, fallbackTint)))
-            .border(0.75.dp, luminousBorder, glassShape)
+            .background(Brush.verticalGradient(listOf(topSheen, glassTint, bottomSheen)))
+            .then(
+                if (specularRimBrush != null) {
+                    Modifier.border(0.85.dp, specularRimBrush, glassShape)
+                } else {
+                    Modifier
+                },
+            )
     }
 }
 

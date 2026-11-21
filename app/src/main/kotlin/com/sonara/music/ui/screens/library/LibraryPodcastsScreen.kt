@@ -36,6 +36,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -81,6 +82,9 @@ import com.sonara.music.extensions.toMediaItem
 import com.sonara.music.playback.queues.ListQueue
 import com.sonara.music.ui.component.ChipsRow
 import com.sonara.music.ui.component.HideOnScrollFAB
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
+import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.component.LocalMenuState
 import com.sonara.music.ui.component.Material3MenuGroup
 import com.sonara.music.ui.component.Material3MenuItemData
@@ -341,11 +345,15 @@ fun LibraryPodcastsScreen(
                 }
             }
 
-            // ── DOWNLOADED tab ────────────────────────────────────────────
             PodcastFilter.DOWNLOADED -> {
+                val screenBackdrop = rememberRegaBackdropState()
                 LazyColumn(
                     state = lazyListState,
                     contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .regaBackdropSource(screenBackdrop)
+                        .background(MaterialTheme.colorScheme.background),
                 ) {
                     item(key = "filter", contentType = CONTENT_TYPE_HEADER) {
                         chipsHeader()
@@ -463,19 +471,21 @@ fun LibraryPodcastsScreen(
                     }
                 }
 
-                HideOnScrollFAB(
-                    visible = downloadedEpisodes.isNotEmpty(),
-                    lazyListState = lazyListState,
-                    icon = R.drawable.shuffle,
-                    onClick = {
-                        playerConnection.playQueue(
-                            ListQueue(
-                                title = downloadedEpisodesStr,
-                                items = downloadedEpisodes.shuffled().map { it.toMediaItem() },
-                            ),
-                        )
-                    },
-                )
+                CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+                    HideOnScrollFAB(
+                        visible = downloadedEpisodes.isNotEmpty(),
+                        lazyListState = lazyListState,
+                        icon = R.drawable.shuffle,
+                        onClick = {
+                            playerConnection.playQueue(
+                                ListQueue(
+                                    title = downloadedEpisodesStr,
+                                    items = downloadedEpisodes.shuffled().map { it.toMediaItem() },
+                                ),
+                            )
+                        },
+                    )
+                }
             }
         }
 

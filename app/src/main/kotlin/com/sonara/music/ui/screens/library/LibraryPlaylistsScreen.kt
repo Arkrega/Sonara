@@ -6,6 +6,7 @@
 package com.sonara.music.ui.screens.library
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -28,12 +29,16 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.component.glass.RegaGlassFab
+import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -405,7 +410,14 @@ fun LibraryPlaylistsScreen(
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
-        when (viewType) {
+        val screenBackdrop = rememberRegaBackdropState()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .regaBackdropSource(screenBackdrop)
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            when (viewType) {
             LibraryViewType.LIST -> {
                 LazyColumn(
                     state = lazyListState,
@@ -539,22 +551,25 @@ fun LibraryPlaylistsScreen(
                 }
             }
         }
+        }
 
-        RegaGlassFab(
-            onClick = { showCreatePlaylistDialog = true },
-            contentDescription = stringResource(R.string.create_playlist),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .windowInsetsPadding(
-                    LocalPlayerAwareWindowInsets.current
-                        .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
+        CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+            RegaGlassFab(
+                onClick = { showCreatePlaylistDialog = true },
+                contentDescription = stringResource(R.string.create_playlist),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .windowInsetsPadding(
+                        LocalPlayerAwareWindowInsets.current
+                            .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
+                    )
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.add),
+                    contentDescription = null,
                 )
-                .padding(16.dp)
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.add),
-                contentDescription = null,
-            )
+            }
         }
     }
 }

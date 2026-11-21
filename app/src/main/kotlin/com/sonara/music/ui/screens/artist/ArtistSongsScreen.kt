@@ -6,6 +6,7 @@
 package com.sonara.music.ui.screens.artist
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -24,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -48,6 +50,9 @@ import com.sonara.music.constants.HideExplicitKey
 import com.sonara.music.extensions.toMediaItem
 import com.sonara.music.playback.queues.ListQueue
 import com.sonara.music.ui.component.HideOnScrollFAB
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
+import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.component.IconButton
 import com.sonara.music.ui.component.LocalMenuState
 import com.sonara.music.ui.component.SongListItem
@@ -89,9 +94,14 @@ fun ArtistSongsScreen(
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
+        val screenBackdrop = rememberRegaBackdropState()
         LazyColumn(
             state = lazyListState,
             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+            modifier = Modifier
+                .fillMaxSize()
+                .regaBackdropSource(screenBackdrop)
+                .background(MaterialTheme.colorScheme.background),
         ) {
             item(
                 key = "header",
@@ -197,17 +207,19 @@ fun ArtistSongsScreen(
             },
         )
 
-        HideOnScrollFAB(
-            lazyListState = lazyListState,
-            icon = R.drawable.shuffle,
-            onClick = {
-                playerConnection.playQueue(
-                    ListQueue(
-                        title = artist?.artist?.name,
-                        items = songs.shuffled().map { it.toMediaItem() },
-                    ),
-                )
-            },
-        )
+        CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+            HideOnScrollFAB(
+                lazyListState = lazyListState,
+                icon = R.drawable.shuffle,
+                onClick = {
+                    playerConnection.playQueue(
+                        ListQueue(
+                            title = artist?.artist?.name,
+                            items = songs.shuffled().map { it.toMediaItem() },
+                        ),
+                    )
+                },
+            )
+        }
     }
 }

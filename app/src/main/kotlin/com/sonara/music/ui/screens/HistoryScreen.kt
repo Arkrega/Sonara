@@ -31,6 +31,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -70,6 +71,9 @@ import com.sonara.music.playback.queues.ListQueue
 import com.sonara.music.playback.queues.YouTubeQueue
 import com.sonara.music.ui.component.ChipsRow
 import com.sonara.music.ui.component.HideOnScrollFAB
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
+import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.component.IconButton
 import com.sonara.music.ui.component.LocalMenuState
 import com.sonara.music.ui.component.NavigationTitle
@@ -209,6 +213,7 @@ fun HistoryScreen(
     val lazyListState = rememberLazyListState()
 
     Box(Modifier.fillMaxSize()) {
+        val screenBackdrop = rememberRegaBackdropState()
         LazyColumn(
             state = lazyListState,
             contentPadding =
@@ -216,11 +221,15 @@ fun HistoryScreen(
                     .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
                     .asPaddingValues(),
             modifier =
-                Modifier.windowInsetsPadding(
-                    LocalPlayerAwareWindowInsets.current.only(
-                        WindowInsetsSides.Top,
+                Modifier
+                    .fillMaxSize()
+                    .regaBackdropSource(screenBackdrop)
+                    .background(MaterialTheme.colorScheme.background)
+                    .windowInsetsPadding(
+                        LocalPlayerAwareWindowInsets.current.only(
+                            WindowInsetsSides.Top,
+                        ),
                     ),
-                ),
         ) {
             item(key = "chips_row") {
                 ChipsRow(
@@ -401,36 +410,38 @@ fun HistoryScreen(
 
         val historyTitle = stringResource(R.string.history)
 
-        HideOnScrollFAB(
-            visible =
-                if (historySource == HistorySource.REMOTE) {
-                    filteredRemoteContent?.any { it.songs.isNotEmpty() } == true
-                } else {
-                    allEvents.isNotEmpty()
-                },
-            lazyListState = lazyListState,
-            icon = R.drawable.shuffle,
-            onClick = {
-                if (historySource == HistorySource.REMOTE && historyPage != null) {
-                    val songs = filteredRemoteContent?.flatMap { it.songs } ?: emptyList()
-                    if (songs.isNotEmpty()) {
+        CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+            HideOnScrollFAB(
+                visible =
+                    if (historySource == HistorySource.REMOTE) {
+                        filteredRemoteContent?.any { it.songs.isNotEmpty() } == true
+                    } else {
+                        allEvents.isNotEmpty()
+                    },
+                lazyListState = lazyListState,
+                icon = R.drawable.shuffle,
+                onClick = {
+                    if (historySource == HistorySource.REMOTE && historyPage != null) {
+                        val songs = filteredRemoteContent?.flatMap { it.songs } ?: emptyList()
+                        if (songs.isNotEmpty()) {
+                            playerConnection.playQueue(
+                                ListQueue(
+                                    title = historyTitle,
+                                    items = songs.map { it.toMediaItem() }.shuffled(),
+                                ),
+                            )
+                        }
+                    } else {
                         playerConnection.playQueue(
                             ListQueue(
                                 title = historyTitle,
-                                items = songs.map { it.toMediaItem() }.shuffled(),
+                                items = allEvents.map { it.song.toMediaItem() }.shuffled(),
                             ),
                         )
                     }
-                } else {
-                    playerConnection.playQueue(
-                        ListQueue(
-                            title = historyTitle,
-                            items = allEvents.map { it.song.toMediaItem() }.shuffled(),
-                        ),
-                    )
-                }
-            },
-        )
+                },
+            )
+        }
     }
 
     TopAppBar(

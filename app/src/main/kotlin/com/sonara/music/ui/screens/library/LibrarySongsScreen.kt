@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -81,6 +83,9 @@ import com.sonara.music.playback.queues.ListQueue
 import com.sonara.music.ui.component.ChipsRow
 import com.sonara.music.ui.component.DefaultDialog
 import com.sonara.music.ui.component.HideOnScrollFAB
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
+import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.component.LibrarySearchEmptyPlaceholder
 import com.sonara.music.ui.component.LibrarySearchHeader
 import com.sonara.music.ui.component.LocalMenuState
@@ -324,9 +329,14 @@ fun LibrarySongsScreen(
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
+        val screenBackdrop = rememberRegaBackdropState()
         LazyColumn(
             state = lazyListState,
             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+            modifier = Modifier
+                .fillMaxSize()
+                .regaBackdropSource(screenBackdrop)
+                .background(MaterialTheme.colorScheme.background),
         ) {
             item(
                 key = "filter",
@@ -477,32 +487,33 @@ fun LibrarySongsScreen(
             }
         }
 
-        // Show upload FAB when on UPLOADED filter, shuffle FAB otherwise
-        HideOnScrollFAB(
-            visible = if (filter == SongFilter.UPLOADED) true else filteredSongs.isNotEmpty(),
-            lazyListState = lazyListState,
-            icon = if (filter == SongFilter.UPLOADED) R.drawable.upload else R.drawable.shuffle,
-            onClick = {
-                if (filter == SongFilter.UPLOADED) {
-                    filePickerLauncher.launch(
-                        arrayOf(
-                            "audio/mpeg",
-                            "audio/mp4",
-                            "audio/x-m4a",
-                            "audio/flac",
-                            "audio/ogg",
-                            "audio/x-ms-wma",
-                        ),
-                    )
-                } else {
-                    playerConnection.playQueue(
-                        ListQueue(
-                            title = queueAllSongsStr,
-                            items = filteredSongs.shuffled().map { it.toMediaItem() },
-                        ),
-                    )
-                }
-            },
-        )
+        CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+            HideOnScrollFAB(
+                visible = if (filter == SongFilter.UPLOADED) true else filteredSongs.isNotEmpty(),
+                lazyListState = lazyListState,
+                icon = if (filter == SongFilter.UPLOADED) R.drawable.upload else R.drawable.shuffle,
+                onClick = {
+                    if (filter == SongFilter.UPLOADED) {
+                        filePickerLauncher.launch(
+                            arrayOf(
+                                "audio/mpeg",
+                                "audio/mp4",
+                                "audio/x-m4a",
+                                "audio/flac",
+                                "audio/ogg",
+                                "audio/x-ms-wma",
+                            ),
+                        )
+                    } else {
+                        playerConnection.playQueue(
+                            ListQueue(
+                                title = queueAllSongsStr,
+                                items = filteredSongs.shuffled().map { it.toMediaItem() },
+                            ),
+                        )
+                    }
+                },
+            )
+        }
     }
 }

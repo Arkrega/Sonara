@@ -1,3 +1,13 @@
+---v1.5.3
+# SONARA 1.5.3
+
+Live Liquid Glass backdrop refraction on floating FABs and enhanced crystal specular highlights across inline glass surfaces.
+
+## Highlights
+- Enabled live screen backdrop recording across Home, Search, History, Stats, Artist, Library, and Auto Playlist screens so Recognize Music, Shuffle, Play All, and Create Playlist floating buttons render real-time AGSL optical refraction
+- Upgraded RegaGlassFab into circular crystal glass orbs with brighter specular rim highlights, and added Liquid Glass styling to the Home guest notice card
+- Enhanced RegaLiquidGlass and regaGlassSpecular with diagonal specular border rims and crisp vertical crystal sheen gradients so both live and inline glass components read clearly over dark and light backgrounds
+
 ---v1.5.2
 # SONARA 1.5.2
 

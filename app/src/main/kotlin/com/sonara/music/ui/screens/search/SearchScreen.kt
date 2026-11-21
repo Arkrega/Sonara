@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,9 +72,12 @@ import com.sonara.music.db.entities.SearchHistory
 import com.sonara.music.playback.queues.YouTubeQueue
 import com.sonara.music.ui.component.HideOnScrollFAB
 import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.component.glass.RegaGlassMaterial
 import com.sonara.music.ui.component.glass.RegaGlassStyle
 import com.sonara.music.ui.component.glass.RegaLiquidGlass
+import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.utils.SearchRoutes
 import com.sonara.music.utils.rememberEnumPreference
@@ -329,31 +333,41 @@ fun SearchScreen(
                 .padding(top = paddingValues.calculateTopPadding())
                 .fillMaxSize(),
         ) {
-            when (searchSource) {
-                SearchSource.LOCAL -> {
-                    LocalSearchScreen(
-                        query = query.text,
-                        onDismiss = { navController.navigateUp() },
-                        pureBlack = pureBlack,
-                    )
-                }
+            val screenBackdrop = rememberRegaBackdropState()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .regaBackdropSource(screenBackdrop)
+                    .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.background),
+            ) {
+                when (searchSource) {
+                    SearchSource.LOCAL -> {
+                        LocalSearchScreen(
+                            query = query.text,
+                            onDismiss = { navController.navigateUp() },
+                            pureBlack = pureBlack,
+                        )
+                    }
 
-                SearchSource.ONLINE -> {
-                    OnlineSearchScreen(
-                        query = query.text,
-                        onQueryChange = { query = it },
-                        onSearch = onSearchFromSuggestion,
-                        onDismiss = { },
-                        pureBlack = pureBlack,
-                    )
+                    SearchSource.ONLINE -> {
+                        OnlineSearchScreen(
+                            query = query.text,
+                            onQueryChange = { query = it },
+                            onSearch = onSearchFromSuggestion,
+                            onDismiss = { },
+                            pureBlack = pureBlack,
+                        )
+                    }
                 }
             }
 
-            HideOnScrollFAB(
-                lazyListState = lazyListState,
-                icon = R.drawable.mic,
-                onClick = { navController.navigate("recognition") },
-            )
+            CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+                HideOnScrollFAB(
+                    lazyListState = lazyListState,
+                    icon = R.drawable.mic,
+                    onClick = { navController.navigate("recognition") },
+                )
+            }
         }
     }
 

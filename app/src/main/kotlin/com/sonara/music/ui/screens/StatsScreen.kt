@@ -7,6 +7,7 @@ package com.sonara.music.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -34,6 +35,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -78,6 +80,9 @@ import com.sonara.music.ui.component.ArtistListItem
 import com.sonara.music.ui.component.ChoiceChipsRow
 import com.sonara.music.ui.component.EmptyPlaceholder
 import com.sonara.music.ui.component.HideOnScrollFAB
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
+import com.sonara.music.ui.component.glass.regaBackdropSource
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.component.IconButton
 import com.sonara.music.ui.component.LocalAlbumsGrid
 import com.sonara.music.ui.component.LocalArtistsGrid
@@ -300,6 +305,7 @@ fun StatsScreen(
         }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        val screenBackdrop = rememberRegaBackdropState()
         LazyColumn(
             state = lazyListState,
             contentPadding =
@@ -307,9 +313,13 @@ fun StatsScreen(
                     .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
                     .asPaddingValues(),
             modifier =
-                Modifier.windowInsetsPadding(
-                    LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Top),
-                ),
+                Modifier
+                    .fillMaxSize()
+                    .regaBackdropSource(screenBackdrop)
+                    .background(MaterialTheme.colorScheme.background)
+                    .windowInsetsPadding(
+                        LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Top),
+                    ),
         ) {
             val filteredArtists =
                 allArtists
@@ -653,21 +663,22 @@ fun StatsScreen(
                 }
             }
         }
-        // FAB to shuffle most played songs
         if (mostPlayedSongsStats.isNotEmpty() && !isSearching) {
-            HideOnScrollFAB(
-                visible = true,
-                lazyListState = lazyListState,
-                icon = R.drawable.shuffle,
-                onClick = {
-                    playerConnection.playQueue(
-                        ListQueue(
-                            title = context.getString(R.string.most_played_songs),
-                            items = orderedMostPlayedSongs.map { it.toMediaMetadata().toMediaItem() }.shuffled(),
-                        ),
-                    )
-                },
-            )
+            CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+                HideOnScrollFAB(
+                    visible = true,
+                    lazyListState = lazyListState,
+                    icon = R.drawable.shuffle,
+                    onClick = {
+                        playerConnection.playQueue(
+                            ListQueue(
+                                title = context.getString(R.string.most_played_songs),
+                                items = orderedMostPlayedSongs.map { it.toMediaMetadata().toMediaItem() }.shuffled(),
+                            ),
+                        )
+                    },
+                )
+            }
         }
     }
 
