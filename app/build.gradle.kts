@@ -358,6 +358,8 @@ dependencies {
     implementation(libs.compose.ui.util)
     implementation(libs.compose.animation)
     implementation(libs.compose.reorderable)
+    implementation(libs.kyant.backdrop)
+    implementation(libs.prismal.agsl)
 
     implementation(libs.viewmodel.compose)
     implementation(libs.lifecycle.process)

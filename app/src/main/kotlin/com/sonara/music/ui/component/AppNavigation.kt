@@ -56,8 +56,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.screens.Screens
 import com.sonara.music.ui.theme.SonaraLabelStyle
+import com.styropyr0.prismal.components.LocalPrismalBottomTabHighlightedIndex
+import com.styropyr0.prismal.components.PrismalGlassBottomTab
+import com.styropyr0.prismal.components.PrismalGlassBottomTabs
+import com.styropyr0.prismal.specular.PrismalSpecular
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
@@ -91,6 +97,13 @@ fun AppNavigationBar(
 ) {
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+    val backdropState = LocalRegaBackdrop.current
+    val selectedIndex = remember(currentRoute, navigationItems) {
+        navigationItems.indexOfFirst { screen ->
+            isRouteSelected(currentRoute, screen.route, navigationItems)
+        }
+    }
 
     val barShape = RoundedCornerShape(20.dp)
 
@@ -103,9 +116,64 @@ fun AppNavigationBar(
                     WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal,
                 ),
             )
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .padding(
+                horizontal = 14.dp,
+                vertical = if (liquidGlassEnabled && slimNav) 0.dp else 6.dp,
+            ),
         contentAlignment = Alignment.Center,
     ) {
+        if (liquidGlassEnabled && backdropState != null && backdropState.enabled && navigationItems.isNotEmpty()) {
+            val safeSelectedIndex = selectedIndex.coerceIn(0, navigationItems.lastIndex)
+            PrismalGlassBottomTabs(
+                selectedTabIndex = { safeSelectedIndex },
+                onTabSelected = { index ->
+                    navigationItems.getOrNull(index)?.let { screen ->
+                        onItemClick(screen, index == selectedIndex)
+                    }
+                },
+                backdrop = backdropState.prismalBackdrop,
+                tabsCount = navigationItems.size,
+                dropletContentTint = MaterialTheme.colorScheme.primary,
+                specular = { PrismalSpecular.Default },
+                blurRadius = 6.dp,
+                refractionHeight = 16.dp,
+                refractionAmount = 28.dp,
+                dropletChromaticAberration = 0.45f,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                navigationItems.forEachIndexed { index, screen ->
+                    val highlightedIndex = LocalPrismalBottomTabHighlightedIndex.current()
+                    val isHighlighted = highlightedIndex == index
+                    val iconRes = if (isHighlighted) screen.iconIdActive else screen.iconIdInactive
+                    val contentTint = if (isHighlighted) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    PrismalGlassBottomTab(
+                        onClick = { onItemClick(screen, index == selectedIndex) },
+                    ) {
+                        Icon(
+                            painter = painterResource(id = iconRes),
+                            contentDescription = stringResource(screen.titleId),
+                            tint = contentTint,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        if (!slimNav) {
+                            Text(
+                                text = stringResource(screen.titleId),
+                                style = SonaraLabelStyle.copy(fontSize = 10.sp),
+                                color = contentTint,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+            return@Box
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()

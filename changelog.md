@@ -1,3 +1,13 @@
+---v1.5.0
+# SONARA 1.5.0
+
+Real-time Liquid Glass UI powered by AndroidLiquidGlass and PrismalAGSL with an instant Appearance toggle.
+
+## Highlights
+- Added live Liquid Glass optical refraction, blur, chromatic dispersion, and specular highlights powered by Kyant0/AndroidLiquidGlass and styropyr0/PrismalAGSL across the bottom navigation dock, mini-player, player buttons, audio/video pill, lyrics/queue panels, switches, FABs, and dialogs
+- Upgraded the floating bottom navigation bar with an interactive draggable Liquid Glass droplet using PrismalGlassBottomTabs
+- Added a Liquid Glass on/off toggle under Appearance settings (enabled by default) with instant live switching and automatic frosted fallback on older Android versions
+
 ---v1.4.2
 # SONARA 1.4.2
 

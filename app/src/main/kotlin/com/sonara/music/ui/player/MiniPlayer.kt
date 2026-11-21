@@ -114,6 +114,7 @@ import com.sonara.music.ui.component.AnimatedWaveform
 import androidx.compose.ui.draw.shadow
 import com.sonara.music.ui.component.glass.RegaGlassMaterial
 import com.sonara.music.ui.component.glass.RegaGlassStyle
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
 import com.sonara.music.ui.component.glass.RegaLiquidGlass
 import com.sonara.music.ui.component.glass.regaGlassSpecular
 import androidx.compose.ui.draw.blur
@@ -381,7 +382,9 @@ private fun NewMiniPlayer(
                 },
     ) {
         val interactionSource = remember { MutableInteractionSource() }
-        val miniPlayerShape = RoundedCornerShape(16.dp)
+        val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+        val miniPlayerCornerRadius = if (liquidGlassEnabled) 22.dp else 16.dp
+        val miniPlayerShape = RoundedCornerShape(miniPlayerCornerRadius)
         RegaLiquidGlass(
             modifier =
                 Modifier
@@ -401,7 +404,7 @@ private fun NewMiniPlayer(
             style = RegaGlassStyle.preset(
                 material = RegaGlassMaterial.Thin,
                 tint = backgroundColor,
-                borderRadius = 16.dp,
+                borderRadius = miniPlayerCornerRadius,
                 elevation = 0.dp,
             ),
             contentAlignment = Alignment.CenterStart,

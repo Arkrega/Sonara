@@ -48,8 +48,11 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -64,6 +67,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.sonara.music.R
 import com.sonara.music.ui.theme.LocalRegaColors
+import com.styropyr0.prismal.components.PrismalGlassToggle
+import com.styropyr0.prismal.drawPrismalGlass
+import com.styropyr0.prismal.effects.applyPrismalGlassEffects
+import com.styropyr0.prismal.specular.PrismalSpecular
 
 val RegaPillShape = RoundedCornerShape(2.dp)
 val RegaSquircleShape = RoundedCornerShape(6.dp)
@@ -559,6 +566,24 @@ fun RegaGlassSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+    val backdropState = LocalRegaBackdrop.current
+    if (liquidGlassEnabled && backdropState != null && backdropState.enabled) {
+        Box(
+            modifier = modifier
+                .minimumInteractiveComponentSize()
+                .alpha(if (enabled) 1f else 0.4f),
+            contentAlignment = Alignment.Center,
+        ) {
+            PrismalGlassToggle(
+                selected = { checked },
+                onSelect = { newValue -> if (enabled) onCheckedChange(newValue) },
+                backdrop = backdropState.prismalBackdrop,
+            )
+        }
+        return
+    }
+
     val thumbOffset by animateDpAsState(
         targetValue = if (checked) 24.dp else 4.dp,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
@@ -634,12 +659,82 @@ fun Modifier.regaGlassSpecular(
     borderColor: Color = Color.Unspecified,
     borderWidth: Dp = 1.dp,
 ): Modifier = composed {
-    val actualTint = if (tintColor != Color.Unspecified) tintColor else LocalRegaColors.current.glassTint
-    val actualBorder = if (borderColor != Color.Unspecified) borderColor else LocalRegaColors.current.glassBorder
-    this
-        .clip(shape)
-        .background(actualTint)
-        .border(borderWidth, actualBorder, shape)
+    val colors = LocalRegaColors.current
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+    val backdropState = LocalRegaBackdrop.current
+    val density = LocalDensity.current
+    val actualTint = if (tintColor != Color.Unspecified) tintColor else colors.glassTint
+    val actualBorder = if (borderColor != Color.Unspecified) borderColor else colors.glassBorder
+
+    if (!liquidGlassEnabled) {
+        return@composed this
+            .clip(shape)
+            .background(actualTint)
+            .border(borderWidth, actualBorder, shape)
+    }
+
+    val glassTint = resolveLiquidGlassSurfaceTint(
+        baseTint = actualTint,
+        material = RegaGlassMaterial.Thin,
+        isDark = colors.isDark,
+    )
+    val luminousBorder =
+        if (actualBorder.alpha <= 0.01f) {
+            Color.Transparent
+        } else {
+            val sheen = if (colors.isDark) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.56f)
+            lerp(actualBorder, sheen, 0.35f)
+        }
+
+    if (backdropState != null && backdropState.enabled) {
+        this
+            .drawPrismalGlass(
+                backdrop = backdropState.prismalBackdrop,
+                shape = { shape },
+                specular = { PrismalSpecular.Default },
+                depthShadow = null,
+                effects = {
+                    val maxLens = (size.minDimension * 0.42f).coerceAtLeast(0f)
+                    val safeHeight = minOf(with(density) { 10.dp.toPx() }, maxLens)
+                    val safeAmount = minOf(with(density) { 18.dp.toPx() }, maxLens * 1.5f)
+                    applyPrismalGlassEffects(
+                        density = density,
+                        adaptiveLuminance = false,
+                        luminance = if (colors.isDark) 0.25f else 0.78f,
+                        blurRadiusPx = with(density) { 12.dp.toPx() },
+                        refractionHeightPx = safeHeight,
+                        refractionAmountPx = safeAmount,
+                        depthEffect = true,
+                        chromaticAberration = 0.18f,
+                        useVibrancy = true,
+                    )
+                },
+                onDrawSurface = {
+                    if (glassTint.alpha > 0.005f) {
+                        drawRect(glassTint)
+                    }
+                },
+            )
+            .then(
+                if (luminousBorder.alpha > 0.005f) {
+                    Modifier.border(0.75.dp, luminousBorder, shape)
+                } else {
+                    Modifier
+                },
+            )
+    } else {
+        val fallbackTint = resolveLiquidGlassSurfaceTint(
+            baseTint = actualTint,
+            material = RegaGlassMaterial.Thin,
+            isDark = colors.isDark,
+            supportsBlur = false,
+        )
+        val topHighlight = lerp(fallbackTint, Color.White, if (colors.isDark) 0.14f else 0.30f)
+        this
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(topHighlight, fallbackTint)))
+            .border(0.75.dp, luminousBorder, shape)
+    }
 }
 
 typealias SonaraGlassMaterial = RegaGlassMaterial

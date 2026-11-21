@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -75,6 +76,7 @@ import com.sonara.music.db.entities.SongEntity
 import com.sonara.music.models.MediaMetadata
 import com.sonara.music.playback.CacheCleanupManager
 import com.sonara.music.playback.ChunkedRangeDataSource
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
 import com.sonara.music.ui.component.glass.RegaPillShape
 import com.sonara.music.ui.component.glass.regaGlassSpecular
 import com.sonara.music.ui.theme.LocalRegaColors
@@ -125,6 +127,7 @@ fun PlayerVideoModeToggle(
 ) {
     val haptic = LocalHapticFeedback.current
     val regaColors = LocalRegaColors.current
+    val pillShape = if (LocalLiquidGlassEnabled.current) CircleShape else RegaPillShape
     val activeBg = textColor.copy(alpha = 0.18f)
     val activeBorder = textColor.copy(alpha = 0.30f)
 
@@ -134,11 +137,11 @@ fun PlayerVideoModeToggle(
         modifier = modifier
             .height(34.dp)
             .regaGlassSpecular(
-                shape = RegaPillShape,
+                shape = pillShape,
                 tintColor = regaColors.glassTint,
                 borderColor = regaColors.glassBorder,
             )
-            .clip(RegaPillShape)
+            .clip(pillShape)
             .padding(3.dp),
     ) {
         VideoModePillSegment(
@@ -201,13 +204,14 @@ private fun VideoModePillSegment(
         label = "videoPillContent",
     )
 
+    val segmentShape = if (LocalLiquidGlassEnabled.current) CircleShape else RegaPillShape
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier
-            .clip(RegaPillShape)
+            .clip(segmentShape)
             .background(bgColor)
-            .border(0.75.dp, borderColor, RegaPillShape)
+            .border(0.75.dp, borderColor, segmentShape)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {

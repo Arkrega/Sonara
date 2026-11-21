@@ -61,6 +61,7 @@ import com.sonara.music.constants.DensityScaleKey
 import com.sonara.music.constants.EnableDynamicIconKey
 import com.sonara.music.constants.EnableHighRefreshRateKey
 import com.sonara.music.constants.EnableLandscapeScalingKey
+import com.sonara.music.constants.EnableLiquidGlassKey
 import com.sonara.music.constants.ExperimentalLyricsKey
 import com.sonara.music.constants.ForceBottomNavBarKey
 import com.sonara.music.constants.GridItemSize
@@ -142,6 +143,11 @@ fun AppearanceSettings(
         rememberPreference(
             EnableLandscapeScalingKey,
             defaultValue = false,
+        )
+    val (enableLiquidGlass, onEnableLiquidGlassChange) =
+        rememberPreference(
+            EnableLiquidGlassKey,
+            defaultValue = true,
         )
 
     val (useNewPlayerDesign, onUseNewPlayerDesignChange) =
@@ -894,6 +900,30 @@ fun AppearanceSettings(
             title = stringResource(R.string.theme),
             items =
                 buildList {
+                    add(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.liquid_glass),
+                            title = { Text(stringResource(R.string.enable_liquid_glass)) },
+                            description = { Text(stringResource(R.string.enable_liquid_glass_desc)) },
+                            trailingContent = {
+                                Switch(
+                                    checked = enableLiquidGlass,
+                                    onCheckedChange = onEnableLiquidGlassChange,
+                                    thumbContent = {
+                                        Icon(
+                                            painter =
+                                                painterResource(
+                                                    id = if (enableLiquidGlass) R.drawable.check else R.drawable.close,
+                                                ),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize),
+                                        )
+                                    },
+                                )
+                            },
+                            onClick = { onEnableLiquidGlassChange(!enableLiquidGlass) },
+                        ),
+                    )
                     add(
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.speed),

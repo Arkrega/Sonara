@@ -990,4 +990,6 @@
     <string name="max_video_cache_size">Ukuran maksimal cache video</string>
     <string name="clear_video_cache">Bersihkan cache video</string>
     <string name="clear_video_cache_dialog">Yakin ingin menghapus semua cache video?</string>
+    <string name="enable_liquid_glass">Liquid Glass</string>
+    <string name="enable_liquid_glass_desc">Efek kaca cair real-time dengan refraksi, blur, dan kilau pada navigasi, mini-player, dan kontrol</string>
 </resources>

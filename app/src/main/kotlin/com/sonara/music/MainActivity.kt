@@ -151,6 +151,7 @@ import com.sonara.music.constants.DensityScaleKey
 import com.sonara.music.constants.DisableScreenshotKey
 import com.sonara.music.constants.EnableHighRefreshRateKey
 import com.sonara.music.constants.EnableLandscapeScalingKey
+import com.sonara.music.constants.EnableLiquidGlassKey
 import com.sonara.music.constants.ExperimentalLyricsKey
 import com.sonara.music.constants.ForceBottomNavBarKey
 import com.sonara.music.constants.LastSeenVersionKey
@@ -194,6 +195,7 @@ import com.sonara.music.ui.component.BottomSheetPage
 import com.sonara.music.ui.component.LocalBottomSheetPageState
 import com.sonara.music.ui.component.LocalMenuState
 import com.sonara.music.ui.component.rememberBottomSheetState
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
 import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.component.glass.regaBackdropSource
 import com.sonara.music.ui.component.glass.rememberRegaBackdropState
@@ -1164,7 +1166,8 @@ class MainActivity : FragmentActivity() {
 
                 val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.background
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
-                val appBackdropState = rememberRegaBackdropState()
+                val enableLiquidGlass by rememberPreference(EnableLiquidGlassKey, defaultValue = true)
+                val appBackdropState = rememberRegaBackdropState(enabled = enableLiquidGlass)
 
                 CompositionLocalProvider(
                     LocalDatabase provides database,
@@ -1177,6 +1180,7 @@ class MainActivity : FragmentActivity() {
                     LocalListenTogetherManager provides listenTogetherManager,
                     LocalChangelogState provides showChangelog,
                     LocalArtistNameAliases provides artistNameAliases,
+                    LocalLiquidGlassEnabled provides enableLiquidGlass,
                     LocalRegaBackdrop provides appBackdropState,
                 ) {
                     if (showChangelog.value) {
@@ -1434,7 +1438,8 @@ class MainActivity : FragmentActivity() {
                                                 .graphicsLayer {
                                                     val progress = playerBottomSheetState.progress
                                                     alpha =
-                                                        if (progress > 0f ||
+                                                        if (enableLiquidGlass ||
+                                                            progress > 0f ||
                                                             (useNewMiniPlayerDesign && !shouldShowNavigationBar)
                                                         ) {
                                                             0f
@@ -1478,7 +1483,8 @@ class MainActivity : FragmentActivity() {
                         Row(
                             Modifier
                                 .fillMaxSize()
-                                .regaBackdropSource(appBackdropState),
+                                .regaBackdropSource(appBackdropState)
+                                .background(baseBg),
                         ) {
                             CompositionLocalProvider(LocalRegaBackdrop provides null) {
                             val onRailItemClick: (Screens, Boolean) -> Unit =

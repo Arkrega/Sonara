@@ -33,6 +33,8 @@ kuromojiIpadic = "0.9.0"
 innertubex = "v0.11.2"
 tinypinyin = "2.0.3"
 protobuf = "4.36.2"
+kyantBackdrop = "2.0.1"
+prismalAgsl = "v1.0.7"
 
 [libraries]
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
@@ -107,6 +109,8 @@ tinypinyin = { module = "com.github.promeG:tinypinyin", version.ref = "tinypinyi
 
 protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf" }
 protobuf-kotlin-lite = { module = "com.google.protobuf:protobuf-kotlin-lite", version.ref = "protobuf" }
+kyant-backdrop = { module = "io.github.kyant0:backdrop", version.ref = "kyantBackdrop" }
+prismal-agsl = { module = "com.github.styropyr0:PrismalAGSL", version.ref = "prismalAgsl" }
 
 [plugins]
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
