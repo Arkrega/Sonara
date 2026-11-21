@@ -18,18 +18,22 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,8 +44,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,27 +55,26 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
-import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.component.glass.RegaGlassMaterial
 import com.sonara.music.ui.component.glass.RegaGlassStyle
 import com.sonara.music.ui.component.glass.RegaLiquidGlass
+import com.sonara.music.ui.component.glass.regaGlassSpecular
 import com.sonara.music.ui.screens.Screens
 import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.ui.theme.SonaraLabelStyle
-import com.styropyr0.prismal.components.LocalPrismalBottomTabHighlightedIndex
-import com.styropyr0.prismal.components.PrismalGlassBottomTab
-import com.styropyr0.prismal.components.PrismalGlassBottomTabs
-import com.styropyr0.prismal.specular.PrismalSpecular
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlin.math.roundToInt
 
 @Stable
 private fun isRouteSelected(currentRoute: String?, screenRoute: String, navigationItems: List<Screens>): Boolean {
@@ -84,10 +89,6 @@ private fun isRouteSelected(currentRoute: String?, screenRoute: String, navigati
     return false
 }
 
-/**
- * SONARA dock. Linear-like: a flat bar, hairline top border, and a single
- * soft rounded cell behind the active destination. No capsule, no glass.
- */
 @Composable
 fun AppNavigationBar(
     navigationItems: List<Screens>,
@@ -102,7 +103,7 @@ fun AppNavigationBar(
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
     val liquidGlassEnabled = LocalLiquidGlassEnabled.current
-    val backdropState = LocalRegaBackdrop.current
+    val currentOnItemClick by rememberUpdatedState(onItemClick)
     val selectedIndex = remember(currentRoute, navigationItems) {
         navigationItems.indexOfFirst { screen ->
             isRouteSelected(currentRoute, screen.route, navigationItems)
@@ -126,53 +127,164 @@ fun AppNavigationBar(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        if (liquidGlassEnabled && backdropState != null && backdropState.enabled && navigationItems.isNotEmpty()) {
-            val safeSelectedIndex = selectedIndex.coerceIn(0, navigationItems.lastIndex)
-            PrismalGlassBottomTabs(
-                selectedTabIndex = { safeSelectedIndex },
-                onTabSelected = { index ->
-                    navigationItems.getOrNull(index)?.let { screen ->
-                        onItemClick(screen, index == selectedIndex)
-                    }
-                },
-                backdrop = backdropState.prismalBackdrop,
-                tabsCount = navigationItems.size,
-                adaptiveLuminance = false,
-                dropletContentTint = MaterialTheme.colorScheme.primary,
-                specular = { PrismalSpecular.Default },
-                blurRadius = 1.5.dp,
-                dropletBlurRadius = 0.dp,
-                refractionHeight = 16.dp,
-                refractionAmount = 32.dp,
-                dropletChromaticAberration = 0.50f,
-                modifier = Modifier.fillMaxWidth(),
+        if (liquidGlassEnabled && navigationItems.isNotEmpty()) {
+            var lastValidIndex by remember { mutableIntStateOf(selectedIndex.coerceAtLeast(0)) }
+            if (selectedIndex >= 0) {
+                lastValidIndex = selectedIndex
+            }
+            val animatedIndex by animateFloatAsState(
+                targetValue = lastValidIndex.coerceIn(0, navigationItems.lastIndex).toFloat(),
+                animationSpec = spring(
+                    dampingRatio = 0.72f,
+                    stiffness = 420f,
+                ),
+                label = "glassDockSlide",
+            )
+            val indicatorAlpha by animateFloatAsState(
+                targetValue = if (selectedIndex >= 0) 1f else 0f,
+                animationSpec = tween(180),
+                label = "glassDockIndicatorAlpha",
+            )
+            val regaColors = LocalRegaColors.current
+            val density = LocalDensity.current
+
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (slimNav) 52.dp else 60.dp)
+                    .shadow(
+                        elevation = 16.dp,
+                        shape = CircleShape,
+                        clip = false,
+                        ambientColor = Color.Black.copy(alpha = 0.35f),
+                        spotColor = Color.Black.copy(alpha = 0.35f),
+                    )
+                    .regaGlassSpecular(
+                        shape = CircleShape,
+                        tintColor = regaColors.glassTint,
+                        borderColor = regaColors.glassBorder,
+                    )
+                    .padding(4.dp),
+                contentAlignment = Alignment.CenterStart,
             ) {
-                navigationItems.forEachIndexed { index, screen ->
-                    val highlightedIndex = LocalPrismalBottomTabHighlightedIndex.current()
-                    val isHighlighted = highlightedIndex == index
-                    val iconRes = if (isHighlighted) screen.iconIdActive else screen.iconIdInactive
-                    val contentTint = if (isHighlighted) {
-                        MaterialTheme.colorScheme.onSurface
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                    PrismalGlassBottomTab(
-                        onClick = { onItemClick(screen, index == selectedIndex) },
-                    ) {
-                        Icon(
-                            painter = painterResource(id = iconRes),
-                            contentDescription = stringResource(screen.titleId),
-                            tint = contentTint,
-                            modifier = Modifier.size(20.dp),
+                if (indicatorAlpha > 0.01f) {
+                    val tabWidth = maxWidth / navigationItems.size
+                    val tabWidthPx = with(density) { tabWidth.toPx() }
+                    RegaLiquidGlass(
+                        modifier = Modifier
+                            .offset { IntOffset((animatedIndex * tabWidthPx).roundToInt(), 0) }
+                            .width(tabWidth)
+                            .fillMaxHeight()
+                            .graphicsLayer { alpha = indicatorAlpha },
+                        shape = CircleShape,
+                        borderColor = Color.White.copy(alpha = if (regaColors.isDark) 0.34f else 0.72f),
+                        style = RegaGlassStyle.preset(
+                            material = RegaGlassMaterial.Clear,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                            borderRadius = 26.dp,
+                            elevation = 0.dp,
+                        ),
+                    ) {}
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    navigationItems.forEach { screen ->
+                        val isSelected = remember(currentRoute, screen.route) {
+                            isRouteSelected(currentRoute, screen.route, navigationItems)
+                        }
+                        val currentIsSelected by rememberUpdatedState(isSelected)
+                        val iconRes = remember(isSelected, screen) {
+                            if (isSelected) screen.iconIdActive else screen.iconIdInactive
+                        }
+
+                        val isSearchItem = screen == Screens.Search && onSearchLongClick != null
+                        val isHomeHoldItem = screen == Screens.Home && onHomeLongHold != null
+                        val interactionSource = remember { MutableInteractionSource() }
+
+                        if (isSearchItem || isHomeHoldItem) {
+                            LaunchedEffect(interactionSource) {
+                                var isLongClick = false
+                                interactionSource.interactions.collectLatest { interaction ->
+                                    when (interaction) {
+                                        is PressInteraction.Press -> {
+                                            isLongClick = false
+                                            delay(if (isHomeHoldItem) 15_000L else viewConfiguration.longPressTimeoutMillis)
+                                            isLongClick = true
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            if (isHomeHoldItem) onHomeLongHold.invoke() else onSearchLongClick?.invoke()
+                                        }
+                                        is PressInteraction.Release -> {
+                                            if (!isLongClick) currentOnItemClick(screen, currentIsSelected)
+                                        }
+                                        is PressInteraction.Cancel -> isLongClick = false
+                                    }
+                                }
+                            }
+                        }
+
+                        val pressed by interactionSource.collectIsPressedAsState()
+                        val cellScale by animateFloatAsState(
+                            targetValue = if (pressed) 0.94f else 1f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = 520f,
+                            ),
+                            label = "glassNavCellScale",
                         )
-                        if (!slimNav) {
-                            Text(
-                                text = stringResource(screen.titleId),
-                                style = SonaraLabelStyle.copy(fontSize = 10.sp),
-                                color = contentTint,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                        val contentTint by animateColorAsState(
+                            targetValue = if (isSelected) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            animationSpec = tween(220),
+                            label = "glassNavContentTint",
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .graphicsLayer {
+                                    scaleX = cellScale
+                                    scaleY = cellScale
+                                }
+                                .clip(CircleShape)
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = ripple(bounded = true),
+                                    onClick = {
+                                        if (!isSearchItem && !isHomeHoldItem) {
+                                            currentOnItemClick(screen, currentIsSelected)
+                                        }
+                                    },
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = iconRes),
+                                    contentDescription = stringResource(screen.titleId),
+                                    tint = contentTint,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                if (!slimNav) {
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        text = stringResource(screen.titleId),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        style = SonaraLabelStyle.copy(fontSize = 9.sp, letterSpacing = 0.3.sp),
+                                        color = contentTint,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -234,7 +346,7 @@ fun AppNavigationBar(
                                     if (isHomeHoldItem) onHomeLongHold.invoke() else onSearchLongClick?.invoke()
                                 }
                                 is PressInteraction.Release -> {
-                                    if (!isLongClick) onItemClick(screen, currentIsSelected)
+                                    if (!isLongClick) currentOnItemClick(screen, currentIsSelected)
                                 }
                                 is PressInteraction.Cancel -> isLongClick = false
                             }
@@ -298,7 +410,7 @@ fun AppNavigationBar(
                             indication = ripple(bounded = true),
                             onClick = {
                                 if (!isSearchItem && !isHomeHoldItem) {
-                                    onItemClick(screen, currentIsSelected)
+                                    currentOnItemClick(screen, currentIsSelected)
                                 }
                             },
                         ),

@@ -1197,6 +1197,7 @@ class MainActivity : FragmentActivity() {
                                 enter = fadeIn(animationSpec = tween(durationMillis = 300)),
                                 exit = fadeOut(animationSpec = tween(durationMillis = 200)),
                             ) {
+                                val useTopBarLiquidGlass = enableLiquidGlass && currentRoute != Screens.Home.route
                                 Row {
                                     TopAppBar(
                                         title = {
@@ -1232,14 +1233,14 @@ class MainActivity : FragmentActivity() {
                                                         }
                                                     },
                                                     shape = CircleShape,
-                                                    color = if (enableLiquidGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                    color = if (useTopBarLiquidGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHighest,
                                                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                                     modifier =
                                                         Modifier
                                                             .padding(end = 8.dp)
                                                             .height(32.dp)
                                                             .then(
-                                                                if (enableLiquidGlass) {
+                                                                if (useTopBarLiquidGlass) {
                                                                     Modifier.regaGlassSpecular(
                                                                         shape = CircleShape,
                                                                         tintColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -1264,14 +1265,14 @@ class MainActivity : FragmentActivity() {
                                                 Surface(
                                                     onClick = { availableUpdate?.let { beginUpdate(it) } },
                                                     shape = CircleShape,
-                                                    color = if (enableLiquidGlass) Color.Transparent else MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                                                    color = if (useTopBarLiquidGlass) Color.Transparent else MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
                                                     contentColor = MaterialTheme.colorScheme.primary,
                                                     modifier =
                                                         Modifier
                                                             .padding(end = 12.dp)
                                                             .height(32.dp)
                                                             .then(
-                                                                if (enableLiquidGlass) {
+                                                                if (useTopBarLiquidGlass) {
                                                                     Modifier.regaGlassSpecular(
                                                                         shape = CircleShape,
                                                                         tintColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
@@ -1327,12 +1328,12 @@ class MainActivity : FragmentActivity() {
                                         colors =
                                             TopAppBarDefaults.topAppBarColors(
                                                 containerColor = when {
-                                                    enableLiquidGlass -> Color.Transparent
+                                                    useTopBarLiquidGlass -> Color.Transparent
                                                     pureBlack -> Color.Black
                                                     else -> MaterialTheme.colorScheme.background
                                                 },
                                                 scrolledContainerColor = when {
-                                                    enableLiquidGlass -> Color.Transparent
+                                                    useTopBarLiquidGlass -> Color.Transparent
                                                     pureBlack -> Color.Black
                                                     else -> MaterialTheme.colorScheme.background
                                                 },
@@ -1343,7 +1344,7 @@ class MainActivity : FragmentActivity() {
                                         modifier =
                                             Modifier
                                                 .then(
-                                                    if (enableLiquidGlass) {
+                                                    if (useTopBarLiquidGlass) {
                                                         Modifier.regaGlassSpecular(
                                                             shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp),
                                                             tintColor = baseBg.copy(alpha = 0.14f),

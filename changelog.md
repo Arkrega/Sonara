@@ -1,3 +1,12 @@
+---v1.5.2
+# SONARA 1.5.2
+
+Liquid Glass bottom navigation dock fix and clean Home SONARA logo header.
+
+## Highlights
+- Removed Liquid Glass styling from the Home TopAppBar where the SONARA logo is displayed while keeping Liquid Glass TopAppBar active on other top-level screens
+- Replaced the faulty bottom tab wrapper with a crystal-clear Liquid Glass dock that properly syncs active tab state, slides smoothly between Home, Search, and all destinations, restores scroll-to-top, and keeps long-press actions working reliably
+
 ---v1.5.1
 # SONARA 1.5.1
 
