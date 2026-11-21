@@ -97,6 +97,8 @@ import com.sonara.music.ui.utils.resize
 import com.sonara.music.utils.makeTimeString
 import com.sonara.music.utils.rememberPreference
 import com.sonara.music.viewmodels.AlbumViewModel
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -598,5 +600,7 @@ fun AlbumScreen(
                 }
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

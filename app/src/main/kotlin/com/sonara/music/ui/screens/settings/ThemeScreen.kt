@@ -80,6 +80,8 @@ import com.sonara.music.ui.theme.DefaultThemeColor
 import com.sonara.music.ui.theme.SonaraTheme
 import com.sonara.music.utils.rememberEnumPreference
 import com.sonara.music.utils.rememberPreference
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 data class ThemePalette(
     val nameRes: Int,
@@ -158,7 +160,9 @@ fun ThemeScreen(
                     contentDescription = stringResource(R.string.cd_back)
                 )
             }
-        }
+        },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }
 

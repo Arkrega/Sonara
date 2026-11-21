@@ -27,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -73,6 +72,9 @@ import com.sonara.music.utils.reportException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -327,7 +329,7 @@ fun LastFMSettings(
                 Material3SettingsItem(
                     title = { Text(stringResource(R.string.enable_scrobbling)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = lastfmScrobbling,
                             onCheckedChange = onlastfmScrobblingChange,
                             enabled = isLoggedIn,
@@ -348,7 +350,7 @@ fun LastFMSettings(
                 Material3SettingsItem(
                     title = { Text(stringResource(R.string.lastfm_now_playing)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = useNowPlaying,
                             onCheckedChange = onUseNowPlayingChange,
                             enabled = isLoggedIn && lastfmScrobbling,
@@ -370,7 +372,7 @@ fun LastFMSettings(
                     title = { Text(stringResource(R.string.last_fm_send_likes)) },
                     description = { stringResource(R.string.last_fm_send_likes_description) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = useSendLikes,
                             onCheckedChange = onUseSendLikes,
                             enabled = isLoggedIn,
@@ -625,6 +627,8 @@ fun LastFMSettings(
                     contentDescription = null,
                 )
             }
-        }
+        },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

@@ -44,6 +44,8 @@ import com.sonara.music.ui.menu.YouTubePlaylistMenu
 import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.rememberEnumPreference
 import com.sonara.music.viewmodels.BrowseViewModel
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -157,5 +159,7 @@ fun BrowseScreen(
                 )
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

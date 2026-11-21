@@ -92,6 +92,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 private enum class LoginStage {
     Authenticating,
@@ -330,6 +332,8 @@ fun LoginScreen(
                         )
                     }
                 },
+                modifier = Modifier.regaTopAppBarGlass(),
+                colors = regaTopAppBarColors(),
             )
         },
         contentWindowInsets = WindowInsets.systemBars,

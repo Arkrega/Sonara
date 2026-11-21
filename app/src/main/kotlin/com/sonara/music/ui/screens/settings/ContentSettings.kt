@@ -30,7 +30,6 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -100,6 +99,9 @@ import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.rememberEnumPreference
 import com.sonara.music.utils.rememberPreference
 import java.net.Proxy
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -252,7 +254,7 @@ fun ContentSettings(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(stringResource(R.string.enable_authentication))
-                        Switch(
+                        SonaraSwitch(
                             checked = authEnabled,
                             onCheckedChange = {
                                 authEnabled = it
@@ -394,7 +396,7 @@ fun ContentSettings(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
+                        SonaraSwitch(
                             checked = enableLrclib,
                             onCheckedChange = onEnableLrclibChange,
                             thumbContent = {
@@ -423,7 +425,7 @@ fun ContentSettings(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
+                        SonaraSwitch(
                             checked = enableKugou,
                             onCheckedChange = onEnableKugouChange,
                             thumbContent = {
@@ -452,7 +454,7 @@ fun ContentSettings(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
+                        SonaraSwitch(
                             checked = enableBetterLyrics,
                             onCheckedChange = onEnableBetterLyricsChange,
                             thumbContent = {
@@ -481,7 +483,7 @@ fun ContentSettings(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
+                        SonaraSwitch(
                             checked = enablePaxsenix,
                             onCheckedChange = onEnablePaxsenixChange,
                             thumbContent = {
@@ -510,7 +512,7 @@ fun ContentSettings(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
+                        SonaraSwitch(
                             checked = enableLyricsPlus,
                             onCheckedChange = onEnableLyricsPlusChange,
                             thumbContent = {
@@ -539,7 +541,7 @@ fun ContentSettings(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
+                        SonaraSwitch(
                             checked = enableZemer,
                             onCheckedChange = onEnableZemerChange,
                             thumbContent = {
@@ -771,7 +773,7 @@ fun ContentSettings(
                     icon = painterResource(R.drawable.explicit),
                     title = { Text(stringResource(R.string.hide_explicit)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = hideExplicit,
                             onCheckedChange = onHideExplicitChange,
                             thumbContent = {
@@ -791,7 +793,7 @@ fun ContentSettings(
                     icon = painterResource(R.drawable.slow_motion_video),
                     title = { Text(stringResource(R.string.hide_video_songs)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = hideVideoSongs,
                             onCheckedChange = onHideVideoSongsChange,
                             thumbContent = {
@@ -811,7 +813,7 @@ fun ContentSettings(
                     icon = painterResource(R.drawable.hide_image),
                     title = { Text(stringResource(R.string.hide_youtube_shorts)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = hideYoutubeShorts,
                             onCheckedChange = onHideYoutubeShortsChange,
                             thumbContent = {
@@ -860,7 +862,7 @@ fun ContentSettings(
                     icon = painterResource(R.drawable.info),
                     title = { Text(stringResource(R.string.show_artist_description)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = showArtistDescription,
                             onCheckedChange = onShowArtistDescriptionChange,
                             thumbContent = {
@@ -880,7 +882,7 @@ fun ContentSettings(
                     icon = painterResource(R.drawable.person),
                     title = { Text(stringResource(R.string.show_artist_subscriber_count)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = showArtistSubscriberCount,
                             onCheckedChange = onShowArtistSubscriberCountChange,
                             thumbContent = {
@@ -900,7 +902,7 @@ fun ContentSettings(
                     icon = painterResource(R.drawable.person),
                     title = { Text(stringResource(R.string.show_artist_monthly_listeners)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = showMonthlyListeners,
                             onCheckedChange = onShowMonthlyListenersChange,
                             thumbContent = {
@@ -962,7 +964,7 @@ fun ContentSettings(
                         icon = painterResource(R.drawable.wifi_proxy),
                         title = { Text(stringResource(R.string.enable_proxy)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = proxyEnabled,
                                 onCheckedChange = onProxyEnabledChange,
                                 thumbContent = {
@@ -1026,7 +1028,7 @@ fun ContentSettings(
                     title = { Text(stringResource(R.string.show_most_stats_playlists)) },
                     description = { Text(stringResource(R.string.show_most_stats_playlists_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = showMostStatsPlaylists,
                             onCheckedChange = onShowMostStatsPlaylistsChange,
                             thumbContent = {
@@ -1046,7 +1048,7 @@ fun ContentSettings(
                     icon = painterResource(R.drawable.trending_up),
                     title = { Text(stringResource(R.string.show_wrapped_card)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = showWrappedCard,
                             onCheckedChange = onShowWrappedCardChange,
                             thumbContent = {
@@ -1075,7 +1077,7 @@ fun ContentSettings(
                     title = { Text(stringResource(R.string.randomize_home_order)) },
                     description = { Text(stringResource(R.string.randomize_home_order_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = randomizeHomeOrder,
                             onCheckedChange = onRandomizeHomeOrderChange,
                             thumbContent = {
@@ -1127,6 +1129,8 @@ fun ContentSettings(
                     contentDescription = null,
                 )
             }
-        }
+        },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

@@ -274,4 +274,19 @@
     <string name="theme_mode">Mode Tema</string>
     <string name="color_palette">Palet Warna</string>
     <string name="use_system_colors">Gunakan warna sistem</string>
+    <string name="liquid_glass_preset">Tingkat kejernihan Liquid Glass</string>
+    <string name="liquid_glass_preset_desc">Pilih tingkat transparansi dan blur efek kaca</string>
+    <string name="liquid_glass_preset_crystal">Jernih</string>
+    <string name="liquid_glass_preset_balanced">Seimbang</string>
+    <string name="liquid_glass_preset_frosted">Embun</string>
+    <string name="slider_style_liquid_glass">Liquid Glass</string>
+    <string name="pre_cache_next_song">Pre-cache lagu berikutnya</string>
+    <string name="pre_cache_next_song_desc">Muat lagu berikutnya di latar belakang agar putar instan tanpa jeda</string>
+    <string name="pre_cache_wifi_only">Pre-cache hanya via Wi-Fi</string>
+    <string name="pre_cache_wifi_only_desc">Hindari penggunaan kuota seluler saat pre-cache lagu berikutnya</string>
+    <string name="cached_songs_shortcut">Lagu tercache</string>
+    <string name="cached_items_count">%1$d tercache</string>
+    <string name="enter_pip">Picture-in-Picture</string>
+    <string name="enter_fullscreen">Layar penuh</string>
+    <string name="exit_fullscreen">Keluar layar penuh</string>
 </resources>

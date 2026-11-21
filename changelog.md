@@ -1,3 +1,14 @@
+---v1.6.0
+# SONARA 1.6.0
+
+Liquid Glass clarity presets, global glass switches and seekbar, fullscreen landscape music video with Picture-in-Picture, and smart next-track pre-caching.
+
+## Highlights
+- Added Liquid Glass clarity presets (Crystal, Balanced, Frosted) under Appearance settings alongside floating Liquid Glass TopAppBars across sub-screens, upgraded crystal glass switches across all settings and menus, an animated sliding Audio/Video mode capsule, and a new Liquid Glass player seekbar style
+- Added fullscreen landscape music video mode with live Liquid Glass HUD controls, +/-10s double-tap seek gestures, quick inline PiP and Fullscreen frame actions, and native Android Picture-in-Picture (PiP) with single-decoder handoff and seamless auto-enter
+- Added smart background pre-caching for upcoming queue tracks with a Wi-Fi only safeguard, plus live cached song/video item counts and a quick Cached songs browser shortcut in Storage settings
+- Cleaned up residual debug logging, resolved deprecated Material 3 slider calls, and refined in-app changelog actions with Liquid Glass styling
+
 ---v1.5.3
 # SONARA 1.5.3
 

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
+import com.sonara.music.ui.component.glass.SonaraSwitch
 
 @Composable
 fun CreatePlaylistDialog(
@@ -93,7 +93,7 @@ fun CreatePlaylistDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Switch(
+                    SonaraSwitch(
                         modifier = Modifier.padding(start = 12.dp),
                         checked = syncedPlaylist,
                         onCheckedChange = {

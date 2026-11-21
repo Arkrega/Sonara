@@ -731,11 +731,17 @@ fun BottomSheetPlayer(
                     style = MaterialTheme.typography.bodyLarge,
                 )
 
+                val sleepSliderState = remember {
+                    SliderState(
+                        value = sleepTimerValue,
+                        steps = (120 - 5) / 5 - 1,
+                        trackRange = 5f..120f,
+                    )
+                }
+                sleepSliderState.value = sleepTimerValue
                 Slider(
-                    value = sleepTimerValue,
+                    state = sleepSliderState,
                     onValueChange = { sleepTimerValue = it },
-                    valueRange = 5f..120f,
-                    steps = (120 - 5) / 5 - 1,
                 )
 
                 Column(
@@ -2173,6 +2179,117 @@ private fun PlayerPlaybackProgress(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(20.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Canvas(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(trackHeight),
+                            ) {
+                                val h = size.height
+                                val radius = CornerRadius(h / 2f, h / 2f)
+                                drawRoundRect(
+                                    color = inactiveColor,
+                                    topLeft = Offset.Zero,
+                                    size = size,
+                                    cornerRadius = radius,
+                                )
+                                val activeW = (size.width * frac).coerceAtLeast(if (frac > 0f) h else 0f)
+                                if (activeW > 0f) {
+                                    drawRoundRect(
+                                        color = activeColor,
+                                        topLeft = Offset.Zero,
+                                        size = Size(activeW, h),
+                                        cornerRadius = radius,
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = horizontalPadding),
+                )
+            }
+
+            SliderStyle.LIQUID_GLASS -> {
+                val interactionSource = remember { MutableInteractionSource() }
+                val isDragged by interactionSource.collectIsDraggedAsState()
+                val isPressed by interactionSource.collectIsPressedAsState()
+                val isInteracting = isDragged || isPressed
+
+                val trackHeight by animateDpAsState(
+                    targetValue = if (isInteracting) 8.dp else 5.dp,
+                    animationSpec = tween(150),
+                    label = "glassTrackHeight",
+                )
+                val thumbWidth by animateDpAsState(
+                    targetValue = if (isInteracting) 36.dp else 28.dp,
+                    animationSpec = spring(dampingRatio = 0.7f, stiffness = 500f),
+                    label = "glassThumbWidth",
+                )
+                val thumbHeight by animateDpAsState(
+                    targetValue = if (isInteracting) 22.dp else 18.dp,
+                    animationSpec = spring(dampingRatio = 0.7f, stiffness = 500f),
+                    label = "glassThumbHeight",
+                )
+                val sliderRange = 0f..safeDuration
+                val sliderState = remember(sliderRange) {
+                    SliderState(value = clampedValue, trackRange = sliderRange)
+                }
+                sliderState.value = clampedValue
+
+                val inactiveColor =
+                    if (playerBackground == PlayerBackgroundStyle.DEFAULT && !useDarkTheme) {
+                        Color.Black.copy(alpha = 0.12f)
+                    } else {
+                        Color.White.copy(alpha = 0.20f)
+                    }
+                val activeColor = textButtonColor.copy(alpha = 0.78f)
+
+                Slider(
+                    state = sliderState,
+                    onValueChange = {
+                        if (!isListenTogetherGuest) {
+                            onSliderPositionChange(it.toLong())
+                        }
+                    },
+                    onValueChangeFinished = {
+                        if (!isListenTogetherGuest) {
+                            sliderPosition?.let { onSeek(it) }
+                            onSliderPositionChange(null)
+                        }
+                    },
+                    enabled = !isListenTogetherGuest,
+                    interactionSource = interactionSource,
+                    thumb = {
+                        Box(
+                            modifier = Modifier.size(width = 36.dp, height = 24.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            RegaLiquidGlass(
+                                modifier = Modifier.size(width = thumbWidth, height = thumbHeight),
+                                shape = CircleShape,
+                                borderColor = Color.White.copy(alpha = 0.55f),
+                                style = RegaGlassStyle.preset(
+                                    material = RegaGlassMaterial.Clear,
+                                    tint = Color.White.copy(alpha = 0.16f),
+                                    borderRadius = thumbHeight / 2,
+                                    elevation = if (isInteracting) 6.dp else 3.dp,
+                                ),
+                            ) {}
+                        }
+                    },
+                    track = { sState ->
+                        val frac =
+                            if (sState.trackRange.endInclusive <= sState.trackRange.start) {
+                                0f
+                            } else {
+                                ((sState.value - sState.trackRange.start) / (sState.trackRange.endInclusive - sState.trackRange.start))
+                                    .coerceIn(0f, 1f)
+                            }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(24.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Canvas(

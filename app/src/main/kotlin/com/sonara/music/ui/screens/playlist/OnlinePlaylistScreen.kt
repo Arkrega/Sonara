@@ -108,6 +108,8 @@ import com.sonara.music.viewmodels.OnlinePlaylistViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -472,6 +474,8 @@ fun OnlinePlaylistScreen(
                     }
                 }
             },
+            modifier = Modifier.regaTopAppBarGlass(),
+            colors = regaTopAppBarColors(),
         )
 
         SnackbarHost(

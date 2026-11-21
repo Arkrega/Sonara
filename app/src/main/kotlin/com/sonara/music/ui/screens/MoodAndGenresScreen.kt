@@ -64,6 +64,8 @@ import com.sonara.music.viewmodels.MoodAndGenresViewModel
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 /** Compact carousel tile used on Home. */
 val MoodTileHeight = 132.dp
@@ -152,6 +154,8 @@ fun MoodAndGenresScreen(
                 )
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }
 

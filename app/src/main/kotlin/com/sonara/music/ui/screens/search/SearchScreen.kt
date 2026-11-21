@@ -78,6 +78,8 @@ import com.sonara.music.ui.component.glass.RegaGlassStyle
 import com.sonara.music.ui.component.glass.RegaLiquidGlass
 import com.sonara.music.ui.component.glass.regaBackdropSource
 import com.sonara.music.ui.component.glass.rememberRegaBackdropState
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.utils.SearchRoutes
 import com.sonara.music.utils.rememberEnumPreference
@@ -321,8 +323,11 @@ fun SearchScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.background,
+                modifier = Modifier.regaTopAppBarGlass(),
+                colors = regaTopAppBarColors(
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.background,
+                    ),
                 ),
             )
         },

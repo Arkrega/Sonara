@@ -154,6 +154,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 import java.time.LocalDateTime
 
 @SuppressLint("RememberReturnType")
@@ -850,8 +852,11 @@ fun LocalPlaylistScreen(
                 }
 
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = if (showTopBarTitle) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent,
+            modifier = Modifier.regaTopAppBarGlass(),
+            colors = regaTopAppBarColors(
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (showTopBarTitle) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent,
+                ),
             ),
         )
 

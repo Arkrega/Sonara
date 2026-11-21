@@ -87,6 +87,8 @@ import com.sonara.music.utils.rememberPreference
 import com.sonara.music.viewmodels.DateAgo
 import com.sonara.music.viewmodels.HistoryViewModel
 import java.time.format.DateTimeFormatter
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -211,9 +213,9 @@ fun HistoryScreen(
     }
 
     val lazyListState = rememberLazyListState()
+    val screenBackdrop = rememberRegaBackdropState()
 
     Box(Modifier.fillMaxSize()) {
-        val screenBackdrop = rememberRegaBackdropState()
         LazyColumn(
             state = lazyListState,
             contentPadding =
@@ -444,119 +446,123 @@ fun HistoryScreen(
         }
     }
 
-    TopAppBar(
-        title = {
-            if (inSelectMode) {
-                Text(pluralStringResource(R.plurals.n_selected, selection.size, selection.size))
-            } else if (isSearching) {
-                TextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.search),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                    },
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.titleLarge,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    colors =
-                        TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent,
-                        ),
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester),
-                )
-            } else {
-                Text(stringResource(R.string.history))
-            }
-        },
-        navigationIcon = {
-            if (inSelectMode) {
-                IconButton(onClick = onExitSelectionMode) {
-                    Icon(
-                        painter = painterResource(R.drawable.close),
-                        contentDescription = null,
-                    )
-                }
-            } else {
-                IconButton(
-                    onClick = {
-                        if (isSearching) {
-                            isSearching = false
-                            query = TextFieldValue()
-                        } else {
-                            navController.navigateUp()
-                        }
-                    },
-                    onLongClick = {
-                        if (!isSearching) {
-                            navController.backToMain()
-                        }
-                    },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.arrow_back),
-                        contentDescription = null,
-                    )
-                }
-            }
-        },
-        actions = {
-            if (inSelectMode) {
-                Checkbox(
-                    checked = selection.size == allEvents.size && selection.isNotEmpty(),
-                    onCheckedChange = {
-                        if (selection.size == allEvents.size) {
-                            selection.clear()
-                        } else {
-                            selection.clear()
-                            selection.addAll(allEvents.map { it.event.id })
-                        }
-                    },
-                )
-                IconButton(
-                    enabled = selection.isNotEmpty(),
-                    onClick = {
-                        menuState.show {
-                            SelectionMediaMetadataMenu(
-                                songSelection =
-                                    selection.mapNotNull { eventId ->
-                                        allEvents
-                                            .find { it.event.id == eventId }
-                                            ?.song
-                                            ?.toMediaItem()
-                                            ?.metadata
-                                    },
-                                onDismiss = menuState::dismiss,
-                                clearAction = onExitSelectionMode,
-                                currentItems = emptyList(),
+    CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+        TopAppBar(
+            title = {
+                if (inSelectMode) {
+                    Text(pluralStringResource(R.plurals.n_selected, selection.size, selection.size))
+                } else if (isSearching) {
+                    TextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        placeholder = {
+                            Text(
+                                text = stringResource(R.string.search),
+                                style = MaterialTheme.typography.titleLarge,
                             )
-                        }
-                    },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.more_vert),
-                        contentDescription = null,
+                        },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.titleLarge,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        colors =
+                            TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                disabledIndicatorColor = Color.Transparent,
+                            ),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester),
                     )
+                } else {
+                    Text(stringResource(R.string.history))
                 }
-            } else if (!isSearching) {
-                IconButton(
-                    onClick = { isSearching = true },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.search),
-                        contentDescription = null,
+            },
+            navigationIcon = {
+                if (inSelectMode) {
+                    IconButton(onClick = onExitSelectionMode) {
+                        Icon(
+                            painter = painterResource(R.drawable.close),
+                            contentDescription = null,
+                        )
+                    }
+                } else {
+                    IconButton(
+                        onClick = {
+                            if (isSearching) {
+                                isSearching = false
+                                query = TextFieldValue()
+                            } else {
+                                navController.navigateUp()
+                            }
+                        },
+                        onLongClick = {
+                            if (!isSearching) {
+                                navController.backToMain()
+                            }
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.arrow_back),
+                            contentDescription = null,
+                        )
+                    }
+                }
+            },
+            actions = {
+                if (inSelectMode) {
+                    Checkbox(
+                        checked = selection.size == allEvents.size && selection.isNotEmpty(),
+                        onCheckedChange = {
+                            if (selection.size == allEvents.size) {
+                                selection.clear()
+                            } else {
+                                selection.clear()
+                                selection.addAll(allEvents.map { it.event.id })
+                            }
+                        },
                     )
+                    IconButton(
+                        enabled = selection.isNotEmpty(),
+                        onClick = {
+                            menuState.show {
+                                SelectionMediaMetadataMenu(
+                                    songSelection =
+                                        selection.mapNotNull { eventId ->
+                                            allEvents
+                                                .find { it.event.id == eventId }
+                                                ?.song
+                                                ?.toMediaItem()
+                                                ?.metadata
+                                        },
+                                    onDismiss = menuState::dismiss,
+                                    clearAction = onExitSelectionMode,
+                                    currentItems = emptyList(),
+                                )
+                            }
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.more_vert),
+                            contentDescription = null,
+                        )
+                    }
+                } else if (!isSearching) {
+                    IconButton(
+                        onClick = { isSearching = true },
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.search),
+                            contentDescription = null,
+                        )
+                    }
                 }
-            }
-        },
-    )
+            },
+            modifier = Modifier.regaTopAppBarGlass(),
+            colors = regaTopAppBarColors(),
+        )
+    }
 }

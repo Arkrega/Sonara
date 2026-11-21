@@ -16,7 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -40,6 +39,9 @@ import com.sonara.music.ui.component.Material3SettingsGroup
 import com.sonara.music.ui.component.Material3SettingsItem
 import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.rememberPreference
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 val defaultList = mutableListOf(
     "Japanese" to true,
@@ -109,7 +111,7 @@ fun RomanizationSettings(
                 Material3SettingsItem(
                     title = { Text(stringResource(R.string.lyrics_romanize_as_main)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = lyricsRomanizeAsMain,
                             onCheckedChange = onLyricsRomanizeAsMainChange,
                             thumbContent = {
@@ -128,7 +130,7 @@ fun RomanizationSettings(
                 Material3SettingsItem(
                     title = { Text(stringResource(R.string.line_by_line_option_title)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = lyricsRomanizeCyrillicByLine,
                             onCheckedChange = onLyricsRomanizeCyrillicByLineChange,
                             thumbContent = {
@@ -200,6 +202,8 @@ fun RomanizationSettings(
                     contentDescription = null,
                 )
             }
-        }
+        },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

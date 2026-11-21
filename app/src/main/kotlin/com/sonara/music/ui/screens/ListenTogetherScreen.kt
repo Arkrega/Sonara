@@ -103,6 +103,8 @@ import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.rememberPreference
 import kotlinx.coroutines.launch
 import androidx.compose.material3.IconButton as MaterialIconButton
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -430,6 +432,8 @@ fun ListenTogetherScreen(
                     )
                 }
             },
+            modifier = Modifier.regaTopAppBarGlass(),
+            colors = regaTopAppBarColors(),
         )
     }
 }

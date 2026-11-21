@@ -47,7 +47,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -96,6 +95,9 @@ import com.sonara.music.ui.component.IntegrationCardItem
 import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.rememberPreference
 import kotlinx.coroutines.flow.collectLatest
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -427,7 +429,7 @@ fun ListenTogetherSettings(navController: NavController) {
                                 Text(stringResource(R.string.listen_together_auto_approval_joins_desc))
                             },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = autoApprovalJoins,
                                     onCheckedChange = { autoApprovalJoins = it },
                                     // Only disable for guests in a room (hosts can always change)
@@ -454,7 +456,7 @@ fun ListenTogetherSettings(navController: NavController) {
                                 Text(stringResource(R.string.listen_together_auto_approval_suggestions_desc))
                             },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = autoApproveSuggestions,
                                     onCheckedChange = { autoApproveSuggestions = it },
                                     // Only disable for guests in a room (hosts can always change)
@@ -481,7 +483,7 @@ fun ListenTogetherSettings(navController: NavController) {
                                 Text(stringResource(R.string.listen_together_sync_volume_desc))
                             },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = syncHostVolume,
                                     onCheckedChange = { syncHostVolume = it },
                                     thumbContent = {
@@ -526,6 +528,8 @@ fun ListenTogetherSettings(navController: NavController) {
                 )
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }
 

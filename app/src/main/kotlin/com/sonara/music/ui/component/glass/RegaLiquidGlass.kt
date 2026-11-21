@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.sonara.music.constants.LiquidGlassPreset
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -110,6 +111,7 @@ internal fun resolveLiquidGlassSurfaceTint(
     material: RegaGlassMaterial,
     isDark: Boolean,
     supportsBlur: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+    preset: LiquidGlassPreset = LiquidGlassPreset.CRYSTAL,
 ): Color {
     if (baseTint.alpha <= 0.01f) return Color.Transparent
     val crystalAlpha =
@@ -119,9 +121,50 @@ internal fun resolveLiquidGlassSurfaceTint(
             RegaGlassMaterial.Regular -> if (isDark) 0.14f else 0.20f
             RegaGlassMaterial.Thick -> if (isDark) 0.20f else 0.26f
         }
-    val effectiveMaxAlpha = if (supportsBlur) crystalAlpha else (crystalAlpha + 0.22f).coerceAtMost(0.56f)
+    val presetBoost =
+        when (preset) {
+            LiquidGlassPreset.CRYSTAL -> 0f
+            LiquidGlassPreset.BALANCED -> 0.08f
+            LiquidGlassPreset.FROSTED -> 0.18f
+        }
+    val fallbackCap =
+        when (preset) {
+            LiquidGlassPreset.CRYSTAL -> 0.56f
+            LiquidGlassPreset.BALANCED -> 0.64f
+            LiquidGlassPreset.FROSTED -> 0.72f
+        }
+    val boostedAlpha = crystalAlpha + presetBoost
+    val effectiveMaxAlpha = if (supportsBlur) boostedAlpha else (boostedAlpha + 0.22f).coerceAtMost(fallbackCap)
     return baseTint.copy(alpha = minOf(baseTint.alpha, effectiveMaxAlpha))
 }
+
+internal fun resolveLiquidGlassBlurDp(
+    material: RegaGlassMaterial,
+    preset: LiquidGlassPreset = LiquidGlassPreset.CRYSTAL,
+): Dp =
+    when (preset) {
+        LiquidGlassPreset.CRYSTAL ->
+            when (material) {
+                RegaGlassMaterial.Clear -> 1.5.dp
+                RegaGlassMaterial.Thin -> 2.dp
+                RegaGlassMaterial.Regular -> 2.5.dp
+                RegaGlassMaterial.Thick -> 3.5.dp
+            }
+        LiquidGlassPreset.BALANCED ->
+            when (material) {
+                RegaGlassMaterial.Clear -> 4.dp
+                RegaGlassMaterial.Thin -> 6.dp
+                RegaGlassMaterial.Regular -> 8.dp
+                RegaGlassMaterial.Thick -> 11.dp
+            }
+        LiquidGlassPreset.FROSTED ->
+            when (material) {
+                RegaGlassMaterial.Clear -> 9.dp
+                RegaGlassMaterial.Thin -> 13.dp
+                RegaGlassMaterial.Regular -> 17.dp
+                RegaGlassMaterial.Thick -> 22.dp
+            }
+    }
 
 internal fun resolveLiquidGlassShape(
     shape: Shape,
@@ -149,6 +192,7 @@ fun RegaLiquidGlass(
 ) {
     val colors = LocalRegaColors.current
     val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+    val liquidGlassPreset = LocalLiquidGlassPreset.current
 
     val baseSurface = style.tint ?: when (style.material) {
         RegaGlassMaterial.Clear -> colors.surface.copy(alpha = 0.72f)
@@ -181,6 +225,7 @@ fun RegaLiquidGlass(
         baseTint = baseSurface,
         material = style.material,
         isDark = colors.isDark,
+        preset = liquidGlassPreset,
     )
     val luminousBorder =
         if (borderColor != null && borderColor.alpha <= 0.01f) {
@@ -211,12 +256,7 @@ fun RegaLiquidGlass(
         }
 
     if (backdropState != null && backdropState.enabled) {
-        val targetBlurDp = when (style.material) {
-            RegaGlassMaterial.Clear -> 1.5.dp
-            RegaGlassMaterial.Thin -> 2.dp
-            RegaGlassMaterial.Regular -> 2.5.dp
-            RegaGlassMaterial.Thick -> 3.5.dp
-        }
+        val targetBlurDp = resolveLiquidGlassBlurDp(style.material, liquidGlassPreset)
         val targetRefractionHeightDp = when (style.material) {
             RegaGlassMaterial.Clear -> 12.dp
             RegaGlassMaterial.Thin -> 14.dp

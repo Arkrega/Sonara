@@ -24,7 +24,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -59,6 +58,9 @@ import kotlinx.coroutines.flow.map
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.math.roundToInt
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 enum class AndroidAutoSection(val id: String) {
     LIKED("liked"),
@@ -206,7 +208,7 @@ fun AndroidAutoSettings(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Spacer(Modifier.width(12.dp))
-                                Switch(
+                                SonaraSwitch(
                                     checked = enabled,
                                     onCheckedChange = { newValue ->
                                         sections = sections.map { (s, e) ->
@@ -307,7 +309,7 @@ fun AndroidAutoSettings(
                     title = { Text(stringResource(R.string.android_auto_youtube_playlists)) },
                     description = { Text(stringResource(R.string.android_auto_youtube_playlists_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = youtubePlaylistsEnabled,
                             onCheckedChange = onYoutubePlaylistsChange,
                             thumbContent = {
@@ -380,5 +382,7 @@ fun AndroidAutoSettings(
                 )
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

@@ -337,4 +337,19 @@
     <string name="new_version_available">New version available</string>
     <string name="translation_models">Translation Models</string>
     <string name="clear_translation_models">Clear translation models</string>
+    <string name="liquid_glass_preset">Liquid Glass clarity</string>
+    <string name="liquid_glass_preset_desc">Choose glass transparency and blur intensity</string>
+    <string name="liquid_glass_preset_crystal">Crystal</string>
+    <string name="liquid_glass_preset_balanced">Balanced</string>
+    <string name="liquid_glass_preset_frosted">Frosted</string>
+    <string name="slider_style_liquid_glass">Liquid Glass</string>
+    <string name="pre_cache_next_song">Pre-cache next track</string>
+    <string name="pre_cache_next_song_desc">Buffer the upcoming track in the background for instant playback</string>
+    <string name="pre_cache_wifi_only">Pre-cache on Wi-Fi only</string>
+    <string name="pre_cache_wifi_only_desc">Avoid using mobile data when pre-caching upcoming tracks</string>
+    <string name="cached_songs_shortcut">Cached songs</string>
+    <string name="cached_items_count">%1$d cached</string>
+    <string name="enter_pip">Picture-in-Picture</string>
+    <string name="enter_fullscreen">Fullscreen</string>
+    <string name="exit_fullscreen">Exit fullscreen</string>
 </resources>

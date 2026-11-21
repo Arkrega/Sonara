@@ -18,7 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -92,6 +92,9 @@ import com.sonara.music.ui.component.encodeDayTimes
 import com.sonara.music.constants.SleepTimerFadeOutKey
 import com.sonara.music.constants.SleepTimerStopAfterCurrentSongKey
 import com.sonara.music.ui.utils.getLoudnessLevelLabel
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -342,7 +345,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.video_playback)) },
                     description = { Text(stringResource(R.string.video_playback_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = videoPlaybackEnabled,
                             onCheckedChange = onVideoPlaybackEnabledChange,
                             thumbContent = {
@@ -385,7 +388,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.crossfade)) },
                     description = { Text(stringResource(R.string.crossfade_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = crossfadeEnabled,
                             onCheckedChange = onCrossfadeEnabledChange,
                             thumbContent = {
@@ -408,11 +411,13 @@ fun PlayerSettings(
                         description = {
                             Column {
                                 Text(pluralStringResource(R.plurals.seconds, crossfadeDuration.toInt(), crossfadeDuration.toInt()))
+                                val crossfadeSliderState = remember {
+                                    SliderState(value = crossfadeDuration, steps = 14, trackRange = 1f..15f)
+                                }
+                                crossfadeSliderState.value = crossfadeDuration
                                 Slider(
-                                    value = crossfadeDuration,
+                                    state = crossfadeSliderState,
                                     onValueChange = onCrossfadeDurationChange,
-                                    valueRange = 1f..15f,
-                                    steps = 14
                                 )
                             }
                         }
@@ -422,7 +427,7 @@ fun PlayerSettings(
                         title = { Text(stringResource(R.string.crossfade_gapless)) },
                         description = { Text(stringResource(R.string.crossfade_gapless_desc)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = crossfadeGapless,
                                 onCheckedChange = onCrossfadeGaplessChange,
                                 thumbContent = {
@@ -445,10 +450,13 @@ fun PlayerSettings(
                     description = {
                         Column {
                             Text(historyDuration.roundToInt().toString())
+                            val historySliderState = remember {
+                                SliderState(value = historyDuration, trackRange = 1f..100f)
+                            }
+                            historySliderState.value = historyDuration
                             Slider(
-                                value = historyDuration,
+                                state = historySliderState,
                                 onValueChange = onHistoryDurationChange,
-                                valueRange = 1f..100f
                             )
                         }
                     }
@@ -458,7 +466,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.skip_silence)) },
                     description = { Text(stringResource(R.string.skip_silence_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = skipSilence,
                             onCheckedChange = onSkipSilenceChange,
                             thumbContent = {
@@ -479,7 +487,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.skip_silence_instant)) },
                     description = { Text(stringResource(R.string.skip_silence_instant_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = skipSilenceInstant,
                             onCheckedChange = { onSkipSilenceInstantChange(it) },
                             enabled = skipSilence,
@@ -500,7 +508,7 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.volume_up),
                     title = { Text(stringResource(R.string.audio_normalization)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = audioNormalization,
                             onCheckedChange = onAudioNormalizationChange,
                             thumbContent = {
@@ -536,7 +544,7 @@ fun PlayerSettings(
                         )
                     },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = if (crossfadeEnabled) false else audioOffload,
                             onCheckedChange = onAudioOffloadChange,
                             enabled = !crossfadeEnabled,
@@ -562,7 +570,7 @@ fun PlayerSettings(
                         )
                     },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = varispeed,
                             onCheckedChange = onVarispeedChange,
                             thumbContent = {
@@ -585,7 +593,7 @@ fun PlayerSettings(
                         Text(stringResource(R.string.audio_track_playback_params_description))
                     },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = audioTrackPlaybackParams,
                             onCheckedChange = onAudioTrackPlaybackParamsChange,
                             thumbContent = {
@@ -608,7 +616,7 @@ fun PlayerSettings(
                         title = { Text(stringResource(R.string.google_cast)) },
                         description = { Text(stringResource(R.string.google_cast_description)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = enableGoogleCast,
                                 onCheckedChange = onEnableGoogleCastChange,
                                 thumbContent = {
@@ -630,7 +638,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.seek_seconds_addup)) },
                     description = { Text(stringResource(R.string.seek_seconds_addup_description)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = seekExtraSeconds,
                             onCheckedChange = onSeekExtraSeconds,
                             thumbContent = {
@@ -719,7 +727,7 @@ fun PlayerSettings(
                         title = { Text(stringResource(R.string.enable_automatic_sleeptimer)) },
                         description = { Text(stringResource(R.string.sleeptimer_description)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = sleepTimerEnabled,
                                 onCheckedChange = onSleepTimerEnabledChange,
                                 thumbContent = {
@@ -747,7 +755,7 @@ fun PlayerSettings(
                                 )
                             },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = sleepTimerEnabled,
                                     onCheckedChange = {showSleepTimerDialog = true},
                                     thumbContent = {
@@ -772,7 +780,7 @@ fun PlayerSettings(
                         title = { Text(stringResource(R.string.sleep_timer_stop_after_current_song_title)) },
                         description = { Text(stringResource(R.string.sleep_timer_stop_after_current_song_description)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = sleepTimerStopAfterCurrentSong,
                                 onCheckedChange = onSleepTimerStopAfterCurrentSongChange,
                                 thumbContent = {
@@ -796,7 +804,7 @@ fun PlayerSettings(
                         title = { Text(stringResource(R.string.sleep_timer_fade_out_title)) },
                         description = { Text(stringResource(R.string.sleep_timer_fade_out_description)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = sleepTimerFadeOut,
                                 onCheckedChange = onSleepTimerFadeOutChange,
                                 thumbContent = {
@@ -831,7 +839,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.persistent_queue)) },
                     description = { Text(stringResource(R.string.persistent_queue_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = persistentQueue,
                             onCheckedChange = onPersistentQueueChange,
                             thumbContent = {
@@ -852,7 +860,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.auto_load_more)) },
                     description = { Text(stringResource(R.string.auto_load_more_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = autoLoadMore,
                             onCheckedChange = onAutoLoadMoreChange,
                             thumbContent = {
@@ -873,7 +881,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.auto_radio_queue)) },
                     description = { Text(stringResource(R.string.auto_radio_queue_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = autoRadioQueue,
                             onCheckedChange = onAutoRadioQueueChange,
                             thumbContent = {
@@ -894,7 +902,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.autoplay)) },
                     description = { Text(stringResource(R.string.autoplay_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = autoplay,
                             onCheckedChange = onAutoplayChange,
                             thumbContent = {
@@ -915,7 +923,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.disable_load_more_when_repeat_all)) },
                     description = { Text(stringResource(R.string.disable_load_more_when_repeat_all_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = disableLoadMoreWhenRepeatAll,
                             onCheckedChange = onDisableLoadMoreWhenRepeatAllChange,
                             thumbContent = {
@@ -936,7 +944,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.auto_download_on_like)) },
                     description = { Text(stringResource(R.string.auto_download_on_like_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = autoDownloadOnLike,
                             onCheckedChange = onAutoDownloadOnLikeChange,
                             thumbContent = {
@@ -957,7 +965,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.enable_similar_content)) },
                     description = { Text(stringResource(R.string.similar_content_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = similarContentEnabled,
                             onCheckedChange = similarContentEnabledChange,
                             thumbContent = {
@@ -978,7 +986,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.persistent_shuffle_title)) },
                     description = { Text(stringResource(R.string.persistent_shuffle_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = persistentShuffleAcrossQueues,
                             onCheckedChange = onPersistentShuffleAcrossQueuesChange,
                             thumbContent = {
@@ -999,7 +1007,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.remember_shuffle_and_repeat)) },
                     description = { Text(stringResource(R.string.remember_shuffle_and_repeat_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = rememberShuffleAndRepeat,
                             onCheckedChange = onRememberShuffleAndRepeatChange,
                             thumbContent = {
@@ -1020,7 +1028,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.shuffle_playlist_first)) },
                     description = { Text(stringResource(R.string.shuffle_playlist_first_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = shufflePlaylistFirst,
                             onCheckedChange = onShufflePlaylistFirstChange,
                             thumbContent = {
@@ -1041,7 +1049,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.prevent_duplicate_tracks_in_queue)) },
                     description = { Text(stringResource(R.string.prevent_duplicate_tracks_in_queue_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = preventDuplicateTracksInQueue,
                             onCheckedChange = onPreventDuplicateTracksInQueueChange,
                             thumbContent = {
@@ -1062,7 +1070,7 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.auto_skip_next_on_error)) },
                     description = { Text(stringResource(R.string.auto_skip_next_on_error_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = autoSkipNextOnError,
                             onCheckedChange = onAutoSkipNextOnErrorChange,
                             thumbContent = {
@@ -1090,7 +1098,7 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.clear_all),
                     title = { Text(stringResource(R.string.stop_music_on_task_clear)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = stopMusicOnTaskClear,
                             onCheckedChange = onStopMusicOnTaskClearChange,
                             thumbContent = {
@@ -1110,7 +1118,7 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.volume_off_pause),
                     title = { Text(stringResource(R.string.pause_music_when_media_is_muted)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = pauseOnMute,
                             onCheckedChange = onPauseOnMuteChange,
                             thumbContent = {
@@ -1130,7 +1138,7 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.bluetooth),
                     title = { Text(stringResource(R.string.resume_on_bluetooth_connect)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = resumeOnBluetoothConnect,
                             onCheckedChange = onResumeOnBluetoothConnectChange,
                             thumbContent = {
@@ -1150,7 +1158,7 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.screenshot),
                     title = { Text(stringResource(R.string.keep_screen_on_when_player_is_expanded)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = keepScreenOn,
                             onCheckedChange = onKeepScreenOnChange,
                             thumbContent = {
@@ -1183,6 +1191,8 @@ fun PlayerSettings(
                     contentDescription = null
                 )
             }
-        }
+        },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

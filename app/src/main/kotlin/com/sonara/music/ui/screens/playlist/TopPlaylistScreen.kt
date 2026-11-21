@@ -97,6 +97,8 @@ import com.sonara.music.ui.menu.TopPlaylistMenu
 import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.makeTimeString
 import com.sonara.music.viewmodels.TopPlaylistViewModel
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -515,7 +517,9 @@ fun TopPlaylistScreen(
                         )
                     }
                 }
-            }
+            },
+            modifier = Modifier.regaTopAppBarGlass(),
+            colors = regaTopAppBarColors(),
         )
     }
 }

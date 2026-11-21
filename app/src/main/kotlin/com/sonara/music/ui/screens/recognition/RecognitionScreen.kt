@@ -91,6 +91,8 @@ import com.sonara.shazamkit.models.RecognitionStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -221,6 +223,8 @@ fun RecognitionScreen(
                         )
                     }
                 },
+                modifier = Modifier.regaTopAppBarGlass(),
+                colors = regaTopAppBarColors(),
             )
         },
     ) { paddingValues ->

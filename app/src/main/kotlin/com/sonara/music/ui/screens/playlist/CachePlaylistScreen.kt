@@ -97,6 +97,8 @@ import com.sonara.music.utils.rememberEnumPreference
 import com.sonara.music.utils.rememberPreference
 import com.sonara.music.viewmodels.CachePlaylistViewModel
 import java.time.LocalDateTime
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -462,7 +464,9 @@ fun CachePlaylistScreen(
                         )
                     }
                 }
-            }
+            },
+            modifier = Modifier.regaTopAppBarGlass(),
+            colors = regaTopAppBarColors(),
         )
     }
 }

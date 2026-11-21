@@ -62,6 +62,8 @@ import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.rememberEnumPreference
 import com.sonara.music.utils.rememberPreference
 import com.sonara.music.viewmodels.ArtistSongsViewModel
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -192,20 +194,24 @@ fun ArtistSongsScreen(
             }
         }
 
-        TopAppBar(
-            title = { Text(artist?.artist?.name.orEmpty()) },
-            navigationIcon = {
-                IconButton(
-                    onClick = navController::navigateUp,
-                    onLongClick = navController::backToMain,
-                ) {
-                    Icon(
-                        painterResource(R.drawable.arrow_back),
-                        contentDescription = null,
-                    )
-                }
-            },
-        )
+        CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+            TopAppBar(
+                title = { Text(artist?.artist?.name.orEmpty()) },
+                navigationIcon = {
+                    IconButton(
+                        onClick = navController::navigateUp,
+                        onLongClick = navController::backToMain,
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.arrow_back),
+                            contentDescription = null,
+                        )
+                    }
+                },
+                modifier = Modifier.regaTopAppBarGlass(),
+                colors = regaTopAppBarColors(),
+            )
+        }
 
         CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
             HideOnScrollFAB(

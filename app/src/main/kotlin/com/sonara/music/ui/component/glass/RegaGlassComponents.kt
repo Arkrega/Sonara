@@ -29,13 +29,19 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchColors
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -777,6 +783,165 @@ fun RegaGlassSwitch(
     }
 }
 
+@Composable
+fun SonaraSwitch(
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    modifier: Modifier = Modifier,
+    thumbContent: (@Composable () -> Unit)? = null,
+    enabled: Boolean = true,
+    colors: SwitchColors = SwitchDefaults.colors(),
+    interactionSource: MutableInteractionSource? = null,
+) {
+    if (!LocalLiquidGlassEnabled.current) {
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = modifier,
+            thumbContent = thumbContent,
+            enabled = enabled,
+            colors = colors,
+            interactionSource = interactionSource,
+        )
+        return
+    }
+
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    val isPressed by source.collectIsPressedAsState()
+    val haptics = LocalHapticFeedback.current
+    val primary = MaterialTheme.colorScheme.primary
+    val isDark = LocalRegaColors.current.isDark
+
+    val knobOffset by animateDpAsState(
+        targetValue = if (checked) 24.dp else 4.dp,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMedium),
+        label = "sonaraSwitchKnobOffset",
+    )
+    val knobScale by animateFloatAsState(
+        targetValue = if (isPressed) 1.14f else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
+        label = "sonaraSwitchKnobScale",
+    )
+    val trackFill by animateColorAsState(
+        targetValue = if (checked) primary.copy(alpha = if (isDark) 0.50f else 0.62f) else Color.Transparent,
+        animationSpec = tween(durationMillis = 200),
+        label = "sonaraSwitchTrackFill",
+    )
+    val knobColor by animateColorAsState(
+        targetValue = if (checked) Color.White.copy(alpha = 0.97f) else Color.White.copy(alpha = if (isDark) 0.78f else 0.90f),
+        animationSpec = tween(durationMillis = 200),
+        label = "sonaraSwitchKnobColor",
+    )
+    val toggleModifier =
+        if (onCheckedChange != null) {
+            Modifier.toggleable(
+                value = checked,
+                enabled = enabled,
+                role = Role.Switch,
+                interactionSource = source,
+                indication = null,
+                onValueChange = { value ->
+                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    onCheckedChange(value)
+                },
+            )
+        } else {
+            Modifier
+        }
+
+    Box(
+        modifier = modifier
+            .minimumInteractiveComponentSize()
+            .size(width = 52.dp, height = 32.dp)
+            .regaGlassSpecular(
+                shape = CircleShape,
+                tintColor = LocalRegaColors.current.glassTint,
+                borderColor = LocalRegaColors.current.glassBorder,
+            )
+            .clip(CircleShape)
+            .background(trackFill)
+            .then(toggleModifier)
+            .alpha(if (enabled) 1f else 0.4f),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(x = knobOffset)
+                .size(24.dp)
+                .graphicsLayer {
+                    scaleX = knobScale
+                    scaleY = knobScale
+                }
+                .shadow(elevation = 3.dp, shape = CircleShape, clip = false)
+                .clip(CircleShape)
+                .background(knobColor)
+                .border(0.75.dp, Color.White.copy(alpha = 0.72f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (thumbContent != null) {
+                CompositionLocalProvider(
+                    LocalContentColor provides if (checked) primary else Color(0xFF3A3A3F),
+                ) {
+                    thumbContent()
+                }
+            }
+        }
+    }
+}
+
+fun Modifier.regaTopAppBarGlass(): Modifier = composed {
+    if (!LocalLiquidGlassEnabled.current) return@composed this
+    val regaColors = LocalRegaColors.current
+    val backdropState = LocalRegaBackdrop.current
+    val barShape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
+    if (backdropState != null && backdropState.enabled) {
+        this.regaGlassSpecular(
+            shape = barShape,
+            tintColor = regaColors.glassTint,
+            borderColor = regaColors.glassBorder,
+        )
+    } else {
+        val frostTop = regaColors.surface.copy(alpha = if (regaColors.isDark) 0.82f else 0.88f)
+        val frostBottom = regaColors.surface.copy(alpha = if (regaColors.isDark) 0.66f else 0.74f)
+        val rim = if (regaColors.isDark) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.70f)
+        this
+            .clip(barShape)
+            .background(Brush.verticalGradient(listOf(frostTop, frostBottom)))
+            .border(0.85.dp, rim, barShape)
+    }
+}
+
+@Composable
+fun regaTopAppBarColors(base: TopAppBarColors): TopAppBarColors {
+    if (LocalLiquidGlassEnabled.current) {
+        return TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
+            navigationIconContentColor = base.navigationIconContentColor,
+            titleContentColor = base.titleContentColor,
+            actionIconContentColor = base.actionIconContentColor,
+        )
+    }
+    return base
+}
+
+@Composable
+fun regaTopAppBarColors(
+    containerColor: Color = Color.Unspecified,
+    scrolledContainerColor: Color = Color.Unspecified,
+): TopAppBarColors {
+    if (LocalLiquidGlassEnabled.current) {
+        return TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
+        )
+    }
+    return TopAppBarDefaults.topAppBarColors(
+        containerColor = containerColor,
+        scrolledContainerColor = scrolledContainerColor,
+    )
+}
+
 fun Modifier.regaGlass(
     shape: Shape = RegaCardShape,
     tintColor: Color = Color.Unspecified,
@@ -799,6 +964,7 @@ fun Modifier.regaGlassSpecular(
 ): Modifier = composed {
     val colors = LocalRegaColors.current
     val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+    val liquidGlassPreset = LocalLiquidGlassPreset.current
     val backdropState = LocalRegaBackdrop.current
     val density = LocalDensity.current
     val actualTint = if (tintColor != Color.Unspecified) tintColor else colors.glassTint
@@ -816,6 +982,7 @@ fun Modifier.regaGlassSpecular(
         baseTint = actualTint,
         material = RegaGlassMaterial.Clear,
         isDark = colors.isDark,
+        preset = liquidGlassPreset,
     )
     val luminousBorder =
         if (actualBorder.alpha <= 0.01f) {
@@ -860,7 +1027,7 @@ fun Modifier.regaGlassSpecular(
                         density = density,
                         adaptiveLuminance = false,
                         luminance = if (colors.isDark) 0.25f else 0.78f,
-                        blurRadiusPx = with(density) { 2.dp.toPx() },
+                        blurRadiusPx = with(density) { resolveLiquidGlassBlurDp(RegaGlassMaterial.Thin, liquidGlassPreset).toPx() },
                         refractionHeightPx = safeHeight,
                         refractionAmountPx = safeAmount,
                         depthEffect = true,

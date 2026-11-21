@@ -64,6 +64,8 @@ import com.sonara.music.utils.SearchRoutes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -171,6 +173,8 @@ fun RecognitionHistoryScreen(navController: NavController) {
                         }
                     }
                 },
+                modifier = Modifier.regaTopAppBarGlass(),
+                colors = regaTopAppBarColors(),
             )
         },
     ) { paddingValues ->

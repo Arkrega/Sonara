@@ -80,6 +80,8 @@ import com.sonara.music.ui.menu.YouTubeSongMenu
 import com.sonara.music.ui.utils.SnapLayoutInfoProvider
 import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.viewmodels.ChartsViewModel
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -120,6 +122,8 @@ fun ChartsScreen(
                         )
                     }
                 },
+                modifier = Modifier.regaTopAppBarGlass(),
+                colors = regaTopAppBarColors(),
             )
         },
     ) { paddingValues ->

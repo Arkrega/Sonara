@@ -18,7 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -44,6 +43,9 @@ import com.sonara.music.ui.component.Material3SettingsGroup
 import com.sonara.music.ui.component.Material3SettingsItem
 import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.rememberPreference
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -159,7 +161,7 @@ fun PrivacySettings(
                     icon = painterResource(R.drawable.history),
                     title = { Text(stringResource(R.string.pause_listen_history)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = pauseListenHistory,
                             onCheckedChange = onPauseListenHistoryChange,
                             thumbContent = {
@@ -192,7 +194,7 @@ fun PrivacySettings(
                     icon = painterResource(R.drawable.search_off),
                     title = { Text(stringResource(R.string.pause_search_history)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = pauseSearchHistory,
                             onCheckedChange = onPauseSearchHistoryChange,
                             thumbContent = {
@@ -226,7 +228,7 @@ fun PrivacySettings(
                     title = { Text(stringResource(R.string.disable_screenshot)) },
                     description = { Text(stringResource(R.string.disable_screenshot_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = disableScreenshot,
                             onCheckedChange = onDisableScreenshotChange,
                             thumbContent = {
@@ -259,6 +261,8 @@ fun PrivacySettings(
                     contentDescription = null,
                 )
             }
-        }
+        },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

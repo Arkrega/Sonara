@@ -40,7 +40,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,6 +64,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -114,6 +116,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -497,7 +502,7 @@ fun DiscordSettings(
                     Material3SettingsItem(
                         title = { Text(stringResource(R.string.enable_discord_rpc)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = discordRPC,
                                 onCheckedChange = onDiscordRPCChange,
                                 enabled = isLoggedIn,
@@ -519,7 +524,7 @@ fun DiscordSettings(
                         title = { Text(stringResource(R.string.discord_advanced_mode)) },
                         description = { Text(stringResource(R.string.discord_advanced_mode_description)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = advancedMode,
                                 onCheckedChange = {
                                     onAdvancedModeChange(it)
@@ -593,7 +598,7 @@ fun DiscordSettings(
                                 Material3SettingsItem(
                                     title = { Text(stringResource(R.string.discord_enable_button_1)) },
                                     trailingContent = {
-                                        Switch(
+                                        SonaraSwitch(
                                             checked = btn1Enabled,
                                             onCheckedChange = {
                                                 onBtn1EnabledChange(it)
@@ -636,7 +641,7 @@ fun DiscordSettings(
                                 Material3SettingsItem(
                                     title = { Text(stringResource(R.string.discord_enable_button_2)) },
                                     trailingContent = {
-                                        Switch(
+                                        SonaraSwitch(
                                             checked = btn2Enabled,
                                             onCheckedChange = {
                                                 onBtn2EnabledChange(it)
@@ -890,6 +895,8 @@ fun DiscordSettings(
                 )
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }
 

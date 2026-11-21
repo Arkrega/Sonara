@@ -20,6 +20,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
 import com.sonara.music.LocalPlayerAwareWindowInsets
 import com.sonara.music.R
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 /**
  * EQ Wizard - Device Setup Flow
@@ -78,9 +80,10 @@ private fun WizardScreenContent(
                         Icon(painterResource(R.drawable.arrow_back), contentDescription = null)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = regaTopAppBarColors(TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
-                )
+                )),
+                modifier = Modifier.regaTopAppBarGlass(),
             )
         }
     ) { paddingValues ->

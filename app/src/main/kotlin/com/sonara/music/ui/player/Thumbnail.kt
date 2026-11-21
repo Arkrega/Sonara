@@ -15,12 +15,14 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -30,6 +32,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -92,6 +95,7 @@ import com.sonara.music.constants.VideoQualityKey
 import com.sonara.music.db.entities.SongEntity
 import com.sonara.music.listentogether.RoomRole
 import com.sonara.music.ui.component.CastButton
+import com.sonara.music.ui.component.glass.regaGlassSpecular
 import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.utils.rememberEnumPreference
 import com.sonara.music.utils.rememberPreference
@@ -433,12 +437,47 @@ private fun ThumbnailItem(
     modifier: Modifier = Modifier,
 ) {
     val incrementalSeekSkipEnabled by rememberPreference(SeekExtraSeconds, defaultValue = false)
+    val videoOverlay = LocalVideoOverlayController.current
     var skipMultiplier by remember { mutableIntStateOf(1) }
     var lastTapTime by remember { mutableLongStateOf(0L) }
     val isCurrent = currentMediaId == null || item.mediaId == currentMediaId
     val showVideoFrame = isCurrent && isVideoModeEnabled && !hidePlayerThumbnail
     var videoAspectRatio by remember(item.mediaId) { mutableFloatStateOf(16f / 9f) }
     var videoUiState by remember(item.mediaId, showVideoFrame) { mutableStateOf(VideoPlaybackUiState.IDLE) }
+    var showVideoQuickActions by remember(item.mediaId, showVideoFrame) { mutableStateOf(false) }
+
+    LaunchedEffect(
+        isCurrent,
+        showVideoFrame,
+        isVideoHostVisible,
+        item.mediaId,
+        currentSongEntity?.explicit,
+        currentSongEntity?.isUploaded,
+        videoAspectRatio,
+        videoUiState,
+    ) {
+        val overlay = videoOverlay ?: return@LaunchedEffect
+        if (!isCurrent) return@LaunchedEffect
+        if (showVideoFrame && isVideoHostVisible) {
+            overlay.activeVideoId = item.mediaId
+            overlay.activeVideoExplicit = currentSongEntity?.explicit
+            overlay.activeVideoUploaded = currentSongEntity?.isUploaded
+            overlay.activeVideoAspectRatio = videoAspectRatio
+            overlay.activeVideoTitle = item.mediaMetadata.title?.toString().orEmpty()
+            overlay.activeVideoSubtitle = item.mediaMetadata.artist?.toString().orEmpty()
+            overlay.isVideoPlaybackReady = videoUiState == VideoPlaybackUiState.PLAYING
+        } else if (!showVideoFrame && !overlay.isVideoFullscreen && !overlay.isInPipMode) {
+            overlay.isVideoPlaybackReady = false
+            overlay.activeVideoId = null
+        }
+    }
+
+    LaunchedEffect(showVideoQuickActions, showVideoFrame) {
+        if (showVideoQuickActions && showVideoFrame) {
+            delay(4000L)
+            showVideoQuickActions = false
+        }
+    }
 
     val clampedVideoRatio = videoAspectRatio.coerceIn(0.75f, 2.1f)
     val videoHorizontalPadding = if (isLandscape) 12.dp else 16.dp
@@ -499,8 +538,13 @@ private fun ThumbnailItem(
                         CompositingStrategy.Offscreen
                     }
             }
-            .pointerInput(Unit) {
+            .pointerInput(showVideoFrame, videoUiState) {
                 detectTapGestures(
+                    onTap = {
+                        if (showVideoFrame && videoUiState == VideoPlaybackUiState.PLAYING) {
+                            showVideoQuickActions = !showVideoQuickActions
+                        }
+                    },
                     onDoubleTap = { offset ->
                         if (isListenTogetherGuest) return@detectTapGestures
 
@@ -572,7 +616,7 @@ private fun ThumbnailItem(
                         isUploaded = currentSongEntity?.isUploaded,
                         mainPlayer = playerConnection.player,
                         videoQuality = videoQuality,
-                        isActive = showVideoFrame && isVideoHostVisible,
+                        isActive = showVideoFrame && isVideoHostVisible && videoOverlay?.isVideoFullscreen != true && videoOverlay?.isInPipMode != true,
                         onVideoAspectRatioChanged = { ratio ->
                             videoAspectRatio = ratio
                         },
@@ -604,6 +648,65 @@ private fun ThumbnailItem(
                     .padding(8.dp),
                 tintColor = textBackgroundColor
             )
+
+            AnimatedVisibility(
+                visible = showVideoFrame && videoUiState == VideoPlaybackUiState.PLAYING && showVideoQuickActions,
+                enter = fadeIn(tween(180)),
+                exit = fadeOut(tween(180)),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(10.dp),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .regaGlassSpecular(
+                                shape = CircleShape,
+                                tintColor = Color.Black.copy(alpha = 0.28f),
+                                borderColor = Color.White.copy(alpha = 0.45f),
+                            )
+                            .clip(CircleShape)
+                            .clickable {
+                                showVideoQuickActions = false
+                                videoOverlay?.onEnterPip?.invoke(videoAspectRatio)
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.picture_in_picture),
+                            contentDescription = stringResource(R.string.enter_pip),
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .regaGlassSpecular(
+                                shape = CircleShape,
+                                tintColor = Color.Black.copy(alpha = 0.28f),
+                                borderColor = Color.White.copy(alpha = 0.45f),
+                            )
+                            .clip(CircleShape)
+                            .clickable {
+                                showVideoQuickActions = false
+                                videoOverlay?.isVideoFullscreen = true
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.fullscreen),
+                            contentDescription = stringResource(R.string.enter_fullscreen),
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -88,6 +88,8 @@ import com.sonara.music.ui.utils.backToMain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.Locale
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 private data class Contributor(
     val name: String,
@@ -465,7 +467,9 @@ fun AboutScreen(
                     contentDescription = stringResource(R.string.cd_back),
                 )
             }
-        }
+        },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 
     Box(Modifier.fillMaxSize()) {

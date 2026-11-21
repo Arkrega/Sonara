@@ -142,6 +142,7 @@ import com.sonara.music.constants.HideExplicitKey
 import com.sonara.music.constants.HideVideoSongsKey
 import com.sonara.music.constants.HistoryDuration
 import com.sonara.music.constants.LastFMUseNowPlaying
+import com.sonara.music.constants.MaxSongCacheSizeKey
 import com.sonara.music.constants.MediaSessionConstants
 import com.sonara.music.constants.MediaSessionConstants.CommandAddToTargetPlaylist
 import com.sonara.music.constants.MediaSessionConstants.CommandToggleLike
@@ -153,6 +154,8 @@ import com.sonara.music.constants.PauseOnMute
 import com.sonara.music.constants.PersistentQueueKey
 import com.sonara.music.constants.PersistentShuffleAcrossQueuesKey
 import com.sonara.music.constants.PlayerVolumeKey
+import com.sonara.music.constants.PreCacheNextSongKey
+import com.sonara.music.constants.PreCacheWifiOnlyKey
 import com.sonara.music.constants.PreventDuplicateTracksInQueueKey
 import com.sonara.music.constants.RememberShuffleAndRepeatKey
 import com.sonara.music.constants.RepeatModeKey
@@ -500,6 +503,7 @@ class MusicService :
     // leaving the player "prepared but paused" forever.
     private var pausedDueToNetworkError = false
     private var silenceSkipJob: Job? = null
+    private var preCacheNextSongJob: Job? = null
 
     private var historyPaused = true
     private var historyDurationMs = 30_000L
@@ -2613,6 +2617,8 @@ class MusicService :
 
         setupAudioNormalization()
 
+        schedulePreCacheNextTrack()
+
         scrobbleManager?.onSongStop()
         if (player.playWhenReady && player.playbackState == Player.STATE_READY) {
             scrobbleManager?.onSongStart(player.currentMetadata, duration = player.duration)
@@ -3839,6 +3845,50 @@ class MusicService :
         }
     }
 
+    private fun schedulePreCacheNextTrack() {
+        preCacheNextSongJob?.cancel()
+        preCacheNextSongJob = scope.launch {
+            delay(2500L)
+            if (!::player.isInitialized) return@launch
+            val nextIndex = player.nextMediaItemIndex
+            if (nextIndex == C.INDEX_UNSET || nextIndex !in 0 until player.mediaItemCount) return@launch
+            val nextItem = player.getMediaItemAt(nextIndex)
+            val nextMediaId = nextItem.mediaId
+            if (nextMediaId.isBlank()) return@launch
+            val nextMetadata = nextItem.metadata
+            val enabled = dataStore.get(PreCacheNextSongKey, true)
+            val songCacheEnabled = dataStore.get(EnableSongCacheKey, true)
+            val maxSongCacheSizeMb = dataStore.get(MaxSongCacheSizeKey, 1024)
+            val wifiOnly = dataStore.get(PreCacheWifiOnlyKey, true)
+            val isMetered = connectivityManager.isActiveNetworkMetered
+            val isAlreadyDownloaded = downloadCache.isCached(nextMediaId, 0L, CHUNK_LENGTH)
+            val isAlreadyCached = playerCache.isCached(nextMediaId, 0L, CHUNK_LENGTH)
+            if (!NextSongPreCacheManager.shouldPreCacheNextTrack(
+                    enabled = enabled,
+                    songCacheEnabled = songCacheEnabled,
+                    maxSongCacheSizeMb = maxSongCacheSizeMb,
+                    wifiOnly = wifiOnly,
+                    isNetworkMetered = isMetered,
+                    isAlreadyDownloaded = isAlreadyDownloaded,
+                    isAlreadyCached = isAlreadyCached,
+                )
+            ) {
+                return@launch
+            }
+            val song = withContext(Dispatchers.IO) { database.songEntity(nextMediaId) }
+            NextSongPreCacheManager.preCacheTrack(
+                mediaId = nextMediaId,
+                audioQuality = audioQuality,
+                connectivityManager = connectivityManager,
+                playerCache = playerCache,
+                contentHints = ContentHints(
+                    isExplicit = song?.explicit ?: nextMetadata?.explicit,
+                    isUploaded = song?.isUploaded,
+                ),
+            )
+        }
+    }
+
     private fun createDataSourceFactory(
         normalizationProcessor: VolumeNormalizationAudioProcessor,
         playerProvider: () -> ExoPlayer?,
@@ -4442,6 +4492,8 @@ class MusicService :
         player.removeListener(this)
         sleepTimer?.let { player.removeListener(it) }
         initialBufferRecoveryJob?.cancel()
+        preCacheNextSongJob?.cancel()
+        preCacheNextSongJob = null
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controllerFuture = null
         releaseExoPlayer(player)

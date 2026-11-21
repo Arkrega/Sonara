@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +57,8 @@ import com.sonara.music.constants.EnableVideoCacheKey
 import com.sonara.music.constants.MaxImageCacheSizeKey
 import com.sonara.music.constants.MaxSongCacheSizeKey
 import com.sonara.music.constants.MaxVideoCacheSizeKey
+import com.sonara.music.constants.PreCacheNextSongKey
+import com.sonara.music.constants.PreCacheWifiOnlyKey
 import com.sonara.music.extensions.tryOrNull
 import com.sonara.music.playback.CacheCleanupManager
 import com.sonara.music.ui.component.ActionPromptDialog
@@ -75,6 +77,9 @@ import kotlinx.coroutines.launch
 import okio.ByteString.Companion.encodeUtf8
 import java.io.File
 import kotlin.math.roundToInt
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalCoilApi::class, ExperimentalMaterial3Api::class, DelicateCoilApi::class)
 @Composable
@@ -102,6 +107,14 @@ fun StorageSettings(
     )
     val (enableSongCache, onEnableSongCacheChange) = rememberPreference(
         key = EnableSongCacheKey,
+        defaultValue = true
+    )
+    val (preCacheNextSong, onPreCacheNextSongChange) = rememberPreference(
+        key = PreCacheNextSongKey,
+        defaultValue = true
+    )
+    val (preCacheWifiOnly, onPreCacheWifiOnlyChange) = rememberPreference(
+        key = PreCacheWifiOnlyKey,
         defaultValue = true
     )
     val (maxVideoCacheSize, onMaxVideoCacheSizeChange) = rememberPreference(
@@ -137,8 +150,14 @@ fun StorageSettings(
     var playerCacheSize by remember {
         androidx.compose.runtime.mutableLongStateOf(tryOrNull { playerCache.cacheSpace } ?: 0)
     }
+    var cachedSongsCount by remember {
+        mutableIntStateOf(tryOrNull { playerCache.keys.size } ?: 0)
+    }
     var videoCacheSize by remember {
         androidx.compose.runtime.mutableLongStateOf(tryOrNull { videoCache.cacheSpace } ?: 0)
+    }
+    var cachedVideosCount by remember {
+        mutableIntStateOf(tryOrNull { videoCache.keys.size } ?: 0)
     }
     var downloadCacheSize by remember {
         mutableLongStateOf(tryOrNull { downloadCache.cacheSpace } ?: 0)
@@ -206,12 +225,14 @@ fun StorageSettings(
         while (isActive) {
             delay(500)
             playerCacheSize = tryOrNull { playerCache.cacheSpace } ?: 0
+            cachedSongsCount = tryOrNull { playerCache.keys.size } ?: 0
         }
     }
     LaunchedEffect(videoCache) {
         while (isActive) {
             delay(500)
             videoCacheSize = tryOrNull { videoCache.cacheSpace } ?: 0
+            cachedVideosCount = tryOrNull { videoCache.keys.size } ?: 0
         }
     }
     LaunchedEffect(downloadCache) {
@@ -472,66 +493,119 @@ fun StorageSettings(
 
         Material3SettingsGroup(
             title = stringResource(R.string.song_cache),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.cached),
-                    title = { Text(stringResource(R.string.enable_song_cache)) },
-                    description = { Text(stringResource(R.string.enable_song_cache_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = enableSongCache,
-                            onCheckedChange = onEnableSongCacheChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (enableSongCache) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    },
-                    onClick = { onEnableSongCacheChange(!enableSongCache) }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.cached),
-                    title = { Text(stringResource(R.string.max_song_cache_size)) },
-                    enabled = enableSongCache,
-                    description = {
-                        val songCacheValues =
-                            remember { listOf(0, 128, 256, 512, 1024, 2048, 4096, 8192, -1) }
-                        Column {
-                            Text(
-                                text = when (maxSongCacheSize) {
-                                    0 -> stringResource(R.string.disable)
-                                    -1 -> stringResource(R.string.unlimited)
-                                    else -> Formatter.formatShortFileSize(context, maxSongCacheSize * 1024 * 1024L)
+            items = buildList {
+                add(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.cached),
+                        title = { Text(stringResource(R.string.enable_song_cache)) },
+                        description = { Text(stringResource(R.string.enable_song_cache_desc)) },
+                        trailingContent = {
+                            SonaraSwitch(
+                                checked = enableSongCache,
+                                onCheckedChange = onEnableSongCacheChange,
+                                thumbContent = {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (enableSongCache) R.drawable.check else R.drawable.close
+                                        ),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
                                 }
                             )
-                            Slider(
-                                value = songCacheValues.indexOf(maxSongCacheSize).toFloat(),
+                        },
+                        onClick = { onEnableSongCacheChange(!enableSongCache) }
+                    )
+                )
+                add(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.cached),
+                        title = { Text(stringResource(R.string.pre_cache_next_song)) },
+                        description = { Text(stringResource(R.string.pre_cache_next_song_desc)) },
+                        enabled = enableSongCache,
+                        trailingContent = {
+                            SonaraSwitch(
+                                checked = preCacheNextSong,
+                                onCheckedChange = onPreCacheNextSongChange,
                                 enabled = enableSongCache,
-                                onValueChange = {
-                                    val newValue = songCacheValues[it.roundToInt()]
-                                    val newLimitInBytes = if (newValue == -1) {
-                                        Long.MAX_VALUE
-                                    } else {
-                                        newValue * 1024 * 1024L
+                                thumbContent = {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (preCacheNextSong) R.drawable.check else R.drawable.close
+                                        ),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        },
+                        onClick = { if (enableSongCache) onPreCacheNextSongChange(!preCacheNextSong) }
+                    )
+                )
+                if (enableSongCache && preCacheNextSong) {
+                    add(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.cached),
+                            title = { Text(stringResource(R.string.pre_cache_wifi_only)) },
+                            description = { Text(stringResource(R.string.pre_cache_wifi_only_desc)) },
+                            trailingContent = {
+                                SonaraSwitch(
+                                    checked = preCacheWifiOnly,
+                                    onCheckedChange = onPreCacheWifiOnlyChange,
+                                    thumbContent = {
+                                        Icon(
+                                            painter = painterResource(
+                                                id = if (preCacheWifiOnly) R.drawable.check else R.drawable.close
+                                            ),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                                        )
                                     }
-
-                                        if (newLimitInBytes < playerCacheSize) {
-                                            cacheUsage = playerCacheSize
-                                            cacheType = songCacheString
-                                            onConfirmAction = { onMaxSongCacheSizeChange(newValue) }
-                                            showCacheWarningDialog = true
-                                        } else {
-                                            onMaxSongCacheSizeChange(newValue)
-                                        }
-                                    },
-                                    steps = songCacheValues.size - 2,
-                                    valueRange = 0f..(songCacheValues.size - 1).toFloat(),
                                 )
+                            },
+                            onClick = { onPreCacheWifiOnlyChange(!preCacheWifiOnly) }
+                        )
+                    )
+                }
+                add(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.cached),
+                        title = { Text(stringResource(R.string.max_song_cache_size)) },
+                        enabled = enableSongCache,
+                        description = {
+                            val songCacheValues =
+                                remember { listOf(0, 128, 256, 512, 1024, 2048, 4096, 8192, -1) }
+                            Column {
+                                Text(
+                                    text = when (maxSongCacheSize) {
+                                        0 -> stringResource(R.string.disable)
+                                        -1 -> stringResource(R.string.unlimited)
+                                        else -> Formatter.formatShortFileSize(context, maxSongCacheSize * 1024 * 1024L)
+                                    }
+                                )
+                                Slider(
+                                    value = songCacheValues.indexOf(maxSongCacheSize).toFloat(),
+                                    enabled = enableSongCache,
+                                    onValueChange = {
+                                        val newValue = songCacheValues[it.roundToInt()]
+                                        val newLimitInBytes = if (newValue == -1) {
+                                            Long.MAX_VALUE
+                                        } else {
+                                            newValue * 1024 * 1024L
+                                        }
+
+                                            if (newLimitInBytes < playerCacheSize) {
+                                                cacheUsage = playerCacheSize
+                                                cacheType = songCacheString
+                                                onConfirmAction = { onMaxSongCacheSizeChange(newValue) }
+                                                showCacheWarningDialog = true
+                                            } else {
+                                                onMaxSongCacheSizeChange(newValue)
+                                            }
+                                        },
+                                        steps = songCacheValues.size - 2,
+                                        valueRange = 0f..(songCacheValues.size - 1).toFloat(),
+                                    )
                                 LinearProgressIndicator(
                                     progress = { playerCacheProgress },
                                     modifier = Modifier.fillMaxWidth(),
@@ -541,27 +615,43 @@ fun StorageSettings(
                                 Text(
                                     text =
                                         if (maxSongCacheSize == -1) {
-                                            Formatter.formatShortFileSize(context, playerCacheSize)
+                                            "${Formatter.formatShortFileSize(context, playerCacheSize)} · ${
+                                                stringResource(R.string.cached_items_count, cachedSongsCount)
+                                            }"
                                         } else {
                                             "${Formatter.formatShortFileSize(context, playerCacheSize)} / ${
-                                                Formatter.formatShortFileSize(context, 
+                                                Formatter.formatShortFileSize(
+                                                    context,
                                                     maxSongCacheSize * 1024 * 1024L,
                                                 )
-                                            }"
+                                            } · ${stringResource(R.string.cached_items_count, cachedSongsCount)}"
                                         },
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                             }
                         },
-                    ),
+                    )
+                )
+                add(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.cached),
+                        title = { Text(stringResource(R.string.cached_songs_shortcut)) },
+                        description = { Text(stringResource(R.string.cached_items_count, cachedSongsCount)) },
+                        onClick = {
+                            navController.navigate("cache_playlist/cached")
+                        },
+                    )
+                )
+                add(
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.clear_all),
                         title = { Text(stringResource(R.string.clear_song_cache)) },
                         onClick = {
                             clearCacheDialog = true
                         },
-                    ),
-                ),
+                    )
+                )
+            },
         )
 
         Material3SettingsGroup(
@@ -572,7 +662,7 @@ fun StorageSettings(
                     title = { Text(stringResource(R.string.enable_video_cache)) },
                     description = { Text(stringResource(R.string.enable_video_cache_desc)) },
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             checked = enableVideoCache,
                             onCheckedChange = onEnableVideoCacheChange,
                             thumbContent = {
@@ -630,7 +720,7 @@ fun StorageSettings(
                             Text(
                                 text = "${Formatter.formatShortFileSize(context, videoCacheSize)} / ${
                                     Formatter.formatShortFileSize(context, maxVideoCacheSize * 1024 * 1024L)
-                                }",
+                                } · ${stringResource(R.string.cached_items_count, cachedVideosCount)}",
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
@@ -723,5 +813,7 @@ fun StorageSettings(
                 )
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

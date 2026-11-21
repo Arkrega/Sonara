@@ -101,6 +101,8 @@ import com.sonara.music.utils.rememberPreference
 import com.sonara.music.viewmodels.StatsViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -304,8 +306,9 @@ fun StatsScreen(
             emptyList()
         }
 
+    val screenBackdrop = rememberRegaBackdropState()
+
     Box(modifier = Modifier.fillMaxSize()) {
-        val screenBackdrop = rememberRegaBackdropState()
         LazyColumn(
             state = lazyListState,
             contentPadding =
@@ -682,121 +685,125 @@ fun StatsScreen(
         }
     }
 
-    TopAppBar(
-        title = {
-            if (inSelectMode) {
-                Text(pluralStringResource(R.plurals.n_selected, selection.size, selection.size))
-            } else if (isSearching) {
-                Row {
-                    TextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        placeholder = {
-                            Text(
-                                text = stringResource(R.string.search),
-                                style = MaterialTheme.typography.titleLarge,
-                            )
-                        },
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.titleLarge,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        colors =
-                            TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Transparent,
-                            ),
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .focusRequester(focusRequester),
-                    )
+    CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+        TopAppBar(
+            title = {
+                if (inSelectMode) {
+                    Text(pluralStringResource(R.plurals.n_selected, selection.size, selection.size))
+                } else if (isSearching) {
+                    Row {
+                        TextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            placeholder = {
+                                Text(
+                                    text = stringResource(R.string.search),
+                                    style = MaterialTheme.typography.titleLarge,
+                                )
+                            },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.titleLarge,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            colors =
+                                TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    disabledIndicatorColor = Color.Transparent,
+                                ),
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .focusRequester(focusRequester),
+                        )
 
-                    if (sArtists.isNotEmpty()) {
-                        androidx.compose.material3.IconButton(onClick = clearArtistSelection) {
-                            Icon(
-                                painter = painterResource(R.drawable.close),
-                                contentDescription = "Clear Artists",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
+                        if (sArtists.isNotEmpty()) {
+                            androidx.compose.material3.IconButton(onClick = clearArtistSelection) {
+                                Icon(
+                                    painter = painterResource(R.drawable.close),
+                                    contentDescription = "Clear Artists",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
                         }
                     }
+                } else {
+                    Text(stringResource(R.string.stats))
                 }
-            } else {
-                Text(stringResource(R.string.stats))
-            }
-        },
-        navigationIcon = {
-            if (inSelectMode) {
-                androidx.compose.material3.IconButton(onClick = onExitSelectionMode) {
-                    Icon(
-                        painter = painterResource(R.drawable.close),
-                        contentDescription = "Select Button",
+            },
+            navigationIcon = {
+                if (inSelectMode) {
+                    androidx.compose.material3.IconButton(onClick = onExitSelectionMode) {
+                        Icon(
+                            painter = painterResource(R.drawable.close),
+                            contentDescription = "Select Button",
+                        )
+                    }
+                } else {
+                    IconButton(
+                        onClick = {
+                            if (isSearching) {
+                                isSearching = false
+                                query = TextFieldValue()
+                            } else {
+                                navController.navigateUp()
+                            }
+                        },
+                        onLongClick = {
+                            if (!isSearching) {
+                                navController.backToMain()
+                            }
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.arrow_back),
+                            contentDescription = "Back Button",
+                        )
+                    }
+                }
+            },
+            actions = {
+                if (inSelectMode) {
+                    Checkbox(
+                        checked = true,
+                        onCheckedChange = {
+                        },
                     )
+                    androidx.compose.material3.IconButton(
+                        enabled = selection.isNotEmpty(),
+                        onClick = {
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.more_vert),
+                            contentDescription = "More Button",
+                        )
+                    }
+                } else if (!isSearching) {
+                    androidx.compose.material3.IconButton(
+                        onClick = { isSearching = true },
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.search),
+                            contentDescription = "Search Button",
+                        )
+                    }
+                    IconButton(
+                        onClick = { showTimeTransfer = true },
+                        onLongClick = { showTimeTransfer = true },
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.sync),
+                            contentDescription = "Time Transfer",
+                        )
+                    }
                 }
-            } else {
-                IconButton(
-                    onClick = {
-                        if (isSearching) {
-                            isSearching = false
-                            query = TextFieldValue()
-                        } else {
-                            navController.navigateUp()
-                        }
-                    },
-                    onLongClick = {
-                        if (!isSearching) {
-                            navController.backToMain()
-                        }
-                    },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.arrow_back),
-                        contentDescription = "Back Button",
-                    )
-                }
-            }
-        },
-        actions = {
-            if (inSelectMode) {
-                Checkbox(
-                    checked = true,
-                    onCheckedChange = {
-                    },
-                )
-                androidx.compose.material3.IconButton(
-                    enabled = selection.isNotEmpty(),
-                    onClick = {
-                    },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.more_vert),
-                        contentDescription = "More Button",
-                    )
-                }
-            } else if (!isSearching) {
-                androidx.compose.material3.IconButton(
-                    onClick = { isSearching = true },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.search),
-                        contentDescription = "Search Button",
-                    )
-                }
-                IconButton(
-                    onClick = { showTimeTransfer = true },
-                    onLongClick = { showTimeTransfer = true },
-                ) {
-                    Icon(
-                        painterResource(R.drawable.sync),
-                        contentDescription = "Time Transfer",
-                    )
-                }
-            }
-        },
-    )
+            },
+            modifier = Modifier.regaTopAppBarGlass(),
+            colors = regaTopAppBarColors(),
+        )
+    }
 }
 
 enum class OptionStats { WEEKS, MONTHS, YEARS, CONTINUOUS }

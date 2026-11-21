@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
@@ -51,6 +50,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import com.sonara.music.ui.component.glass.SonaraSwitch
 
 fun decodeDayTimes(raw: String): MutableMap<Int, Pair<String, String>> {
     if (raw.isBlank()) return mutableMapOf()
@@ -347,7 +347,7 @@ fun SleepTimerDialog(
                                 text = stringResource(R.string.sleep_timer_weekdays),
                                 modifier = Modifier.weight(1f),
                             )
-                            Switch(
+                            SonaraSwitch(
                                 checked = weekdaysEnabled,
                                 onCheckedChange = { weekdaysEnabled = it },
                                 thumbContent = {
@@ -399,7 +399,7 @@ fun SleepTimerDialog(
                                 text = stringResource(R.string.sleep_timer_weekends),
                                 modifier = Modifier.weight(1f),
                             )
-                            Switch(
+                            SonaraSwitch(
                                 checked = weekendsEnabled,
                                 onCheckedChange = { weekendsEnabled = it },
                                 thumbContent = {
@@ -492,7 +492,7 @@ fun SleepTimerDialog(
                                         modifier = Modifier.weight(1f),
                                         style = MaterialTheme.typography.bodyMedium,
                                     )
-                                    Switch(
+                                    SonaraSwitch(
                                         checked = isDaySelected,
                                         onCheckedChange = {
                                             selectedDays =

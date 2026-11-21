@@ -137,6 +137,8 @@ import com.sonara.music.utils.rememberPreference
 import com.sonara.music.viewmodels.ArtistViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -200,10 +202,11 @@ fun ArtistScreen(
         showLocal = libraryArtist?.artist?.isLocal == true
     }
 
+    val screenBackdrop = rememberRegaBackdropState()
+
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
-        val screenBackdrop = rememberRegaBackdropState()
         LazyColumn(
             state = lazyListState,
             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
@@ -1028,41 +1031,44 @@ fun ArtistScreen(
         )
     }
 
-    TopAppBar(
-        title = { if (!transparentAppBar) Text(displayArtistName.orEmpty()) },
-        navigationIcon = {
-            IconButton(
-                onClick = navController::navigateUp,
-                onLongClick = navController::backToMain,
-            ) {
-                Icon(
-                    painterResource(R.drawable.arrow_back),
-                    contentDescription = null,
-                )
-            }
-        },
-        actions = {
-            IconButton(
-                onClick = {
-                    viewModel.artistPage?.artist?.shareLink?.let { link ->
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("Artist Link", link)
-                        clipboard.setPrimaryClip(clip)
-                        Toast.makeText(context, R.string.link_copied, Toast.LENGTH_SHORT).show()
-                    }
-                },
-            ) {
-                Icon(
-                    painterResource(R.drawable.link),
-                    contentDescription = null,
-                )
-            }
-        },
-        colors =
-            if (transparentAppBar) {
-                TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-            } else {
-                TopAppBarDefaults.topAppBarColors()
+    CompositionLocalProvider(LocalRegaBackdrop provides screenBackdrop) {
+        TopAppBar(
+            title = { if (!transparentAppBar) Text(displayArtistName.orEmpty()) },
+            navigationIcon = {
+                IconButton(
+                    onClick = navController::navigateUp,
+                    onLongClick = navController::backToMain,
+                ) {
+                    Icon(
+                        painterResource(R.drawable.arrow_back),
+                        contentDescription = null,
+                    )
+                }
             },
-    )
+            actions = {
+                IconButton(
+                    onClick = {
+                        viewModel.artistPage?.artist?.shareLink?.let { link ->
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clip = ClipData.newPlainText("Artist Link", link)
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(context, R.string.link_copied, Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                ) {
+                    Icon(
+                        painterResource(R.drawable.link),
+                        contentDescription = null,
+                    )
+                }
+            },
+            colors =
+                regaTopAppBarColors(if (transparentAppBar) {
+                    TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                } else {
+                    TopAppBarDefaults.topAppBarColors()
+                }),
+            modifier = Modifier.regaTopAppBarGlass(),
+        )
+    }
 }

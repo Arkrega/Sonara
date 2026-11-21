@@ -7,9 +7,11 @@ package com.sonara.music.ui.screens.settings
 
 import android.os.Build
 import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,8 +20,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -63,6 +66,8 @@ import com.sonara.music.constants.EnableHighRefreshRateKey
 import com.sonara.music.constants.EnableLandscapeScalingKey
 import com.sonara.music.constants.EnableLiquidGlassKey
 import com.sonara.music.constants.ExperimentalLyricsKey
+import com.sonara.music.constants.LiquidGlassPreset
+import com.sonara.music.constants.LiquidGlassPresetKey
 import com.sonara.music.constants.ForceBottomNavBarKey
 import com.sonara.music.constants.GridItemSize
 import com.sonara.music.constants.GridItemsSizeKey
@@ -117,6 +122,9 @@ import com.sonara.music.utils.rememberPreference
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.roundToInt
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -149,6 +157,12 @@ fun AppearanceSettings(
             EnableLiquidGlassKey,
             defaultValue = true,
         )
+    val (liquidGlassPreset, onLiquidGlassPresetChange) =
+        rememberEnumPreference(
+            LiquidGlassPresetKey,
+            defaultValue = LiquidGlassPreset.CRYSTAL,
+        )
+    var showLiquidGlassPresetDialog by rememberSaveable { mutableStateOf(false) }
 
     val (useNewPlayerDesign, onUseNewPlayerDesignChange) =
         rememberPreference(
@@ -510,6 +524,26 @@ fun AppearanceSettings(
                 )
             }
         }
+    }
+
+    if (showLiquidGlassPresetDialog) {
+        EnumDialog(
+            onDismiss = { showLiquidGlassPresetDialog = false },
+            onSelect = {
+                onLiquidGlassPresetChange(it)
+                showLiquidGlassPresetDialog = false
+            },
+            title = stringResource(R.string.liquid_glass_preset),
+            current = liquidGlassPreset,
+            values = LiquidGlassPreset.entries.toList(),
+            valueText = {
+                when (it) {
+                    LiquidGlassPreset.CRYSTAL -> stringResource(R.string.liquid_glass_preset_crystal)
+                    LiquidGlassPreset.BALANCED -> stringResource(R.string.liquid_glass_preset_balanced)
+                    LiquidGlassPreset.FROSTED -> stringResource(R.string.liquid_glass_preset_frosted)
+                }
+            },
+        )
     }
 
     if (showPlayerButtonsStyleDialog) {
@@ -886,6 +920,70 @@ fun AppearanceSettings(
                         )
                     }
                 }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier =
+                            Modifier
+                                .aspectRatio(1f)
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(
+                                    1.dp,
+                                    if (sliderStyle == SliderStyle.LIQUID_GLASS) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.outlineVariant
+                                    },
+                                    RoundedCornerShape(8.dp),
+                                ).clickable {
+                                    onSliderStyleChange(SliderStyle.LIQUID_GLASS)
+                                    onSquigglySliderChange(false)
+                                    showSliderOptionDialog = false
+                                }.padding(12.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                        ) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .weight(0.6f)
+                                        .height(5.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)),
+                            )
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .width(24.dp)
+                                        .height(15.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f))
+                                        .border(0.85.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f), CircleShape),
+                            )
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .weight(0.4f)
+                                        .height(5.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)),
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.slider_style_liquid_glass),
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
@@ -906,7 +1004,7 @@ fun AppearanceSettings(
                             title = { Text(stringResource(R.string.enable_liquid_glass)) },
                             description = { Text(stringResource(R.string.enable_liquid_glass_desc)) },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = enableLiquidGlass,
                                     onCheckedChange = onEnableLiquidGlassChange,
                                     thumbContent = {
@@ -924,13 +1022,31 @@ fun AppearanceSettings(
                             onClick = { onEnableLiquidGlassChange(!enableLiquidGlass) },
                         ),
                     )
+                    if (enableLiquidGlass) {
+                        add(
+                            Material3SettingsItem(
+                                icon = painterResource(R.drawable.liquid_glass),
+                                title = { Text(stringResource(R.string.liquid_glass_preset)) },
+                                description = {
+                                    Text(
+                                        when (liquidGlassPreset) {
+                                            LiquidGlassPreset.CRYSTAL -> stringResource(R.string.liquid_glass_preset_crystal)
+                                            LiquidGlassPreset.BALANCED -> stringResource(R.string.liquid_glass_preset_balanced)
+                                            LiquidGlassPreset.FROSTED -> stringResource(R.string.liquid_glass_preset_frosted)
+                                        },
+                                    )
+                                },
+                                onClick = { showLiquidGlassPresetDialog = true },
+                            ),
+                        )
+                    }
                     add(
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.speed),
                             title = { Text(stringResource(R.string.enable_high_refresh_rate)) },
                             description = { Text(stringResource(R.string.enable_high_refresh_rate_desc)) },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = enableHighRefreshRate,
                                     onCheckedChange = onEnableHighRefreshRateChange,
                                     thumbContent = {
@@ -954,7 +1070,7 @@ fun AppearanceSettings(
                             title = { Text(stringResource(R.string.enable_landscape_scaling)) },
                             description = { Text(stringResource(R.string.enable_landscape_scaling_desc)) },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = enableLandscapeScaling,
                                     onCheckedChange = onEnableLandscapeScalingChange,
                                     thumbContent = {
@@ -978,7 +1094,7 @@ fun AppearanceSettings(
                             title = { Text(stringResource(R.string.enable_dynamic_icon)) },
                             description = { Text(stringResource(R.string.enable_dynamic_icon_desc)) },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = enableDynamicIcon,
                                     onCheckedChange = onEnableDynamicIconChange,
                                     thumbContent = {
@@ -1024,7 +1140,7 @@ fun AppearanceSettings(
                             icon = painterResource(R.drawable.nav_bar),
                             title = { Text(stringResource(R.string.new_mini_player_design)) },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = useNewMiniPlayerDesign,
                                     onCheckedChange = onUseNewMiniPlayerDesignChange,
                                     thumbContent = {
@@ -1096,7 +1212,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.palette),
                         title = { Text(stringResource(R.string.new_player_design)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = useNewPlayerDesign,
                                 onCheckedChange = onUseNewPlayerDesignChange,
                                 thumbContent = {
@@ -1132,7 +1248,7 @@ fun AppearanceSettings(
                         title = { Text(stringResource(R.string.hide_player_thumbnail)) },
                         description = { Text(stringResource(R.string.hide_player_thumbnail_desc)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = hidePlayerThumbnail,
                                 onCheckedChange = onHidePlayerThumbnailChange,
                                 thumbContent = {
@@ -1154,7 +1270,7 @@ fun AppearanceSettings(
                         title = { Text(stringResource(R.string.crop_album_art)) },
                         description = { Text(stringResource(R.string.crop_album_art_desc)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = cropAlbumArt,
                                 onCheckedChange = onCropAlbumArtChange,
                                 thumbContent = {
@@ -1208,6 +1324,10 @@ fun AppearanceSettings(
                                     SliderStyle.SLIM -> {
                                         stringResource(R.string.slim)
                                     }
+
+                                    SliderStyle.LIQUID_GLASS -> {
+                                        stringResource(R.string.slider_style_liquid_glass)
+                                    }
                                 },
                             )
                         },
@@ -1217,7 +1337,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.swipe),
                         title = { Text(stringResource(R.string.enable_swipe_thumbnail)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = swipeThumbnail,
                                 onCheckedChange = onSwipeThumbnailChange,
                                 thumbContent = {
@@ -1336,7 +1456,7 @@ fun AppearanceSettings(
                             description = { Text(stringResource(R.string.experimental_lyrics_desc)) },
                             showBadge = true,
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = experimentalLyrics,
                                     onCheckedChange = {
                                         if (!experimentalLyrics) {
@@ -1374,7 +1494,7 @@ fun AppearanceSettings(
                                 title = { Text(stringResource(R.string.lyrics_glow_effect)) },
                                 description = { Text(stringResource(R.string.lyrics_glow_effect_desc)) },
                                 trailingContent = {
-                                    Switch(
+                                    SonaraSwitch(
                                         checked = lyricsGlowEffect,
                                         onCheckedChange = onLyricsGlowEffectChange,
                                         thumbContent = {
@@ -1451,7 +1571,7 @@ fun AppearanceSettings(
                             title = { Text(stringResource(R.string.respect_agent_positioning)) },
                             description = { Text(stringResource(R.string.respect_agent_positioning_desc)) },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = respectAgentPositioning,
                                     onCheckedChange = onRespectAgentPositioningChange,
                                     thumbContent = {
@@ -1474,7 +1594,7 @@ fun AppearanceSettings(
                             icon = painterResource(R.drawable.lyrics),
                             title = { Text(stringResource(R.string.lyrics_click_change)) },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = lyricsClick,
                                     onCheckedChange = onLyricsClickChange,
                                     thumbContent = {
@@ -1497,7 +1617,7 @@ fun AppearanceSettings(
                             icon = painterResource(R.drawable.lyrics),
                             title = { Text(stringResource(R.string.lyrics_auto_scroll)) },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = lyricsScroll,
                                     onCheckedChange = onLyricsScrollChange,
                                     thumbContent = {
@@ -1521,7 +1641,7 @@ fun AppearanceSettings(
                             title = { Text(stringResource(R.string.hide_status_bar_fullscreen)) },
                             description = { Text(stringResource(R.string.hide_status_bar_fullscreen_desc)) },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = hideStatusBarOnFullscreen,
                                     onCheckedChange = onHideStatusBarOnFullscreenChange,
                                     thumbContent = {
@@ -1583,7 +1703,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.swipe),
                         title = { Text(stringResource(R.string.swipe_song_to_add)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = swipeToSong,
                                 onCheckedChange = onSwipeToSongChange,
                                 thumbContent = {
@@ -1604,7 +1724,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.swipe),
                         title = { Text(stringResource(R.string.swipe_song_to_remove)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = swipeToRemoveSong,
                                 onCheckedChange = onSwipeToRemoveSongChange,
                                 thumbContent = {
@@ -1625,7 +1745,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.nav_bar),
                         title = { Text(stringResource(R.string.force_bottom_navbar)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = forceBottomNav,
                                 onCheckedChange = onForceBottomNavChange,
                                 thumbContent = {
@@ -1646,7 +1766,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.nav_bar),
                         title = { Text(stringResource(R.string.slim_navbar)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = slimNav,
                                 onCheckedChange = onSlimNavChange,
                                 thumbContent = {
@@ -1668,7 +1788,7 @@ fun AppearanceSettings(
                         title = { Text(stringResource(R.string.listen_together_in_top_bar)) },
                         description = { Text(stringResource(R.string.listen_together_in_top_bar_desc)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = listenTogetherInTopBar,
                                 onCheckedChange = onListenTogetherInTopBarChange,
                                 thumbContent = {
@@ -1719,7 +1839,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.favorite),
                         title = { Text(stringResource(R.string.show_liked_playlist)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = showLikedPlaylist,
                                 onCheckedChange = onShowLikedPlaylistChange,
                                 thumbContent = {
@@ -1740,7 +1860,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.offline),
                         title = { Text(stringResource(R.string.show_downloaded_playlist)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = showDownloadedPlaylist,
                                 onCheckedChange = onShowDownloadedPlaylistChange,
                                 thumbContent = {
@@ -1761,7 +1881,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.trending_up),
                         title = { Text(stringResource(R.string.show_top_playlist)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = showTopPlaylist,
                                 onCheckedChange = onShowTopPlaylistChange,
                                 thumbContent = {
@@ -1782,7 +1902,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.cached),
                         title = { Text(stringResource(R.string.show_cached_playlist)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = showCachedPlaylist,
                                 onCheckedChange = onShowCachedPlaylistChange,
                                 thumbContent = {
@@ -1803,7 +1923,7 @@ fun AppearanceSettings(
                         icon = painterResource(R.drawable.backup),
                         title = { Text(stringResource(R.string.show_uploaded_playlist)) },
                         trailingContent = {
-                            Switch(
+                            SonaraSwitch(
                                 checked = showUploadedPlaylist,
                                 onCheckedChange = onShowUploadedPlaylistChange,
                                 thumbContent = {
@@ -1858,6 +1978,8 @@ fun AppearanceSettings(
                 )
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }
 

@@ -9,13 +9,16 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ForegroundServiceStartNotAllowedException
 import android.app.PendingIntent
+import android.app.PictureInPictureParams
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Rational
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
@@ -152,12 +155,16 @@ import com.sonara.music.constants.DisableScreenshotKey
 import com.sonara.music.constants.EnableHighRefreshRateKey
 import com.sonara.music.constants.EnableLandscapeScalingKey
 import com.sonara.music.constants.EnableLiquidGlassKey
+import com.sonara.music.constants.EnableVideoCacheKey
 import com.sonara.music.constants.ExperimentalLyricsKey
 import com.sonara.music.constants.ForceBottomNavBarKey
 import com.sonara.music.constants.LastSeenVersionKey
+import com.sonara.music.constants.LiquidGlassPreset
+import com.sonara.music.constants.LiquidGlassPresetKey
 import com.sonara.music.constants.ListenTogetherInTopBarKey
 import com.sonara.music.constants.ListenTogetherUsernameKey
 import com.sonara.music.constants.LyricsProviderOrderKey
+import com.sonara.music.constants.MaxVideoCacheSizeKey
 import com.sonara.music.constants.MiniPlayerBottomSpacing
 import com.sonara.music.constants.MiniPlayerHeight
 import com.sonara.music.constants.NavigationBarAnimationSpec
@@ -176,6 +183,8 @@ import com.sonara.music.constants.StopMusicOnTaskClearKey
 import com.sonara.music.constants.UpdateNotificationsEnabledKey
 import com.sonara.music.constants.UpdatePromptDateKey
 import com.sonara.music.constants.UseNewMiniPlayerDesignKey
+import com.sonara.music.constants.VideoQuality
+import com.sonara.music.constants.VideoQualityKey
 import com.sonara.music.constants.VideoThumbnailMigrationDoneKey
 import com.sonara.music.db.MusicDatabase
 import com.sonara.music.db.entities.SearchHistory
@@ -196,12 +205,17 @@ import com.sonara.music.ui.component.LocalBottomSheetPageState
 import com.sonara.music.ui.component.LocalMenuState
 import com.sonara.music.ui.component.rememberBottomSheetState
 import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.LocalLiquidGlassPreset
 import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.component.glass.regaBackdropSource
 import com.sonara.music.ui.component.glass.regaGlassSpecular
 import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.menu.YouTubeSongMenu
 import com.sonara.music.ui.player.BottomSheetPlayer
+import com.sonara.music.ui.player.FullscreenVideoPlayerOverlay
+import com.sonara.music.ui.player.LocalVideoOverlayController
+import com.sonara.music.ui.player.SyncedVideoPlayerSurface
+import com.sonara.music.ui.player.VideoOverlayController
 import com.sonara.music.ui.screens.Screens
 import com.sonara.music.ui.screens.SonaraOnboarding
 import com.sonara.music.ui.screens.navigationBuilder
@@ -245,6 +259,7 @@ import java.io.File
 import java.time.LocalDate
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 import com.sonara.music.utils.AppUpdateDownloader
 import com.sonara.music.utils.UpdateDownloadState
@@ -353,6 +368,45 @@ class MainActivity : FragmentActivity() {
 
     // This is the snapshot we pass to Compose - changes here trigger recomposition
     private var playerConnectionSnapshot by mutableStateOf<PlayerConnection?>(null)
+    private var pipModeState by mutableStateOf(false)
+    private var videoOverlayControllerRef: VideoOverlayController? = null
+    private var isPlayerExpandedRef: Boolean = false
+
+    private fun enterVideoPipMode(aspectRatio: Float) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val clampedRatio = aspectRatio.takeIf { it.isFinite() && it > 0f }?.coerceIn(0.5f, 2.3f) ?: (16f / 9f)
+        val builder = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational((clampedRatio * 1000f).roundToInt(), 1000))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setSeamlessResizeEnabled(true)
+        }
+        runCatching {
+            enterPictureInPictureMode(builder.build())
+        }
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isInPictureInPictureMode) {
+            val ctrl = videoOverlayControllerRef
+            val playing = playerConnectionSnapshot?.player?.isPlaying == true
+            if (ctrl?.canAutoEnterPip(playing, isPlayerExpandedRef) == true) {
+                enterVideoPipMode(ctrl.activeVideoAspectRatio)
+            }
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration,
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        pipModeState = isInPictureInPictureMode
+        videoOverlayControllerRef?.isInPipMode = isInPictureInPictureMode
+        if (!isInPictureInPictureMode) {
+            videoOverlayControllerRef?.isVideoFullscreen = false
+        }
+    }
 
     private var isServiceBound = false
 
@@ -1169,7 +1223,43 @@ class MainActivity : FragmentActivity() {
                 val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.background
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
                 val enableLiquidGlass by rememberPreference(EnableLiquidGlassKey, defaultValue = true)
+                val liquidGlassPreset by rememberEnumPreference(
+                    LiquidGlassPresetKey,
+                    defaultValue = LiquidGlassPreset.CRYSTAL,
+                )
+                val videoQuality by rememberEnumPreference(VideoQualityKey, defaultValue = VideoQuality.AUTO)
+                val enableVideoCache by rememberPreference(EnableVideoCacheKey, defaultValue = true)
+                val maxVideoCacheSize by rememberPreference(MaxVideoCacheSizeKey, defaultValue = 512)
                 val appBackdropState = rememberRegaBackdropState(enabled = enableLiquidGlass)
+                val videoOverlayController = remember {
+                    VideoOverlayController(
+                        onEnterPip = { ratio -> enterVideoPipMode(ratio) },
+                    )
+                }
+                videoOverlayController.isInPipMode = pipModeState
+                videoOverlayControllerRef = videoOverlayController
+                isPlayerExpandedRef = playerBottomSheetState.isExpanded
+                val isPlayingForPip =
+                    activePlayerConnection?.isPlaying?.collectAsStateWithLifecycle(initialValue = false)?.value ?: false
+                val canAutoEnterPip = videoOverlayController.canAutoEnterPip(
+                    isPlaying = isPlayingForPip,
+                    isPlayerExpanded = playerBottomSheetState.isExpanded,
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val activePipRatio = videoOverlayController.activeVideoAspectRatio
+                    LaunchedEffect(canAutoEnterPip, activePipRatio) {
+                        val clamped = activePipRatio.takeIf { it.isFinite() && it > 0f }?.coerceIn(0.5f, 2.3f) ?: (16f / 9f)
+                        runCatching {
+                            setPictureInPictureParams(
+                                PictureInPictureParams.Builder()
+                                    .setAspectRatio(Rational((clamped * 1000f).roundToInt(), 1000))
+                                    .setAutoEnterEnabled(canAutoEnterPip)
+                                    .setSeamlessResizeEnabled(true)
+                                    .build(),
+                            )
+                        }
+                    }
+                }
 
                 CompositionLocalProvider(
                     LocalDatabase provides database,
@@ -1183,7 +1273,9 @@ class MainActivity : FragmentActivity() {
                     LocalChangelogState provides showChangelog,
                     LocalArtistNameAliases provides artistNameAliases,
                     LocalLiquidGlassEnabled provides enableLiquidGlass,
+                    LocalLiquidGlassPreset provides liquidGlassPreset,
                     LocalRegaBackdrop provides appBackdropState,
+                    LocalVideoOverlayController provides videoOverlayController,
                 ) {
                     if (showChangelog.value) {
                         ChangelogScreen(onDismiss = { showChangelog.value = false })
@@ -1832,6 +1924,49 @@ class MainActivity : FragmentActivity() {
                                     },
                                 )
                         }
+                    }
+
+                    val activePipConnection = activePlayerConnection
+                    val activeOverlayVideoId = videoOverlayController.activeVideoId
+                    if (videoOverlayController.isInPipMode && activePipConnection != null && activeOverlayVideoId != null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black),
+                        ) {
+                            SyncedVideoPlayerSurface(
+                                videoId = activeOverlayVideoId,
+                                isExplicit = videoOverlayController.activeVideoExplicit,
+                                isUploaded = videoOverlayController.activeVideoUploaded,
+                                mainPlayer = activePipConnection.player,
+                                videoQuality = videoQuality,
+                                isActive = true,
+                                onVideoAspectRatioChanged = {},
+                                onVideoStateChanged = {},
+                                videoCache = activePipConnection.service.videoCache,
+                                enableVideoCache = enableVideoCache,
+                                maxVideoCacheSizeMb = maxVideoCacheSize,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    } else if (videoOverlayController.isVideoFullscreen && activePipConnection != null && activeOverlayVideoId != null) {
+                        FullscreenVideoPlayerOverlay(
+                            videoId = activeOverlayVideoId,
+                            isExplicit = videoOverlayController.activeVideoExplicit,
+                            isUploaded = videoOverlayController.activeVideoUploaded,
+                            title = videoOverlayController.activeVideoTitle,
+                            subtitle = videoOverlayController.activeVideoSubtitle,
+                            mainPlayer = activePipConnection.player,
+                            videoQuality = videoQuality,
+                            videoCache = activePipConnection.service.videoCache,
+                            enableVideoCache = enableVideoCache,
+                            maxVideoCacheSizeMb = maxVideoCacheSize,
+                            onPrevious = { activePipConnection.seekToPrevious() },
+                            onTogglePlayPause = { activePipConnection.togglePlayPause() },
+                            onNext = { activePipConnection.seekToNext() },
+                            onEnterPip = { ratio -> enterVideoPipMode(ratio) },
+                            onExitFullscreen = { videoOverlayController.isVideoFullscreen = false },
+                        )
                     }
                 }
                 if (!onboardingResolved) {

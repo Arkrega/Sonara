@@ -49,6 +49,8 @@ import com.sonara.music.ui.component.ReleaseNotesCard
 import com.sonara.music.ui.theme.RegaColor
 import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.Updater
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,10 +97,11 @@ fun SettingsScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = regaTopAppBarColors(TopAppBarDefaults.topAppBarColors(
                     containerColor = RegaColor.Background,
                     titleContentColor = RegaColor.TextPrimary
-                )
+                )),
+                modifier = Modifier.regaTopAppBarGlass(),
             )
         }
     ) { paddingValues ->

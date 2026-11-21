@@ -20,7 +20,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -58,6 +57,9 @@ import com.sonara.music.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -168,7 +170,7 @@ fun UpdaterScreen(
                             title = { Text(stringResource(R.string.check_for_updates)) },
                             icon = painterResource(R.drawable.update),
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = checkForUpdates,
                                     onCheckedChange = onCheckForUpdatesChange,
                                 )
@@ -183,7 +185,7 @@ fun UpdaterScreen(
                                 title = { Text(stringResource(R.string.update_notifications)) },
                                 icon = painterResource(R.drawable.notification),
                                 trailingContent = {
-                                    Switch(
+                                    SonaraSwitch(
                                         checked = updateNotifications,
                                         onCheckedChange = onUpdateNotificationsChange,
                                     )
@@ -392,5 +394,7 @@ fun UpdaterScreen(
                 )
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

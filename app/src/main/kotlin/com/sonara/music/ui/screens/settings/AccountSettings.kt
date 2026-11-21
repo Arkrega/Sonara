@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,6 +71,7 @@ import com.sonara.music.utils.Updater
 import com.sonara.music.utils.rememberPreference
 import com.sonara.music.viewmodels.AccountSettingsViewModel
 import com.sonara.music.viewmodels.HomeViewModel
+import com.sonara.music.ui.component.glass.SonaraSwitch
 
 @Composable
 fun AccountSettings(
@@ -340,7 +340,7 @@ fun AccountSettings(
                     title = { Text(stringResource(R.string.more_content)) },
                     icon = painterResource(R.drawable.cached),
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             enabled = isLoggedIn,
                             checked = useLoginForBrowse,
                             onCheckedChange = {
@@ -364,7 +364,7 @@ fun AccountSettings(
                     title = { Text(stringResource(R.string.yt_sync)) },
                     icon = painterResource(R.drawable.cached),
                     trailingContent = {
-                        Switch(
+                        SonaraSwitch(
                             enabled = isLoggedIn,
                             checked = ytmSync,
                             onCheckedChange = onYtmSyncChange,

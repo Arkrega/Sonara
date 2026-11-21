@@ -26,6 +26,8 @@ import com.sonara.music.ui.component.IconButton
 import com.sonara.music.ui.component.IntegrationCard
 import com.sonara.music.ui.component.IntegrationCardItem
 import com.sonara.music.ui.utils.backToMain
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +71,8 @@ fun IntegrationScreen(
                     contentDescription = null,
                 )
             }
-        }
+        },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

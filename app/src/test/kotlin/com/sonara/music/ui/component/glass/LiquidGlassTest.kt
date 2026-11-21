@@ -4,6 +4,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.sonara.music.constants.LiquidGlassPreset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -98,5 +99,23 @@ class LiquidGlassTest {
         assertEquals(RegaSquircleShape, resolveLiquidGlassShape(RegaSquircleShape, liquidGlassEnabled = false))
         assertEquals(RegaCardShape, resolveLiquidGlassShape(RegaCardShape, liquidGlassEnabled = false))
         assertEquals(RegaDialogShape, resolveLiquidGlassShape(RegaDialogShape, liquidGlassEnabled = false))
+    }
+
+    @Test
+    fun `liquid glass blur and tint increase monotonically across presets`() {
+        val opaque = Color(0xFF1A1B1E)
+        for (material in RegaGlassMaterial.entries) {
+            val crystalBlur = resolveLiquidGlassBlurDp(material, LiquidGlassPreset.CRYSTAL)
+            val balancedBlur = resolveLiquidGlassBlurDp(material, LiquidGlassPreset.BALANCED)
+            val frostedBlur = resolveLiquidGlassBlurDp(material, LiquidGlassPreset.FROSTED)
+            assertTrue(crystalBlur < balancedBlur)
+            assertTrue(balancedBlur < frostedBlur)
+
+            val crystalTint = resolveLiquidGlassSurfaceTint(opaque, material, isDark = true, supportsBlur = true, preset = LiquidGlassPreset.CRYSTAL)
+            val balancedTint = resolveLiquidGlassSurfaceTint(opaque, material, isDark = true, supportsBlur = true, preset = LiquidGlassPreset.BALANCED)
+            val frostedTint = resolveLiquidGlassSurfaceTint(opaque, material, isDark = true, supportsBlur = true, preset = LiquidGlassPreset.FROSTED)
+            assertTrue(crystalTint.alpha < balancedTint.alpha)
+            assertTrue(balancedTint.alpha < frostedTint.alpha)
+        }
     }
 }

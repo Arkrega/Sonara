@@ -7,6 +7,12 @@ package com.sonara.music.ui.screens.settings
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.RegaGlassMaterial
+import com.sonara.music.ui.component.glass.RegaGlassStyle
+import com.sonara.music.ui.component.glass.RegaLiquidGlass
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -134,13 +140,48 @@ fun ChangelogScreen(
                     .padding(16.dp)
             ) {
                 val githubReleasesUrl = stringResource(R.string.github_releases_url)
-                ExtendedFloatingActionButton(
-                    onClick = { uriHandler.openUri(githubReleasesUrl) },
-                    icon = { Icon(painterResource(R.drawable.github), contentDescription = null, modifier = Modifier.size(24.dp)) },
-                    text = { Text(stringResource(R.string.view_on_github)) },
-                    containerColor = MaterialTheme.colorScheme.onPrimary,
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
+                if (LocalLiquidGlassEnabled.current) {
+                    val glassContentColor = MaterialTheme.colorScheme.primary
+                    RegaLiquidGlass(
+                        shape = CircleShape,
+                        borderColor = glassContentColor.copy(alpha = 0.50f),
+                        style = RegaGlassStyle.preset(
+                            material = RegaGlassMaterial.Thin,
+                            tint = glassContentColor.copy(alpha = 0.16f),
+                            borderRadius = 28.dp,
+                            elevation = 8.dp,
+                        ),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable { uriHandler.openUri(githubReleasesUrl) }
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.github),
+                                contentDescription = null,
+                                tint = glassContentColor,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Text(
+                                text = stringResource(R.string.view_on_github),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = glassContentColor,
+                            )
+                        }
+                    }
+                } else {
+                    ExtendedFloatingActionButton(
+                        onClick = { uriHandler.openUri(githubReleasesUrl) },
+                        icon = { Icon(painterResource(R.drawable.github), contentDescription = null, modifier = Modifier.size(24.dp)) },
+                        text = { Text(stringResource(R.string.view_on_github)) },
+                        containerColor = MaterialTheme.colorScheme.onPrimary,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }

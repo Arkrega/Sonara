@@ -16,6 +16,13 @@ import java.time.ZoneOffset
 val EnableHighRefreshRateKey = booleanPreferencesKey("enableHighRefreshRate")
 val EnableLandscapeScalingKey = booleanPreferencesKey("enableLandscapeScaling")
 val EnableLiquidGlassKey = booleanPreferencesKey("enableLiquidGlass")
+val LiquidGlassPresetKey = stringPreferencesKey("liquidGlassPreset")
+
+enum class LiquidGlassPreset {
+    CRYSTAL,
+    BALANCED,
+    FROSTED,
+}
 val DynamicThemeKey = booleanPreferencesKey("dynamicTheme")
 val SelectedThemeColorKey = intPreferencesKey("selectedThemeColor")
 val DarkModeKey = stringPreferencesKey("darkMode")
@@ -79,6 +86,7 @@ enum class SliderStyle {
     DEFAULT,
     WAVY,
     SLIM,
+    LIQUID_GLASS,
 }
 
 const val SYSTEM_DEFAULT = "SYSTEM_DEFAULT"
@@ -185,6 +193,8 @@ val MaxSongCacheSizeKey = intPreferencesKey("maxSongCacheSize")
 val EnableSongCacheKey = booleanPreferencesKey("enableSongCache")
 val MaxVideoCacheSizeKey = intPreferencesKey("maxVideoCacheSize")
 val EnableVideoCacheKey = booleanPreferencesKey("enableVideoCache")
+val PreCacheNextSongKey = booleanPreferencesKey("preCacheNextSong")
+val PreCacheWifiOnlyKey = booleanPreferencesKey("preCacheWifiOnly")
 val CacheAutoClearDaysKey = intPreferencesKey("cacheAutoClearDays")
 
 enum class CacheAutoClearInterval(val days: Int) {

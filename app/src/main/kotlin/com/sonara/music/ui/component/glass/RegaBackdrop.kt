@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.unit.Density
 import com.kyant.backdrop.Backdrop
+import com.sonara.music.constants.LiquidGlassPreset
 import com.styropyr0.prismal.sources.PrismalGlassLayer
 import com.styropyr0.prismal.sources.prismalGlassLayer
 import com.styropyr0.prismal.sources.rememberPrismalGlassLayer
@@ -45,6 +46,8 @@ class RegaBackdropState internal constructor(
 )
 
 val LocalLiquidGlassEnabled = staticCompositionLocalOf { true }
+
+val LocalLiquidGlassPreset = staticCompositionLocalOf { LiquidGlassPreset.CRYSTAL }
 
 val LocalRegaBackdrop = staticCompositionLocalOf<RegaBackdropState?> { null }
 

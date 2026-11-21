@@ -37,7 +37,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -89,6 +88,7 @@ import com.sonara.music.constants.OpenRouterDefaultModel
 import com.sonara.music.constants.OpenRouterModelKey
 import com.sonara.music.constants.DeeplFormalityKey
 import com.sonara.music.utils.rememberPreference
+import com.sonara.music.ui.component.glass.SonaraSwitch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -502,7 +502,7 @@ fun LyricsMenu(
                                     }
                                 },
                                 trailingContent = {
-                                    Switch(
+                                    SonaraSwitch(
                                         checked = hasTranslations,
                                         onCheckedChange = { newCheckedState ->
                                             if (newCheckedState) {
@@ -553,7 +553,7 @@ fun LyricsMenu(
                                 respectAgentPositioning = !respectAgentPositioning
                             },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = respectAgentPositioning,
                                     onCheckedChange = { newCheckedState ->
                                         respectAgentPositioning = newCheckedState
@@ -591,7 +591,7 @@ fun LyricsMenu(
                                 showIntervalIndicator = !showIntervalIndicator
                             },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = showIntervalIndicator,
                                     onCheckedChange = { newCheckedState ->
                                         showIntervalIndicator = newCheckedState
@@ -656,7 +656,7 @@ fun LyricsMenu(
                                 }
                             },
                             trailingContent = {
-                                Switch(
+                                SonaraSwitch(
                                     checked = isChecked,
                                     onCheckedChange = { newCheckedState ->
                                         isChecked = newCheckedState

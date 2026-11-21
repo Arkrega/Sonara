@@ -85,6 +85,8 @@ import com.sonara.music.ui.component.YouTubeListItem
 import com.sonara.music.ui.menu.YouTubeSongMenu
 import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.viewmodels.OnlinePodcastViewModel
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -294,7 +296,9 @@ fun OnlinePodcastScreen(
                     }
                 }
             },
-            scrollBehavior = scrollBehavior
+            scrollBehavior = scrollBehavior,
+            modifier = Modifier.regaTopAppBarGlass(),
+            colors = regaTopAppBarColors(),
         )
     }
 }

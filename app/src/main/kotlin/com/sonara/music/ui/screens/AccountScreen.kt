@@ -67,6 +67,8 @@ import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.rememberEnumPreference
 import com.sonara.music.viewmodels.AccountContentType
 import com.sonara.music.viewmodels.AccountViewModel
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -331,6 +333,8 @@ fun AccountScreen(
                 )
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }
 

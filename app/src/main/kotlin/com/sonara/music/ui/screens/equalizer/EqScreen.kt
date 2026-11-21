@@ -40,7 +40,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -88,6 +87,9 @@ import com.sonara.music.eq.data.SavedEQProfile
 import com.sonara.music.ui.theme.RegaColor
 import com.sonara.music.utils.rememberPreference
 import kotlin.math.round
+import com.sonara.music.ui.component.glass.SonaraSwitch
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -210,7 +212,7 @@ fun EqScreen(
                     }
                 },
                 actions = {
-                    Switch(
+                    SonaraSwitch(
                         checked = state.isEnabled,
                         onCheckedChange = { viewModel.toggleEqualizer(it) },
                         colors = SwitchDefaults.colors(
@@ -300,10 +302,11 @@ fun EqScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = regaTopAppBarColors(TopAppBarDefaults.topAppBarColors(
                     containerColor = RegaColor.Background,
                     titleContentColor = RegaColor.TextPrimary
-                )
+                )),
+                modifier = Modifier.regaTopAppBarGlass(),
             )
         }
     ) { paddingValues ->
@@ -630,7 +633,7 @@ fun EqScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
-                            Switch(
+                            SonaraSwitch(
                                 checked = reverbEnabled && reverbSupported,
                                 onCheckedChange = { isChecked ->
                                     RegaReverbManager.setEnabled(isChecked)

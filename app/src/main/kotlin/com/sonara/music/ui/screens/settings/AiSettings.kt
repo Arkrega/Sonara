@@ -60,6 +60,8 @@ import com.sonara.music.ui.component.Material3SettingsGroup
 import com.sonara.music.ui.component.Material3SettingsItem
 import com.sonara.music.ui.component.TextFieldDialog
 import com.sonara.music.utils.rememberPreference
+import com.sonara.music.ui.component.glass.regaTopAppBarGlass
+import com.sonara.music.ui.component.glass.regaTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -667,5 +669,7 @@ fun AiSettings(navController: NavController) {
                 )
             }
         },
+        modifier = Modifier.regaTopAppBarGlass(),
+        colors = regaTopAppBarColors(),
     )
 }

@@ -1,52 +1,95 @@
 package com.sonara.music.ui.player
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.pm.ActivityInfo
 import android.graphics.Matrix
 import android.net.ConnectivityManager
 import android.view.TextureView
+import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -77,11 +120,20 @@ import com.sonara.music.models.MediaMetadata
 import com.sonara.music.playback.CacheCleanupManager
 import com.sonara.music.playback.ChunkedRangeDataSource
 import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
+import com.sonara.music.ui.component.glass.RegaGlassMaterial
+import com.sonara.music.ui.component.glass.RegaGlassStyle
+import com.sonara.music.ui.component.glass.RegaIconButton
+import com.sonara.music.ui.component.glass.RegaLiquidGlass
 import com.sonara.music.ui.component.glass.RegaPillShape
+import com.sonara.music.ui.component.glass.RegaPlayButton
+import com.sonara.music.ui.component.glass.regaBackdropSource
 import com.sonara.music.ui.component.glass.regaGlassSpecular
+import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.utils.InnerTubeXPlayer
 import com.sonara.music.utils.InnerTubeXPlayer.resolveMaxHeight
+import com.sonara.music.utils.makeTimeString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -127,14 +179,14 @@ fun PlayerVideoModeToggle(
 ) {
     val haptic = LocalHapticFeedback.current
     val regaColors = LocalRegaColors.current
-    val pillShape = if (LocalLiquidGlassEnabled.current) CircleShape else RegaPillShape
+    val liquidGlassEnabled = LocalLiquidGlassEnabled.current
+    val pillShape = if (liquidGlassEnabled) CircleShape else RegaPillShape
     val activeBg = textColor.copy(alpha = 0.18f)
-    val activeBorder = textColor.copy(alpha = 0.30f)
+    val activeBorder = textColor.copy(alpha = 0.32f)
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    BoxWithConstraints(
         modifier = modifier
+            .width(184.dp)
             .height(34.dp)
             .regaGlassSpecular(
                 shape = pillShape,
@@ -144,36 +196,76 @@ fun PlayerVideoModeToggle(
             .clip(pillShape)
             .padding(3.dp),
     ) {
-        VideoModePillSegment(
-            selected = !isVideoMode,
-            label = stringResource(R.string.player_mode_audio),
-            iconRes = R.drawable.music_note,
-            showLoading = false,
-            textColor = textColor,
-            activeBg = activeBg,
-            activeBorder = activeBorder,
-            onClick = {
-                if (isVideoMode) {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onSelectVideoMode(false)
-                }
-            },
+        val segmentWidth = maxWidth / 2f
+        val capsuleOffset by animateDpAsState(
+            targetValue = if (isVideoMode) segmentWidth else 0.dp,
+            animationSpec = spring(
+                dampingRatio = 0.78f,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+            label = "videoToggleCapsuleOffset",
         )
-        VideoModePillSegment(
-            selected = isVideoMode,
-            label = stringResource(R.string.player_mode_video),
-            iconRes = R.drawable.smart_display,
-            showLoading = isVideoMode && isLoading,
-            textColor = textColor,
-            activeBg = activeBg,
-            activeBorder = activeBorder,
-            onClick = {
-                if (!isVideoMode) {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onSelectVideoMode(true)
-                }
-            },
-        )
+
+        if (liquidGlassEnabled) {
+            RegaLiquidGlass(
+                modifier = Modifier
+                    .offset(x = capsuleOffset)
+                    .width(segmentWidth)
+                    .fillMaxHeight(),
+                shape = pillShape,
+                borderColor = activeBorder,
+                style = RegaGlassStyle.preset(
+                    material = RegaGlassMaterial.Clear,
+                    tint = activeBg,
+                    borderRadius = 15.dp,
+                    elevation = 2.dp,
+                ),
+            ) {}
+        } else {
+            Box(
+                modifier = Modifier
+                    .offset(x = capsuleOffset)
+                    .width(segmentWidth)
+                    .fillMaxHeight()
+                    .clip(pillShape)
+                    .background(activeBg)
+                    .border(0.75.dp, activeBorder, pillShape),
+            )
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            VideoModePillSegment(
+                selected = !isVideoMode,
+                label = stringResource(R.string.player_mode_audio),
+                iconRes = R.drawable.music_note,
+                showLoading = false,
+                textColor = textColor,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                onClick = {
+                    if (isVideoMode) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onSelectVideoMode(false)
+                    }
+                },
+            )
+            VideoModePillSegment(
+                selected = isVideoMode,
+                label = stringResource(R.string.player_mode_video),
+                iconRes = R.drawable.smart_display,
+                showLoading = isVideoMode && isLoading,
+                textColor = textColor,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                onClick = {
+                    if (!isVideoMode) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onSelectVideoMode(true)
+                    }
+                },
+            )
+        }
     }
 }
 
@@ -184,20 +276,9 @@ private fun VideoModePillSegment(
     iconRes: Int,
     showLoading: Boolean,
     textColor: Color,
-    activeBg: Color,
-    activeBorder: Color,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val bgColor by animateColorAsState(
-        targetValue = if (selected) activeBg else Color.Transparent,
-        animationSpec = tween(180),
-        label = "videoPillBg",
-    )
-    val borderColor by animateColorAsState(
-        targetValue = if (selected) activeBorder else Color.Transparent,
-        animationSpec = tween(180),
-        label = "videoPillBorder",
-    )
     val contentColor by animateColorAsState(
         targetValue = if (selected) textColor else textColor.copy(alpha = 0.62f),
         animationSpec = tween(180),
@@ -208,12 +289,10 @@ private fun VideoModePillSegment(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
-        modifier = Modifier
+        modifier = modifier
             .clip(segmentShape)
-            .background(bgColor)
-            .border(0.75.dp, borderColor, segmentShape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         if (showLoading) {
             CircularProgressIndicator(
@@ -239,6 +318,427 @@ private fun VideoModePillSegment(
             color = contentColor,
             maxLines = 1,
         )
+    }
+}
+
+@Stable
+class VideoOverlayController(
+    val onEnterPip: (Float) -> Unit,
+) {
+    var isVideoFullscreen by mutableStateOf(false)
+    var isInPipMode by mutableStateOf(false)
+    var activeVideoId by mutableStateOf<String?>(null)
+    var activeVideoExplicit by mutableStateOf<Boolean?>(null)
+    var activeVideoUploaded by mutableStateOf<Boolean?>(null)
+    var activeVideoAspectRatio by mutableFloatStateOf(16f / 9f)
+    var activeVideoTitle by mutableStateOf("")
+    var activeVideoSubtitle by mutableStateOf("")
+    var isVideoPlaybackReady by mutableStateOf(false)
+
+    fun canAutoEnterPip(
+        isPlaying: Boolean,
+        isPlayerExpanded: Boolean,
+    ): Boolean = isVideoPlaybackReady && activeVideoId != null && isPlaying && (isPlayerExpanded || isVideoFullscreen)
+}
+
+val LocalVideoOverlayController = staticCompositionLocalOf<VideoOverlayController?> { null }
+
+private tailrec fun Context.findActivity(): Activity? =
+    when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
+
+@kotlin.OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FullscreenVideoPlayerOverlay(
+    videoId: String,
+    isExplicit: Boolean?,
+    isUploaded: Boolean?,
+    title: String,
+    subtitle: String,
+    mainPlayer: ExoPlayer,
+    videoQuality: VideoQuality,
+    videoCache: Cache?,
+    enableVideoCache: Boolean,
+    maxVideoCacheSizeMb: Int,
+    onPrevious: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    onNext: () -> Unit,
+    onEnterPip: (Float) -> Unit,
+    onExitFullscreen: () -> Unit,
+) {
+    val context = LocalContext.current
+    val layoutDirection = LocalLayoutDirection.current
+    val regaColors = LocalRegaColors.current
+    val videoHudBackdrop = rememberRegaBackdropState()
+    var showHud by remember { mutableStateOf(true) }
+    var currentAspectRatio by remember(videoId) { mutableFloatStateOf(16f / 9f) }
+    var seekBadgeText by remember { mutableStateOf<String?>(null) }
+    var isPlaying by remember { mutableStateOf(mainPlayer.isPlaying) }
+    var positionMs by remember { mutableLongStateOf(mainPlayer.currentPosition.coerceAtLeast(0L)) }
+    var durationMs by remember { mutableLongStateOf(mainPlayer.duration.takeIf { it > 0L } ?: 0L) }
+    var sliderDragMs by remember { mutableStateOf<Long?>(null) }
+
+    BackHandler(onBack = onExitFullscreen)
+
+    DisposableEffect(context) {
+        val activity = context.findActivity()
+        val window = activity?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        controller?.let {
+            it.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            it.hide(WindowInsetsCompat.Type.systemBars())
+        }
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            controller?.show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
+    DisposableEffect(mainPlayer) {
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(playing: Boolean) {
+                isPlaying = playing
+            }
+        }
+        mainPlayer.addListener(listener)
+        onDispose {
+            mainPlayer.removeListener(listener)
+        }
+    }
+
+    LaunchedEffect(mainPlayer, showHud) {
+        while (true) {
+            positionMs = mainPlayer.currentPosition.coerceAtLeast(0L)
+            durationMs = mainPlayer.duration.takeIf { it > 0L } ?: 0L
+            delay(300L)
+        }
+    }
+
+    LaunchedEffect(showHud, isPlaying) {
+        if (showHud && isPlaying) {
+            delay(3500L)
+            showHud = false
+        }
+    }
+
+    LaunchedEffect(seekBadgeText) {
+        if (seekBadgeText != null) {
+            delay(900L)
+            seekBadgeText = null
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .regaBackdropSource(videoHudBackdrop),
+        ) {
+            SyncedVideoPlayerSurface(
+                videoId = videoId,
+                isExplicit = isExplicit,
+                isUploaded = isUploaded,
+                mainPlayer = mainPlayer,
+                videoQuality = videoQuality,
+                isActive = true,
+                onVideoAspectRatioChanged = { ratio ->
+                    currentAspectRatio = ratio
+                },
+                onVideoStateChanged = {},
+                videoCache = videoCache,
+                enableVideoCache = enableVideoCache,
+                maxVideoCacheSizeMb = maxVideoCacheSizeMb,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = {
+                            showHud = !showHud
+                        },
+                        onDoubleTap = { offset ->
+                            val isLeftSide = (layoutDirection == LayoutDirection.Ltr && offset.x < size.width / 2f) ||
+                                (layoutDirection == LayoutDirection.Rtl && offset.x > size.width / 2f)
+                            val delta = if (isLeftSide) -10_000L else 10_000L
+                            val dur = mainPlayer.duration.takeIf { it > 0L } ?: Long.MAX_VALUE
+                            val target = (mainPlayer.currentPosition + delta).coerceIn(0L, dur)
+                            mainPlayer.seekTo(target)
+                            positionMs = target
+                            seekBadgeText = if (isLeftSide) "-10s" else "+10s"
+                        },
+                    )
+                },
+        )
+
+        CompositionLocalProvider(LocalRegaBackdrop provides videoHudBackdrop) {
+            AnimatedVisibility(
+                visible = seekBadgeText != null,
+                enter = fadeIn(tween(140)) + scaleIn(initialScale = 0.88f, animationSpec = tween(140)),
+                exit = fadeOut(tween(180)) + scaleOut(targetScale = 0.92f, animationSpec = tween(180)),
+                modifier = Modifier.align(Alignment.Center),
+            ) {
+                RegaLiquidGlass(
+                    shape = CircleShape,
+                    borderColor = Color.White.copy(alpha = 0.45f),
+                    style = RegaGlassStyle.preset(
+                        material = RegaGlassMaterial.Thin,
+                        tint = Color.Black.copy(alpha = 0.35f),
+                        borderRadius = 24.dp,
+                    ),
+                ) {
+                    Text(
+                        text = seekBadgeText.orEmpty(),
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = showHud,
+                enter = fadeIn(tween(200)),
+                exit = fadeOut(tween(200)),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Black.copy(alpha = 0.56f),
+                                    Color.Black.copy(alpha = 0.16f),
+                                    Color.Black.copy(alpha = 0.64f),
+                                ),
+                            ),
+                        )
+                        .systemBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            RegaIconButton(
+                                onClick = onExitFullscreen,
+                                size = 40.dp,
+                                shape = CircleShape,
+                                containerColor = regaColors.glassTint,
+                                borderColor = Color.White.copy(alpha = 0.35f),
+                                contentColor = Color.White,
+                                contentDescription = stringResource(R.string.exit_fullscreen),
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.fullscreen_exit),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                            Column(modifier = Modifier.widthIn(max = 420.dp)) {
+                                if (title.isNotBlank()) {
+                                    Text(
+                                        text = title,
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                if (subtitle.isNotBlank()) {
+                                    Text(
+                                        text = subtitle,
+                                        color = Color.White.copy(alpha = 0.78f),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+
+                        RegaIconButton(
+                            onClick = { onEnterPip(currentAspectRatio) },
+                            size = 40.dp,
+                            shape = CircleShape,
+                            containerColor = regaColors.glassTint,
+                            borderColor = Color.White.copy(alpha = 0.35f),
+                            contentColor = Color.White,
+                            contentDescription = stringResource(R.string.enter_pip),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.picture_in_picture),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(28.dp),
+                        modifier = Modifier.align(Alignment.Center),
+                    ) {
+                        RegaIconButton(
+                            onClick = onPrevious,
+                            size = 48.dp,
+                            shape = CircleShape,
+                            containerColor = regaColors.glassTint,
+                            borderColor = Color.White.copy(alpha = 0.35f),
+                            contentColor = Color.White,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.skip_previous),
+                                contentDescription = null,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
+                        RegaPlayButton(
+                            isPlaying = isPlaying,
+                            onClick = onTogglePlayPause,
+                            size = 64.dp,
+                            containerColor = Color.White,
+                            iconColor = Color.Black,
+                        )
+                        RegaIconButton(
+                            onClick = onNext,
+                            size = 48.dp,
+                            shape = CircleShape,
+                            containerColor = regaColors.glassTint,
+                            borderColor = Color.White.copy(alpha = 0.35f),
+                            contentColor = Color.White,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.skip_next),
+                                contentDescription = null,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter),
+                    ) {
+                        val safeDuration = durationMs.coerceAtLeast(1L).toFloat()
+                        val displayPosition = sliderDragMs ?: positionMs
+                        val clamped = displayPosition.coerceIn(0L, durationMs.coerceAtLeast(0L)).toFloat()
+                        val sliderRange = 0f..safeDuration
+                        val sliderState = remember(sliderRange) {
+                            SliderState(value = clamped, trackRange = sliderRange)
+                        }
+                        sliderState.value = clamped
+                        val interactionSource = remember { MutableInteractionSource() }
+                        val isDragged by interactionSource.collectIsDraggedAsState()
+                        val isPressed by interactionSource.collectIsPressedAsState()
+                        val isInteracting = isDragged || isPressed
+
+                        Text(
+                            text = makeTimeString(displayPosition),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+
+                        Slider(
+                            state = sliderState,
+                            onValueChange = { sliderDragMs = it.toLong() },
+                            onValueChangeFinished = {
+                                sliderDragMs?.let { mainPlayer.seekTo(it) }
+                                sliderDragMs = null
+                            },
+                            interactionSource = interactionSource,
+                            thumb = {
+                                Box(
+                                    modifier = Modifier.size(width = 32.dp, height = 22.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    RegaLiquidGlass(
+                                        modifier = Modifier.size(
+                                            width = if (isInteracting) 32.dp else 26.dp,
+                                            height = if (isInteracting) 20.dp else 16.dp,
+                                        ),
+                                        shape = CircleShape,
+                                        borderColor = Color.White.copy(alpha = 0.65f),
+                                        style = RegaGlassStyle.preset(
+                                            material = RegaGlassMaterial.Clear,
+                                            tint = Color.White.copy(alpha = 0.22f),
+                                            borderRadius = 10.dp,
+                                        ),
+                                    ) {}
+                                }
+                            },
+                            track = { sState ->
+                                val frac =
+                                    if (sState.trackRange.endInclusive <= sState.trackRange.start) {
+                                        0f
+                                    } else {
+                                        ((sState.value - sState.trackRange.start) / (sState.trackRange.endInclusive - sState.trackRange.start))
+                                            .coerceIn(0f, 1f)
+                                    }
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(22.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Canvas(
+                                        modifier = Modifier.fillMaxWidth().height(if (isInteracting) 7.dp else 5.dp),
+                                    ) {
+                                        val h = size.height
+                                        val r = CornerRadius(h / 2f, h / 2f)
+                                        drawRoundRect(
+                                            color = Color.White.copy(alpha = 0.26f),
+                                            topLeft = Offset.Zero,
+                                            size = size,
+                                            cornerRadius = r,
+                                        )
+                                        val w = (size.width * frac).coerceAtLeast(if (frac > 0f) h else 0f)
+                                        if (w > 0f) {
+                                            drawRoundRect(
+                                                color = Color.White,
+                                                topLeft = Offset.Zero,
+                                                size = Size(w, h),
+                                                cornerRadius = r,
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        Text(
+                            text = if (durationMs > 0L) makeTimeString(durationMs) else "",
+                            color = Color.White.copy(alpha = 0.85f),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
