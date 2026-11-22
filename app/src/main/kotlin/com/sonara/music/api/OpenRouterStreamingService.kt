@@ -15,9 +15,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import com.sonara.music.utils.SharedHttpPool
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import timber.log.Timber
@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit
 
 object OpenRouterStreamingService {
     private val client =
-        OkHttpClient
-            .Builder()
+        SharedHttpPool
+            .newClientBuilder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

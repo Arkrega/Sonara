@@ -901,6 +901,7 @@ fun ExperimentalLyrics(
                                 LyricsBackgroundStyle.SOLID -> LyricsBackgroundStyle.SOLID
                                 LyricsBackgroundStyle.BLUR -> LyricsBackgroundStyle.BLUR
                                 LyricsBackgroundStyle.GRADIENT -> LyricsBackgroundStyle.GRADIENT
+                                LyricsBackgroundStyle.LIQUID_GLASS -> LyricsBackgroundStyle.LIQUID_GLASS
                             },
                             textColor.toArgb(), secTextColor.toArgb(),
                             when (lyricsTextPosition) {

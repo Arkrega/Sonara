@@ -11,8 +11,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.annotation.MainThread
 import androidx.collection.ArrayMap
-import com.sonara.innertube.YouTube
 import com.sonara.music.BuildConfig
+import com.sonara.music.utils.SharedHttpPool
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
@@ -454,9 +454,8 @@ class PoTokenWebView private constructor(
         // A live renderer mints a poToken in well under a second.
         private const val GENERATE_TIMEOUT_MS = 15_000L
 
-        private val httpClient = OkHttpClient.Builder()
-            .proxy(YouTube.proxy)
-            .build()
+        private val httpClient: OkHttpClient
+            get() = SharedHttpPool.proxiedClient()
 
         suspend fun getNewPoTokenGenerator(context: Context): PoTokenWebView {
             var created: PoTokenWebView? = null

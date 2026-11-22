@@ -1,3 +1,15 @@
+---v2.1.0
+# SONARA 2.1.0
+
+Zero-copy Rust audio DSP, full OkHttp connection pooling, native Compose square cropper, Liquid Glass real-time spectrum visualizer, and Liquid Glass Share Lyrics cards
+
+## Highlights
+- Expanded `sonara-core` Rust with zero-copy Direct `ByteBuffer` native DSP for Biquad Parametric EQ, PCM16/24/32/Float Volume Normalization, Schroeder Stereo Reverb, and a 24-band real-time FFT spectrum engine (~160 KB compressed per ABI)
+- Added a zero-permission Liquid Glass Audio Visualizer in the Player powered natively by Rust FFT spectrum frames, with an Appearance settings toggle and automatic pause/collapse shutdown
+- Added a new Liquid Glass Share Lyrics card style (`LIQUID_GLASS`) across preview and 2160x2160 PNG export while reusing Coil's shared ImageLoader
+- Unified all 8 remaining OkHttpClient instances onto `SharedHttpPool`, eliminated hot `runBlocking` paths in database play counts and lyrics refetch, added lifecycle-aware adaptive player polling, and smoothed Sleep Timer fade-out curves
+- Replaced uCrop with a native Compose EXIF-aware square image cropper (`SquareImageCropDialog`) and scoped AppCompat to GMS builds only to keep FOSS builds lean
+
 ---v2.0.0
 # SONARA 2.0.0
 

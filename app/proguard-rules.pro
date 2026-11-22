@@ -44,8 +44,6 @@
 -keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite {
     <fields>;
 }
--keep class com.yalantis.ucrop.UCropActivity { *; }
--keep class com.yalantis.ucrop.view.** { *; }
 
 -keep class com.sonara.music.models.MediaMetadata { *; }
 -keep class com.sonara.music.models.MediaMetadata$* { *; }
@@ -105,7 +103,6 @@
 -dontwarn java.beans.IntrospectionException
 -dontwarn java.beans.Introspector
 -dontwarn java.beans.PropertyDescriptor
--dontwarn com.yalantis.ucrop.**
 -dontwarn com.google.re2j.**
 -dontwarn kotlin.reflect.**
 -dontwarn io.ktor.**

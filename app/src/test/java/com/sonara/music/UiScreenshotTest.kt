@@ -74,7 +74,7 @@ class UiScreenshotTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private val outputDir = File("src/test/snapshots/images")
+    private val outputDir = File("build/outputs/snapshots/images")
 
     private fun render(
         name: String,

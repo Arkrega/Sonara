@@ -60,7 +60,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.toArgb
 import androidx.palette.graphics.Palette
-import coil3.ImageLoader
+import coil3.imageLoader
 import coil3.request.allowHardware
 import coil3.toBitmap
 import kotlinx.coroutines.Dispatchers
@@ -187,7 +187,7 @@ fun LyricsImageCard(
         LaunchedEffect(mediaMetadata.thumbnailUrl) {
             withContext(Dispatchers.IO) {
                 try {
-                    val loader = ImageLoader(context)
+                    val loader = context.imageLoader
                     val req = ImageRequest.Builder(context).data(mediaMetadata.thumbnailUrl).allowHardware(false).build()
                     val result = loader.execute(req)
                     val bmp = result.image?.toBitmap()
@@ -242,6 +242,17 @@ fun LyricsImageCard(
                             .background(gradientBrush ?: androidx.compose.ui.graphics.Brush.linearGradient(listOf(backgroundSolidColor, backgroundSolidColor)))
                     )
                 }
+                LyricsBackgroundStyle.LIQUID_GLASS -> {
+                    Image(
+                        painter = painter,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .blur(50.dp)
+                            .background(Color.Black.copy(alpha = 0.28f))
+                    )
+                }
             }
         }
     
@@ -281,6 +292,42 @@ fun LyricsImageCard(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(gradientBrush ?: androidx.compose.ui.graphics.Brush.linearGradient(listOf(backgroundSolidColor, backgroundSolidColor)))
+                    )
+                }
+                LyricsBackgroundStyle.LIQUID_GLASS -> {
+                    Image(
+                        painter = painter,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .blur(50.dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.28f))
+                            .padding(14.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.18f),
+                                        Color.White.copy(alpha = 0.06f),
+                                    ),
+                                ),
+                            )
+                            .border(
+                                width = 1.5.dp,
+                                brush = Brush.linearGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.45f),
+                                        Color.White.copy(alpha = 0.10f),
+                                        Color.White.copy(alpha = 0.28f),
+                                    ),
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                            ),
                     )
                 }
             }

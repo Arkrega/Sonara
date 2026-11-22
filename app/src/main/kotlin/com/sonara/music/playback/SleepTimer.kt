@@ -25,6 +25,7 @@ class SleepTimer(
 ) : Player.Listener {
     private companion object {
         private const val TIMER_TICK_MS = 1000L
+        private const val FADE_TICK_MS = 250L
         private const val FADE_OUT_WINDOW_MS = 60_000L
     }
 
@@ -67,7 +68,7 @@ class SleepTimer(
                     scope.launch {
                         while (this@SleepTimer.isActive) {
                             updateVolumeMultiplierForCurrentSong()
-                            delay(TIMER_TICK_MS)
+                            delay(FADE_TICK_MS)
                         }
                     }
             }
@@ -78,6 +79,7 @@ class SleepTimer(
             sleepTimerJob =
                 scope.launch {
                     while (this@SleepTimer.isActive) {
+                        var nextDelayMs = TIMER_TICK_MS
                         if (triggerTime != -1L) {
                             val remainingMs = triggerTime - System.currentTimeMillis()
                             if (remainingMs <= 0L) {
@@ -88,18 +90,23 @@ class SleepTimer(
                                     if (!fadeOutEnabled) {
                                         break
                                     }
+                                    nextDelayMs = FADE_TICK_MS
                                 } else {
                                     completeTimerAndPause()
                                     break
                                 }
                             } else if (fadeOutEnabled && !stopAfterCurrentSongOnTimeout) {
                                 updateVolumeMultiplierForRemainingTime(remainingMs)
+                                if (remainingMs <= FADE_OUT_WINDOW_MS) {
+                                    nextDelayMs = FADE_TICK_MS
+                                }
                             }
                         } else if (pauseWhenSongEnd && fadeOutEnabled) {
                             updateVolumeMultiplierForCurrentSong()
+                            nextDelayMs = FADE_TICK_MS
                         }
 
-                        delay(TIMER_TICK_MS)
+                        delay(nextDelayMs)
                     }
                 }
         }
@@ -171,7 +178,8 @@ class SleepTimer(
 
     private fun volumeMultiplierForRemainingTime(remainingMs: Long): Float {
         if (remainingMs >= FADE_OUT_WINDOW_MS) return 1f
-        return (remainingMs.toFloat() / FADE_OUT_WINDOW_MS).coerceIn(0f, 1f)
+        val linear = (remainingMs.toFloat() / FADE_OUT_WINDOW_MS).coerceIn(0f, 1f)
+        return linear * linear
     }
 
     private fun updateVolumeMultiplier(multiplier: Float) {

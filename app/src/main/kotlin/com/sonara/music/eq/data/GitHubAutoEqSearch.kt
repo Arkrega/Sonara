@@ -1,11 +1,11 @@
 package com.sonara.music.eq.data
 
 import android.content.Context
+import com.sonara.music.utils.SharedHttpPool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
 import java.io.File
@@ -32,7 +32,7 @@ class GitHubAutoEqSearch(private val context: Context) {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val client = OkHttpClient.Builder()
+    private val client = SharedHttpPool.newClientBuilder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()

@@ -6,8 +6,10 @@ import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
 import com.sonara.music.eq.data.ParametricEQ
 import com.sonara.music.eq.data.ParametricEQBand
+import com.sonara.music.utils.SonaraNativeCore
 import timber.log.Timber
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.pow
 
 /**
@@ -19,6 +21,8 @@ class CustomEqualizerAudioProcessor : BaseAudioProcessor() {
     private var channelCount = 0
     private var equalizerEnabled = false
     private var filters: List<BiquadFilter> = emptyList()
+    private var nativeCoeffs = DoubleArray(0)
+    private var nativeStates = DoubleArray(0)
     private var preampGain = 1.0
     private var pendingProfile: ParametricEQ? = null
 
@@ -35,6 +39,7 @@ class CustomEqualizerAudioProcessor : BaseAudioProcessor() {
         createFilters(parametricEQ.bands)
         equalizerEnabled = true
         filters.forEach { it.reset() }
+        nativeStates.fill(0.0)
 
         Timber.tag(TAG)
             .d("Applied EQ profile with ${filters.size} bands and ${parametricEQ.preamp} dB preamp")
@@ -44,6 +49,8 @@ class CustomEqualizerAudioProcessor : BaseAudioProcessor() {
     fun disable() {
         equalizerEnabled = false
         filters = emptyList()
+        nativeCoeffs = DoubleArray(0)
+        nativeStates = DoubleArray(0)
         preampGain = 1.0
         pendingProfile = null
         Timber.tag(TAG).d("Equalizer disabled")
@@ -52,7 +59,7 @@ class CustomEqualizerAudioProcessor : BaseAudioProcessor() {
     fun isEnabled(): Boolean = equalizerEnabled
 
     private fun createFilters(bands: List<ParametricEQBand>) {
-        filters =
+        val created =
             bands
                 .filter { it.enabled && it.frequency < sampleRate / 2.0 }
                 .map { band ->
@@ -64,6 +71,13 @@ class CustomEqualizerAudioProcessor : BaseAudioProcessor() {
                         filterType = band.filterType,
                     )
                 }
+        filters = created
+        val coeffs = DoubleArray(created.size * 5)
+        for (i in created.indices) {
+            created[i].writeCoeffsTo(coeffs, i * 5)
+        }
+        nativeCoeffs = coeffs
+        nativeStates = DoubleArray(created.size * 8)
 
         Timber.tag(TAG)
             .d("Created ${filters.size} biquad filters from ${bands.size} bands (PK/LSC/HSC)")
@@ -105,11 +119,38 @@ class CustomEqualizerAudioProcessor : BaseAudioProcessor() {
     }
 
     private fun processAudioBuffer(input: ByteBuffer, output: ByteBuffer) {
-        repeat(input.remaining() / 2 / channelCount) {
+        val frameCount = input.remaining() / 2 / channelCount
+        if (frameCount <= 0) return
+
+        val byteCount = frameCount * channelCount * 2
+        if (input.isDirect && output.isDirect && nativeCoeffs.isNotEmpty() &&
+            SonaraNativeCore.processEqPcm16Direct(
+                input = input,
+                inputPos = input.position(),
+                output = output,
+                outputPos = output.position(),
+                frameCount = frameCount,
+                channels = channelCount,
+                coeffs = nativeCoeffs,
+                states = nativeStates,
+                preampGain = preampGain,
+            )
+        ) {
+            input.position(input.position() + byteCount)
+            output.position(output.position() + byteCount)
+            return
+        }
+
+        input.order(ByteOrder.LITTLE_ENDIAN)
+        output.order(ByteOrder.LITTLE_ENDIAN)
+        val filterList = filters
+        repeat(frameCount) {
             when (channelCount) {
                 1 -> {
                     var processed = input.getShort().toDouble() / 32768.0
-                    filters.forEach { processed = it.processSample(processed) }
+                    for (i in filterList.indices) {
+                        processed = filterList[i].processLeft(processed)
+                    }
                     processed *= preampGain
                     output.putShort(
                         (processed * 32768.0)
@@ -122,11 +163,10 @@ class CustomEqualizerAudioProcessor : BaseAudioProcessor() {
                 2 -> {
                     var left = input.getShort().toDouble() / 32768.0
                     var right = input.getShort().toDouble() / 32768.0
-                    filters.forEach { filter ->
-                        filter.processStereo(left, right).let {
-                            left = it.first
-                            right = it.second
-                        }
+                    for (i in filterList.indices) {
+                        val f = filterList[i]
+                        left = f.processLeft(left)
+                        right = f.processRight(right)
                     }
                     output.putShort(
                         (left * preampGain * 32768.0)
@@ -147,12 +187,14 @@ class CustomEqualizerAudioProcessor : BaseAudioProcessor() {
 
     override fun onFlush(streamMetadata: AudioProcessor.StreamMetadata) {
         filters.forEach { it.reset() }
+        nativeStates.fill(0.0)
     }
 
     override fun onReset() {
         sampleRate = 0
         channelCount = 0
         filters.forEach { it.reset() }
+        nativeStates.fill(0.0)
     }
 
     private companion object {

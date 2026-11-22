@@ -377,13 +377,11 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.palette)
 
-    implementation(libs.appcompat)
+    "gmsImplementation"(libs.appcompat)
 
     implementation(libs.coil)
     implementation(libs.coil.network.okhttp)
     implementation(libs.browser)
-
-    implementation(libs.ucrop)
 
 
     implementation(libs.media3)

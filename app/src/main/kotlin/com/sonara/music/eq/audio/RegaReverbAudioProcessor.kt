@@ -5,7 +5,9 @@ import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
 import com.sonara.music.eq.data.ReverbConfig
+import com.sonara.music.utils.SonaraNativeCore
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.roundToInt
 
 @UnstableApi
@@ -15,6 +17,9 @@ class RegaReverbAudioProcessor : BaseAudioProcessor() {
 
     @Volatile
     private var currentConfig: ReverbConfig = ReverbConfig()
+
+    @Volatile
+    private var nativeHandle: Long = 0L
 
     private var combFiltersL: Array<CombFilter> = emptyArray()
     private var combFiltersR: Array<CombFilter> = emptyArray()
@@ -74,6 +79,13 @@ class RegaReverbAudioProcessor : BaseAudioProcessor() {
             AllPassFilter(size)
         }
 
+        val oldHandle = nativeHandle
+        if (oldHandle != 0L) {
+            nativeHandle = 0L
+            SonaraNativeCore.destroyReverb(oldHandle)
+        }
+        nativeHandle = SonaraNativeCore.createReverb(rate)
+
         recalculateParameters(currentConfig)
     }
 
@@ -120,6 +132,34 @@ class RegaReverbAudioProcessor : BaseAudioProcessor() {
         val numAps = apsL.size
 
         val frames = input.remaining() / 2 / channelCount
+        if (frames <= 0) return
+
+        val byteCount = frames * channelCount * 2
+        val handle = nativeHandle
+        if (handle != 0L && input.isDirect && output.isDirect &&
+            SonaraNativeCore.processReverbDirect(
+                handle = handle,
+                input = input,
+                inputPos = input.position(),
+                output = output,
+                outputPos = output.position(),
+                frameCount = frames,
+                channels = channelCount,
+                fb = fb,
+                damp = dm,
+                dry = d,
+                wet = w,
+                wet1 = w1,
+                wet2 = w2,
+            )
+        ) {
+            input.position(input.position() + byteCount)
+            output.position(output.position() + byteCount)
+            return
+        }
+
+        input.order(ByteOrder.LITTLE_ENDIAN)
+        output.order(ByteOrder.LITTLE_ENDIAN)
         repeat(frames) {
             when (channelCount) {
                 1 -> {
@@ -211,10 +251,16 @@ class RegaReverbAudioProcessor : BaseAudioProcessor() {
     override fun onReset() {
         sampleRate = 0
         channelCount = 0
+        val oldHandle = nativeHandle
+        if (oldHandle != 0L) {
+            nativeHandle = 0L
+            SonaraNativeCore.destroyReverb(oldHandle)
+        }
         resetFilterBuffers()
     }
 
     private fun resetFilterBuffers() {
+        SonaraNativeCore.resetReverb(nativeHandle)
         combFiltersL.forEach { it.reset() }
         combFiltersR.forEach { it.reset() }
         allpassFiltersL.forEach { it.reset() }

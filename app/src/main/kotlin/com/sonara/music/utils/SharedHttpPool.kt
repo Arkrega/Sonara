@@ -18,6 +18,8 @@ object SharedHttpPool {
             .dispatcher(sharedDispatcher)
             .build()
 
+    fun newClientBuilder(): OkHttpClient.Builder = baseClient.newBuilder()
+
     @Volatile
     private var cachedProxy: Proxy? = null
 

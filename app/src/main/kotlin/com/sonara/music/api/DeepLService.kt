@@ -5,10 +5,10 @@
 
 package com.sonara.music.api
 
+import com.sonara.music.utils.SharedHttpPool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
@@ -16,7 +16,7 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 object DeepLService {
-    private val client = OkHttpClient.Builder()
+    private val client = SharedHttpPool.newClientBuilder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(90, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)

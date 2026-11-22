@@ -7,8 +7,6 @@ package com.sonara.music.ui.screens.playlist
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -17,7 +15,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,7 +73,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -95,7 +91,6 @@ import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastForEachReversed
 import androidx.compose.ui.util.fastSumBy
-import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.exoplayer.offline.Download
@@ -111,7 +106,6 @@ import com.sonara.music.LocalPlayerAwareWindowInsets
 import com.sonara.music.LocalPlayerConnection
 import com.sonara.music.LocalSyncUtils
 import com.sonara.music.R
-import com.sonara.music.constants.DarkModeKey
 import com.sonara.music.constants.PlaylistEditLockKey
 import com.sonara.music.constants.PlaylistSongSortDescendingKey
 import com.sonara.music.constants.PlaylistSongSortType
@@ -134,19 +128,18 @@ import com.sonara.music.ui.component.LocalMenuState
 import com.sonara.music.ui.component.OverlayEditButton
 import com.sonara.music.ui.component.SongListItem
 import com.sonara.music.ui.component.SortHeader
+import com.sonara.music.ui.component.SquareImageCropDialog
 import com.sonara.music.ui.component.TextFieldDialog
 import com.sonara.music.ui.menu.CustomThumbnailMenu
 import com.sonara.music.ui.menu.LocalPlaylistMenu
 import com.sonara.music.ui.menu.SelectionSongMenu
 import com.sonara.music.ui.menu.SongMenu
-import com.sonara.music.ui.screens.settings.DarkMode
 import com.sonara.music.ui.utils.backToMain
 import com.sonara.music.utils.makeTimeString
 import com.sonara.music.utils.rememberEnumPreference
 import com.sonara.music.utils.rememberPreference
 import com.sonara.music.utils.reportException
 import com.sonara.music.viewmodels.LocalPlaylistViewModel
-import com.yalantis.ucrop.UCrop
 import io.ktor.client.plugins.ClientRequestException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -912,61 +905,39 @@ fun LocalPlaylistHeader(
         } ?: false
 
     val result = remember { mutableStateOf<Uri?>(null) }
-    var pendingCropDestUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingCropSourceUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingCropDestFile by remember { mutableStateOf<java.io.File?>(null) }
     var showEditNoteDialog by remember { mutableStateOf(false) }
-
-    val cropLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
-            if (res.resultCode == android.app.Activity.RESULT_OK) {
-                val output = res.data?.let { UCrop.getOutput(it) } ?: pendingCropDestUri
-                if (output != null) result.value = output
-            }
-        }
-
-    val (darkMode, _) =
-        rememberEnumPreference(
-            DarkModeKey,
-            defaultValue = DarkMode.AUTO,
-        )
-
-    val cropColor = MaterialTheme.colorScheme
-    val darkTheme = darkMode == DarkMode.ON || (darkMode == DarkMode.AUTO && isSystemInDarkTheme())
 
     val pickLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.PickVisualMedia(),
         ) { uri ->
             uri?.let { sourceUri ->
-                val destFile = java.io.File(context.cacheDir, "playlist_cover_crop_${System.currentTimeMillis()}.jpg")
-                val destUri = FileProvider.getUriForFile(context, "${context.packageName}.FileProvider", destFile)
-                pendingCropDestUri = destUri
-
-                val options =
-                    UCrop.Options().apply {
-                        setCompressionFormat(Bitmap.CompressFormat.JPEG)
-                        setCompressionQuality(90)
-                        setHideBottomControls(true)
-                        setToolbarTitle(editPlaylistCoverStr)
-
-                        setStatusBarLight(!darkTheme)
-
-                        setToolbarColor(cropColor.surface.toArgb())
-                        setToolbarWidgetColor(cropColor.inverseSurface.toArgb())
-                        setRootViewBackgroundColor(cropColor.surface.toArgb())
-                        setLogoColor(cropColor.surface.toArgb())
-                    }
-
-                val intent =
-                    UCrop
-                        .of(sourceUri, destUri)
-                        .withAspectRatio(1f, 1f)
-                        .withOptions(options)
-                        .getIntent(context)
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                cropLauncher.launch(intent)
+                pendingCropDestFile =
+                    java.io.File(context.cacheDir, "playlist_cover_crop_${System.currentTimeMillis()}.jpg")
+                pendingCropSourceUri = sourceUri
             }
         }
+
+    val cropSource = pendingCropSourceUri
+    val cropDest = pendingCropDestFile
+    if (cropSource != null && cropDest != null) {
+        SquareImageCropDialog(
+            sourceUri = cropSource,
+            destFile = cropDest,
+            title = editPlaylistCoverStr,
+            onDismiss = {
+                pendingCropSourceUri = null
+                pendingCropDestFile = null
+            },
+            onCropped = { croppedUri ->
+                pendingCropSourceUri = null
+                pendingCropDestFile = null
+                result.value = croppedUri
+            },
+        )
+    }
 
     LaunchedEffect(result.value) {
         val uri = result.value ?: return@LaunchedEffect

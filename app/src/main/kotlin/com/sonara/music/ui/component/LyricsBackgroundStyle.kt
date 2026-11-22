@@ -6,5 +6,5 @@
 package com.sonara.music.ui.component
 
 enum class LyricsBackgroundStyle {
-    SOLID, BLUR, GRADIENT
+    SOLID, BLUR, GRADIENT, LIQUID_GLASS
 }

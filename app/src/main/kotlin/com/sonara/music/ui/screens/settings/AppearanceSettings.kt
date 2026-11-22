@@ -91,6 +91,7 @@ import com.sonara.music.constants.PlayerButtonsStyle
 import com.sonara.music.constants.PlayerButtonsStyleKey
 import com.sonara.music.constants.PureBlackMiniPlayerKey
 import com.sonara.music.constants.RespectAgentPositioningKey
+import com.sonara.music.constants.ShowAudioVisualizerKey
 import com.sonara.music.constants.ShowCachedPlaylistKey
 import com.sonara.music.constants.ShowDownloadedPlaylistKey
 import com.sonara.music.constants.ShowLikedPlaylistKey
@@ -163,6 +164,11 @@ fun AppearanceSettings(
             defaultValue = LiquidGlassPreset.CRYSTAL,
         )
     var showLiquidGlassPresetDialog by rememberSaveable { mutableStateOf(false) }
+    val (showAudioVisualizer, onShowAudioVisualizerChange) =
+        rememberPreference(
+            ShowAudioVisualizerKey,
+            defaultValue = true,
+        )
 
     val (useNewPlayerDesign, onUseNewPlayerDesignChange) =
         rememberPreference(
@@ -1040,6 +1046,30 @@ fun AppearanceSettings(
                             ),
                         )
                     }
+                    add(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.graphic_eq),
+                            title = { Text(stringResource(R.string.show_audio_visualizer)) },
+                            description = { Text(stringResource(R.string.show_audio_visualizer_desc)) },
+                            trailingContent = {
+                                SonaraSwitch(
+                                    checked = showAudioVisualizer,
+                                    onCheckedChange = onShowAudioVisualizerChange,
+                                    thumbContent = {
+                                        Icon(
+                                            painter =
+                                                painterResource(
+                                                    id = if (showAudioVisualizer) R.drawable.check else R.drawable.close,
+                                                ),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize),
+                                        )
+                                    },
+                                )
+                            },
+                            onClick = { onShowAudioVisualizerChange(!showAudioVisualizer) },
+                        ),
+                    )
                     add(
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.speed),

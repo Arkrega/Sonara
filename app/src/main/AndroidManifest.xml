@@ -198,7 +198,7 @@
             android:name=".discord.DiscordOAuthActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.AppCompat.NoActionBar">
+            android:theme="@style/Theme.Sonara.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -221,11 +221,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
-
-        <activity
-            android:name="com.yalantis.ucrop.UCropActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
         <activity
             android:name=".recognition.RecognitionLaunchActivity"

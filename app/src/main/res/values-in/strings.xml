@@ -289,4 +289,7 @@
     <string name="enter_pip">Picture-in-Picture</string>
     <string name="enter_fullscreen">Layar penuh</string>
     <string name="exit_fullscreen">Keluar layar penuh</string>
+    <string name="show_audio_visualizer">Visualizer audio</string>
+    <string name="show_audio_visualizer_desc">Tampilkan spektrum Liquid Glass real-time di pemutar</string>
+    <string name="crop_apply">Terapkan</string>
 </resources>

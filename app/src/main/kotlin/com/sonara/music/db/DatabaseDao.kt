@@ -58,9 +58,7 @@ import com.sonara.music.models.toMediaMetadata
 import com.sonara.music.ui.utils.resize
 import com.sonara.music.utils.ArtistNameAliases
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 import java.text.Collator
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -1566,23 +1564,15 @@ interface DatabaseDao {
     @Query("UPDATE song SET totalPlayTime = totalPlayTime + :playTime WHERE id = :songId")
     fun incrementTotalPlayTime(songId: String, playTime: Long)
 
+    @Query("INSERT OR IGNORE INTO playCount (song, year, month, count) VALUES (:songId, :year, :month, 0)")
+    fun insertPlayCountIfAbsent(songId: String, year: Int, month: Int)
+
     @Query("UPDATE playCount SET count = count + 1 WHERE song = :songId AND year = :year AND month = :month")
     fun incrementPlayCount(songId: String, year: Int, month: Int)
 
-    /**
-     * Increment by one the play count with today's year and month.
-     */
     fun incrementPlayCount(songId: String) {
         val time = LocalDateTime.now().atOffset(ZoneOffset.UTC)
-        var oldCount: Int
-        runBlocking {
-            oldCount = getPlayCountByMonth(songId, time.year, time.monthValue).first()
-        }
-
-        // add new
-        if (oldCount <= 0) {
-            insert(PlayCountEntity(songId, time.year, time.monthValue, 0))
-        }
+        insertPlayCountIfAbsent(songId, time.year, time.monthValue)
         incrementPlayCount(songId, time.year, time.monthValue)
     }
 

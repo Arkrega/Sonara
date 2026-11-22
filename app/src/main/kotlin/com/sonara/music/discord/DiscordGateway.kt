@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
+import com.sonara.music.utils.SharedHttpPool
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -77,7 +78,7 @@ class DiscordGateway(
 
     private val lastAckAtMs = AtomicLong(0L)
 
-    private val httpClient: OkHttpClient = OkHttpClient.Builder()
+    private val httpClient: OkHttpClient = SharedHttpPool.newClientBuilder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
         .pingInterval(0, TimeUnit.MILLISECONDS)

@@ -352,4 +352,7 @@
     <string name="enter_pip">Picture-in-Picture</string>
     <string name="enter_fullscreen">Fullscreen</string>
     <string name="exit_fullscreen">Exit fullscreen</string>
+    <string name="show_audio_visualizer">Audio visualizer</string>
+    <string name="show_audio_visualizer_desc">Display real-time Liquid Glass spectrum bars in the player</string>
+    <string name="crop_apply">Apply</string>
 </resources>

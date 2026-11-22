@@ -2039,6 +2039,7 @@ fun OriginalLyrics(
                                         LyricsBackgroundStyle.SOLID -> stringResource(R.string.player_background_solid)
                                         LyricsBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
                                         LyricsBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
+                                        LyricsBackgroundStyle.LIQUID_GLASS -> stringResource(R.string.slider_style_liquid_glass)
                                     }
                                 val selected = previewBackgroundStyle == style
 

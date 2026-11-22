@@ -16,6 +16,7 @@ import java.time.ZoneOffset
 val EnableHighRefreshRateKey = booleanPreferencesKey("enableHighRefreshRate")
 val EnableLandscapeScalingKey = booleanPreferencesKey("enableLandscapeScaling")
 val EnableLiquidGlassKey = booleanPreferencesKey("enableLiquidGlass")
+val ShowAudioVisualizerKey = booleanPreferencesKey("showAudioVisualizer")
 val LiquidGlassPresetKey = stringPreferencesKey("liquidGlassPreset")
 
 enum class LiquidGlassPreset {

@@ -4,6 +4,7 @@ import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
+import com.sonara.music.utils.SonaraNativeCore
 import timber.log.Timber
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -58,8 +59,42 @@ class VolumeNormalizationAudioProcessor : BaseAudioProcessor() {
 
         val gain = currentGain
         val applyGain = enabled && gain.targetGainMb != 0
+        if (!applyGain) {
+            val output = replaceOutputBuffer(inputBuffer.remaining())
+            output.put(inputBuffer)
+            output.flip()
+            return
+        }
+
         val sampleCount = inputBuffer.remaining() / bytesPerSample
-        val output = replaceOutputBuffer(sampleCount * bytesPerSample)
+        val byteCount = sampleCount * bytesPerSample
+        val output = replaceOutputBuffer(byteCount)
+
+        val nativeEncoding =
+            when (encoding) {
+                C.ENCODING_PCM_16BIT -> 1
+                C.ENCODING_PCM_24BIT -> 2
+                C.ENCODING_PCM_32BIT -> 3
+                C.ENCODING_PCM_FLOAT -> 4
+                else -> 0
+            }
+
+        if (nativeEncoding != 0 && sampleCount > 0 && inputBuffer.isDirect && output.isDirect &&
+            SonaraNativeCore.processGainDirect(
+                input = inputBuffer,
+                inputPos = inputBuffer.position(),
+                output = output,
+                outputPos = output.position(),
+                sampleCount = sampleCount,
+                encoding = nativeEncoding,
+                linearGain = gain.linearGain,
+            )
+        ) {
+            inputBuffer.position(inputBuffer.position() + byteCount)
+            output.position(output.position() + byteCount)
+            output.flip()
+            return
+        }
 
         inputBuffer.order(ByteOrder.LITTLE_ENDIAN)
         output.order(ByteOrder.LITTLE_ENDIAN)

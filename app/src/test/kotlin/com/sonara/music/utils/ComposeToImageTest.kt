@@ -52,6 +52,37 @@ class ComposeToImageTest {
             assertEquals(255, Color.alpha(bitmap.getPixel(bitmap.width / 2, bitmap.height / 2)))
         }
 
+    @Test
+    fun createLyricsImage_liquidGlassStyle_clipsOutputToRoundedCorners() =
+        runBlocking {
+            val context = TestContext(ApplicationProvider.getApplicationContext())
+            val bitmap =
+                ComposeToImage.createLyricsImage(
+                    context = context,
+                    coverArtUrl = null,
+                    songTitle = "Title",
+                    artistName = "Artist",
+                    lyrics = "Line one\nLine two",
+                    width = 2160,
+                    height = 2160,
+                    backgroundColor = Color.DKGRAY,
+                    backgroundStyle = LyricsBackgroundStyle.LIQUID_GLASS,
+                )
+
+            val cornerPixels =
+                listOf(
+                    bitmap.getPixel(0, 0),
+                    bitmap.getPixel(bitmap.width - 1, 0),
+                    bitmap.getPixel(0, bitmap.height - 1),
+                    bitmap.getPixel(bitmap.width - 1, bitmap.height - 1),
+                )
+
+            cornerPixels.forEach { pixel ->
+                assertEquals(0, Color.alpha(pixel))
+            }
+            assertEquals(255, Color.alpha(bitmap.getPixel(bitmap.width / 2, bitmap.height / 2)))
+        }
+
     private class TestContext(base: Context) : ContextWrapper(base) {
         private val testResources = TestResources(base.resources)
 

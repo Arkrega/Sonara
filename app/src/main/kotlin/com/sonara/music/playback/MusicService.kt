@@ -203,6 +203,7 @@ import com.sonara.music.models.PersistQueue
 import com.sonara.music.models.toMediaMetadata
 import com.sonara.music.playback.alarm.MusicAlarmScheduler
 import com.sonara.music.playback.alarm.MusicAlarmStore
+import com.sonara.music.playback.audio.AudioSpectrumProcessor
 import com.sonara.music.playback.audio.SilenceDetectorAudioProcessor
 import com.sonara.music.playback.queues.EmptyQueue
 import com.sonara.music.playback.queues.ListQueue
@@ -4131,6 +4132,7 @@ class MusicService :
                         eqProcessor,
                         reverbProcessor,
                         silenceProcessor,
+                        AudioSpectrumProcessor(),
                     ),
                     SilenceSkippingAudioProcessor(2_000_000, 20_000, 256),
                     SonicAudioProcessor(),

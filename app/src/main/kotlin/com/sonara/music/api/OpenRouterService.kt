@@ -22,8 +22,8 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import com.sonara.music.utils.SharedHttpPool
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
@@ -32,8 +32,8 @@ private val translationJson = Json { ignoreUnknownKeys = true }
 
 object OpenRouterService {
     private val client =
-        OkHttpClient
-            .Builder()
+        SharedHttpPool
+            .newClientBuilder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(90, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

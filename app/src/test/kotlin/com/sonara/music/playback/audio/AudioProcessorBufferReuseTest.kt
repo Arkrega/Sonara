@@ -30,6 +30,11 @@ class AudioProcessorBufferReuseTest {
         assertOutputBufferIsReused(CustomEqualizerAudioProcessor())
     }
 
+    @Test
+    fun `audio spectrum processor reuses its direct output buffer`() {
+        assertOutputBufferIsReused(AudioSpectrumProcessor())
+    }
+
     @Suppress("DEPRECATION")
     private fun assertOutputBufferIsReused(processor: AudioProcessor) {
         processor.configure(INPUT_FORMAT)

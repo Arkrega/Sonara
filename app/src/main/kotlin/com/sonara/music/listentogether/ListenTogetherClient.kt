@@ -50,8 +50,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.sonara.music.utils.SharedHttpPool
 import kotlinx.serialization.json.Json
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
@@ -614,8 +614,8 @@ class ListenTogetherClient
             }
 
         private val client =
-            OkHttpClient
-                .Builder()
+            SharedHttpPool
+                .newClientBuilder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)

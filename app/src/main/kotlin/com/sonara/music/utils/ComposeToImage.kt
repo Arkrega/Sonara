@@ -31,7 +31,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.withClip
 import androidx.core.graphics.withTranslation
 import androidx.palette.graphics.Palette
-import coil3.ImageLoader
+import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
@@ -91,7 +91,7 @@ object ComposeToImage {
             var coverArtBitmap: Bitmap? = null
             if (coverArtUrl != null) {
                 try {
-                    val imageLoader = ImageLoader(context)
+                    val imageLoader = context.imageLoader
                     val request =
                         ImageRequest
                             .Builder(context)
@@ -172,6 +172,68 @@ object ComposeToImage {
                         backgroundPaint.color = bgColor
                         canvas.drawRect(backgroundRect, backgroundPaint)
                     }
+                }
+
+                LyricsBackgroundStyle.LIQUID_GLASS -> {
+                    backgroundPaint.color = 0xFF000000.toInt()
+                    canvas.drawRect(backgroundRect, backgroundPaint)
+
+                    if (coverArtBitmap != null) {
+                        try {
+                            val scaledBitmap = Bitmap.createScaledBitmap(coverArtBitmap, imageWidth / 10, imageHeight / 10, true)
+                            val blurredBitmap = fastBlur(scaledBitmap, 1f, 20)
+                            if (blurredBitmap != null) {
+                                val blurRect = RectF(0f, 0f, imageWidth.toFloat(), imageHeight.toFloat())
+                                canvas.drawBitmap(blurredBitmap, null, blurRect, null)
+                            }
+                        } catch (_: Exception) {
+                            backgroundPaint.color = bgColor
+                            canvas.drawRect(backgroundRect, backgroundPaint)
+                        }
+                    } else {
+                        backgroundPaint.color = bgColor
+                        canvas.drawRect(backgroundRect, backgroundPaint)
+                    }
+
+                    val vignettePaint = Paint().apply { color = 0x47000000 }
+                    canvas.drawRect(backgroundRect, vignettePaint)
+
+                    val inset = 16f * scale
+                    val glassRadius = 18f * scale
+                    val glassRect = RectF(inset, inset, imageWidth - inset, imageHeight - inset)
+                    val glassFillPaint =
+                        Paint().apply {
+                            isAntiAlias = true
+                            shader =
+                                LinearGradient(
+                                    inset,
+                                    inset,
+                                    inset,
+                                    imageHeight - inset,
+                                    intArrayOf(0x30FFFFFF, 0x10FFFFFF),
+                                    null,
+                                    Shader.TileMode.CLAMP,
+                                )
+                        }
+                    canvas.drawRoundRect(glassRect, glassRadius, glassRadius, glassFillPaint)
+
+                    val glassRimPaint =
+                        Paint().apply {
+                            isAntiAlias = true
+                            style = Paint.Style.STROKE
+                            strokeWidth = 2f * scale
+                            shader =
+                                LinearGradient(
+                                    inset,
+                                    inset,
+                                    imageWidth - inset,
+                                    imageHeight - inset,
+                                    intArrayOf(0x70FFFFFF, 0x1EFFFFFF, 0x48FFFFFF),
+                                    null,
+                                    Shader.TileMode.CLAMP,
+                                )
+                        }
+                    canvas.drawRoundRect(glassRect, glassRadius, glassRadius, glassRimPaint)
                 }
             }
 

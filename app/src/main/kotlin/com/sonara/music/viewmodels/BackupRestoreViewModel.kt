@@ -21,7 +21,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.sonara.music.constants.DataSyncIdKey
@@ -43,6 +42,7 @@ import com.sonara.music.playback.MusicService.Companion.PERSISTENT_PLAYER_STATE_
 import com.sonara.music.playback.MusicService.Companion.PERSISTENT_QUEUE_FILE
 import com.sonara.music.utils.reportException
 import com.sonara.music.utils.ArtistNameAliases
+import com.sonara.music.utils.SharedHttpPool
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -442,7 +442,7 @@ class BackupRestoreViewModel @Inject constructor(
             val sapisidHash = sha1("$currentTime $sapisid $origin")
             val authHeader = "SAPISIDHASH ${currentTime}_$sapisidHash"
 
-            val client = OkHttpClient()
+            val client = SharedHttpPool.baseClient
             val requestBody = """{"context":{"client":{"clientName":"WEB_REMIX","clientVersion":"1.20240101.01.00"}}}"""
                 .toRequestBody("application/json".toMediaType())
 

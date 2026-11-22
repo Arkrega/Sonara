@@ -369,6 +369,7 @@ internal fun LyricsColorPickerDialog(
                         val label = when(style) {
                             LyricsBackgroundStyle.SOLID -> stringResource(R.string.player_background_solid)
                             LyricsBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
+                            LyricsBackgroundStyle.LIQUID_GLASS -> stringResource(R.string.slider_style_liquid_glass)
                             else -> stringResource(R.string.gradient)
                         }
                         FilterChip(selected = bgStyle == style, onClick = { bgStyle = style }, label = { Text(label) })
