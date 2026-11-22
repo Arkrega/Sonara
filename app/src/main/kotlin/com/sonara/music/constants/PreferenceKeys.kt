@@ -588,10 +588,7 @@ val UseLoginForBrowse = booleanPreferencesKey("useLoginForBrowse")
  * Language tags whose resources are actually bundled in the APK.
  * Keep in sync with androidResources.localeFilters in app/build.gradle.kts.
  */
-val ShippedAppLanguageTags = setOf(
-    "en", "en-GB", "id", "es", "es-419", "pt", "fr", "fr-CA", "de", "it", "ru",
-    "tr", "ar", "hi", "ja", "ko", "zh-CN", "zh-TW", "vi", "th", "pl", "nl",
-)
+val ShippedAppLanguageTags = setOf("en", "id")
 
 val LanguageCodeToName =
     mapOf(

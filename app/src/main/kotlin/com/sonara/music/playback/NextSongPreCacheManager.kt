@@ -10,14 +10,13 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.CacheWriter
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import com.metrolist.innertubex.extraction.ContentHints
-import com.sonara.innertube.YouTube
 import com.sonara.music.constants.AudioQuality
 import com.sonara.music.utils.InnerTubeXPlayer
+import com.sonara.music.utils.SharedHttpPool
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import timber.log.Timber
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -66,18 +65,7 @@ object NextSongPreCacheManager {
                 MAX_PRECACHE_BYTES
             }
 
-        val okHttpClient =
-            OkHttpClient
-                .Builder()
-                .proxy(YouTube.proxy)
-                .proxyAuthenticator { _, response ->
-                    YouTube.proxyAuth?.let { auth ->
-                        response.request
-                            .newBuilder()
-                            .header("Proxy-Authorization", auth)
-                            .build()
-                    } ?: response.request
-                }.build()
+        val okHttpClient = SharedHttpPool.proxiedClient()
 
         val upstreamFactory = OkHttpDataSource.Factory(okHttpClient).apply {
             if (playbackData.streamHeaders.isNotEmpty()) {

@@ -184,7 +184,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            isCrunchPngs = false
+            isCrunchPngs = true
             isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -275,19 +275,12 @@ android {
 
     androidResources {
         generateLocaleConfig = true
-        // Ship a curated set of locales instead of every community translation.
-        // Every dropped locale removes a full string table from resources.arsc;
-        // this trims the APK by roughly 2 MB while keeping the major languages.
-        localeFilters += listOf(
-            "en", "in", "es", "pt-rBR", "fr", "de", "it", "ru",
-            "tr", "ar", "hi", "ja", "ko", "zh-rCN", "zh-rTW", "vi", "th",
-            "pl", "nl",
-        )
+        localeFilters += listOf("en", "in")
     }
 
     packaging {
         jniLibs {
-            useLegacyPackaging = false
+            useLegacyPackaging = true
             keepDebugSymbols +=
                 listOf(
                     "**/libandroidx.graphics.path.so",
@@ -301,6 +294,23 @@ android {
             excludes += "META-INF/LICENSE.md"
             excludes += "META-INF/INDEX.LIST"
             excludes += "META-INF/io.netty.versions.properties"
+            excludes += "META-INF/androidx/**/LICENSE.txt"
+            excludes += "META-INF/LICENSE*"
+            excludes += "META-INF/NOTICE*"
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/*.version"
+            excludes += "META-INF/*.kotlin_module"
+            excludes += "META-INF/proguard/*"
+            excludes += "META-INF/maven/**"
+            excludes += "META-INF/native-image/**"
+            excludes += "DebugProbesKt.bin"
+            excludes += "google/protobuf/*.proto"
+            excludes += "src/google/protobuf/*.proto"
+            excludes += "core/java_features_proto-descriptor-set.proto.bin"
+            excludes += "java/core/java_features_proto-descriptor-set.proto.bin"
+            excludes += "kotlin/**/*.kotlin_builtins"
+            excludes += "kotlin/*.kotlin_builtins"
+            excludes += "kotlin-tooling-metadata.json"
         }
     }
 }

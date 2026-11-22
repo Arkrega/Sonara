@@ -216,6 +216,7 @@ import com.sonara.music.constants.LoudnessLevelKey
 import com.sonara.music.utils.CoilBitmapLoader
 import com.sonara.music.utils.NetworkConnectivityObserver
 import com.sonara.music.utils.ScrobbleManager
+import com.sonara.music.utils.SharedHttpPool
 import com.sonara.music.utils.SyncUtils
 import com.sonara.music.utils.getArtistSeparator
 import com.sonara.music.utils.joinToArtistString
@@ -256,7 +257,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import timber.log.Timber
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -1339,12 +1339,10 @@ class MusicService :
                 )
                 .setRenderersFactory(createRenderersFactory(normalizationProcessor, eqProcessor, reverbProcessor, silenceProcessor, useAudioTrackPlaybackParams))
                 .setLoadControl(
-                    // Start playback once ~750ms is buffered (media3's default is 1000ms) so first
-                    // audio is audible a touch sooner. min/max/after-rebuffer match the media3 1.x
-                    // defaults (50s / 50s / 2000ms) so buffering and post-stall recovery are unchanged.
                     DefaultLoadControl
                         .Builder()
-                        .setBufferDurationsMs(50_000, 50_000, 750, 2_000)
+                        .setBufferDurationsMs(30_000, 50_000, 500, 1_500)
+                        .setPrioritizeTimeOverSizeThresholds(true)
                         .build(),
                 )
                 .setHandleAudioBecomingNoisy(true)
@@ -3549,19 +3547,7 @@ class MusicService :
                     .setUpstreamDataSourceFactory(
                         DefaultDataSource.Factory(
                             this,
-                            OkHttpDataSource.Factory(
-                                OkHttpClient
-                                    .Builder()
-                                    .proxy(YouTube.proxy)
-                                    .proxyAuthenticator { _, response ->
-                                        YouTube.proxyAuth?.let { auth ->
-                                            response.request
-                                                .newBuilder()
-                                                .header("Proxy-Authorization", auth)
-                                                .build()
-                                        } ?: response.request
-                                    }.build(),
-                            ),
+                            OkHttpDataSource.Factory(SharedHttpPool.proxiedClient()),
                         ),
                     ),
             ).setCacheWriteDataSinkFactory(null)

@@ -7,12 +7,20 @@ package com.sonara.music.lyrics
 
 import android.text.format.DateUtils
 import com.github.promeg.pinyinhelper.Pinyin
+import com.sonara.music.utils.SonaraNativeCore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
 val LINE_REGEX = "((\\[\\d\\d:\\d\\d\\.\\d{2,3}\\] ?)+)(.*)".toRegex()
 val TIME_REGEX = "\\[(\\d\\d):(\\d\\d)\\.(\\d{2,3})\\]".toRegex()
+
+private val CLEAN_TITLE_BRACKETS_REGEX = Regex("\\s*[(\\[].*?[)\\]]")
+private val CREDIT_TIMESTAMP_PREFIX_REGEX = Regex("^\\[\\d\\d:\\d\\d\\.\\d{2,3}\\]")
+private val CREDIT_AGENT_PREFIX_REGEX = Regex("^\\{agent:[^}]+\\}")
+private val CREDIT_BG_BRACE_PREFIX_REGEX = Regex("^\\{bg\\}")
+private val CREDIT_BG_BRACKET_PREFIX_REGEX = Regex("^\\[bg:.*\\]")
+private val CREDIT_VERSION_PREFIX_REGEX = Regex("^v\\d+:")
 
 // Regex for rich sync format: [MM:SS.mm]<MM:SS.mm> word <MM:SS.mm> word ...
 private val RICH_SYNC_LINE_REGEX = "\\[(\\d{1,2}):(\\d{2})\\.(\\d{2,3})\\](.*)".toRegex()
@@ -31,10 +39,12 @@ private val BACKGROUND_REGEX = "^\\{bg\\}".toRegex()
 @Suppress("RegExpRedundantEscape")
 object LyricsUtils {
     fun cleanTitleForSearch(title: String): String {
-        return title.replace(Regex("\\s*[(\\[].*?[)\\]]"), "").trim()
+        SonaraNativeCore.cleanTitleForSearch(title)?.let { return it }
+        return title.replace(CLEAN_TITLE_BRACKETS_REGEX, "").trim()
     }
 
     fun filterLyricsCreditLines(lyrics: String): String {
+        SonaraNativeCore.filterLyricsCreditLines(lyrics)?.let { return it }
         return lyrics.lines().filter { line ->
             // Strip leading bracketed/braced content, version tags, and timestamps
             // Handles [00:00.00], {agent:v1}, {bg}, [bg: ...], v1: etc.
@@ -45,11 +55,11 @@ object LyricsUtils {
             while (stripping) {
                 val prevLength = textContent.length
                 textContent = textContent
-                    .replaceFirst(Regex("^\\[\\d\\d:\\d\\d\\.\\d{2,3}\\]"), "")
-                    .replaceFirst(Regex("^\\{agent:[^}]+\\}"), "")
-                    .replaceFirst(Regex("^\\{bg\\}"), "")
-                    .replaceFirst(Regex("^\\[bg:.*\\]"), "")
-                    .replaceFirst(Regex("^v\\d+:"), "")
+                    .replaceFirst(CREDIT_TIMESTAMP_PREFIX_REGEX, "")
+                    .replaceFirst(CREDIT_AGENT_PREFIX_REGEX, "")
+                    .replaceFirst(CREDIT_BG_BRACE_PREFIX_REGEX, "")
+                    .replaceFirst(CREDIT_BG_BRACKET_PREFIX_REGEX, "")
+                    .replaceFirst(CREDIT_VERSION_PREFIX_REGEX, "")
                     .trim()
                 stripping = textContent.length < prevLength
             }

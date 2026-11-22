@@ -1355,7 +1355,7 @@ class MainActivity : FragmentActivity() {
                                             }
                                             if (currentRoute == Screens.Home.route && availableUpdate != null) {
                                                 Surface(
-                                                    onClick = { availableUpdate?.let { beginUpdate(it) } },
+                                                    onClick = { showUpdateDialog = true },
                                                     shape = CircleShape,
                                                     color = if (useTopBarLiquidGlass) Color.Transparent else MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
                                                     contentColor = MaterialTheme.colorScheme.primary,

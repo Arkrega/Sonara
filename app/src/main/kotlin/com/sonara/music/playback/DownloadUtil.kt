@@ -23,7 +23,6 @@ import androidx.media3.exoplayer.offline.DownloadService
 import coil3.imageLoader
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
-import com.sonara.innertube.YouTube
 import com.sonara.innertube.models.SongItem
 import com.metrolist.innertubex.extraction.ContentHints
 import com.sonara.music.constants.AudioQuality
@@ -38,6 +37,7 @@ import com.sonara.music.di.PlayerCache
 import com.sonara.music.models.MediaMetadata
 import com.sonara.music.models.toMediaMetadata
 import com.sonara.music.utils.InnerTubeXPlayer
+import com.sonara.music.utils.SharedHttpPool
 import com.sonara.music.utils.enumPreference
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -54,7 +54,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import okhttp3.OkHttpClient
 import timber.log.Timber
 import java.io.IOException
 import java.time.LocalDateTime
@@ -76,17 +75,7 @@ constructor(
     private val connectivityManager = context.getSystemService<ConnectivityManager>()!!
     private val audioQuality by enumPreference(context, AudioQualityKey, AudioQuality.AUTO)
     private val songUrlCache = StreamUrlCache()
-    private val streamHttpClient =
-        OkHttpClient.Builder()
-            .proxy(YouTube.proxy)
-            .proxyAuthenticator { _, response ->
-                YouTube.proxyAuth?.let { auth ->
-                    response.request.newBuilder()
-                        .header("Proxy-Authorization", auth)
-                        .build()
-                } ?: response.request
-            }
-            .build()
+    private val streamHttpClient = SharedHttpPool.proxiedClient()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val downloadPreparations = Semaphore(3)

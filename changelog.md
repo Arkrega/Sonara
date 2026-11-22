@@ -1,3 +1,15 @@
+---v2.0.0
+# SONARA 2.0.0
+
+Hybrid Kotlin + Rust native core (`sonara-core`), major APK size reduction, Kuro-inspired runtime performance overhaul, and update changelog dialog fix
+
+## Highlights
+- Added `sonara-core`, an ultra-lightweight native Rust JNI engine (~140–150 KB compressed per ABI) handling Shazam FFT audio fingerprinting and lyrics title/credit processing with 100% byte-for-byte parity and seamless Kotlin fallback
+- Slashed release APK size from 8.63 MB to 6.58 MB (17.53 MB to 12.67 MB uncompressed) through full R8 obfuscation and class repackaging, optimized resource shrinking, EN/ID locale trimming, 1-bit monochrome QRIS optimization, JPEG Wrapped artwork, and stripped `.proto`/`.kotlin_builtins` metadata
+- Overhauled runtime performance with a unified OkHttp `ConnectionPool` (`SharedHttpPool`) across playback, pre-caching, downloads, video, and Coil, increased Coil memory cache to 22%, tuned ExoPlayer `DefaultLoadControl` for 500ms instant audio start, moved startup disk I/O off the main thread, and gated `Timber.DebugTree` to debug builds only
+- Fixed the Home screen New Update badge so tapping it opens the release changelog dialog first instead of immediately starting installation
+- Updated Android CI and Stable Release workflows to run `sonara-core` Rust tests and cross-compile Android NDK native libraries automatically
+
 ---v1.6.0
 # SONARA 1.6.0
 

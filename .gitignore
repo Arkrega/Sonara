@@ -107,6 +107,7 @@ app/src/main/java/com/sonara/music/listentogether/proto/*
 # FFTW third-party library build artifacts
 .build-fftw
 app/src/main/cpp/coverart/
+sonara-core/target/
 
 # Agents dir
 .claude

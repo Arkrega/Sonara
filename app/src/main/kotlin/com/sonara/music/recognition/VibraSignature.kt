@@ -1,5 +1,7 @@
 package com.sonara.music.recognition
 
+import com.sonara.music.utils.SonaraNativeCore
+
 /**
  * Audio fingerprint generator for Shazam-compatible signatures.
  *
@@ -18,5 +20,11 @@ object VibraSignature {
      * @throws IllegalArgumentException if samples is empty or has odd length
      */
     @JvmStatic
-    fun fromI16(samples: ByteArray): String = ShazamSignatureGenerator.fromI16(samples)
+    fun fromI16(samples: ByteArray): String {
+        require(samples.size >= 2 && samples.size % 2 == 0) {
+            "samples must be a non-empty byte array with even length (16-bit PCM)"
+        }
+        return SonaraNativeCore.generateShazamSignature(samples)
+            ?: ShazamSignatureGenerator.fromI16(samples)
+    }
 }

@@ -39,6 +39,25 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Set up Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+
+      - name: Build Sonara Native Core (Rust)
+        run: |
+          cargo test --manifest-path sonara-core/Cargo.toml
+          NDK_HOME="${ANDROID_NDK_LATEST_HOME:-$(find "$ANDROID_HOME/ndk" -maxdepth 1 -mindepth 1 | sort -V | tail -n 1)}"
+          NDK_BIN="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDK_BIN/aarch64-linux-android26-clang" \
+            CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384" \
+            cargo build --manifest-path sonara-core/Cargo.toml --release --target aarch64-linux-android
+          CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER="$NDK_BIN/armv7a-linux-androideabi26-clang" \
+            cargo build --manifest-path sonara-core/Cargo.toml --release --target armv7-linux-androideabi
+          mkdir -p app/src/main/jniLibs/arm64-v8a app/src/main/jniLibs/armeabi-v7a
+          cp sonara-core/target/aarch64-linux-android/release/libsonara_core.so app/src/main/jniLibs/arm64-v8a/libsonara_core.so
+          cp sonara-core/target/armv7-linux-androideabi/release/libsonara_core.so app/src/main/jniLibs/armeabi-v7a/libsonara_core.so
+
       - name: Validate Release Tag and Version
         id: validate_version
         run: |

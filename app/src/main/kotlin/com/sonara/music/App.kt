@@ -19,6 +19,7 @@ import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.memory.MemoryCache
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.allowHardware
 import coil3.request.crossfade
@@ -40,6 +41,7 @@ import com.sonara.music.playback.CacheCleanupManager
 import com.sonara.music.utils.CrashHandler
 import com.sonara.music.utils.ArtistNameAliases
 import com.sonara.music.utils.InnerTubeXPlayer
+import com.sonara.music.utils.SharedHttpPool
 import com.sonara.music.utils.dataStore
 import com.sonara.music.utils.safeDataStoreEdit
 import com.sonara.music.utils.reportException
@@ -90,26 +92,23 @@ class App :
         // process claim WebView's data directory and crash the next main-process WebView.
         if (!isMainProcess()) return
 
-        // Install crash handler first
         CrashHandler.install(this)
-        ArtistNameAliases.initialize(this)
 
-        // preferencesDataStore uses filesDir/datastore; proactive mkdir reduces failures on odd ROM states
-        try {
-            val datastoreDir = File(filesDir, "datastore")
-            if (!datastoreDir.isDirectory && !datastoreDir.mkdirs()) {
-                Timber.w("Could not create DataStore directory at ${datastoreDir.path}")
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to ensure DataStore directory")
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
         }
-
-        // Plant logging before extraction services initialize.
-        Timber.plant(Timber.DebugTree())
         InnerTubeXPlayer.initialize(this)
 
-        // Pre-read Coil cache size on background to avoid runBlocking in newImageLoader
         applicationScope.launch(Dispatchers.IO) {
+            ArtistNameAliases.initialize(this@App)
+            try {
+                val datastoreDir = File(filesDir, "datastore")
+                if (!datastoreDir.isDirectory && !datastoreDir.mkdirs()) {
+                    Timber.w("Could not create DataStore directory at ${datastoreDir.path}")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to ensure DataStore directory")
+            }
             cachedCoilCacheSize = dataStore.data.map { it[MaxImageCacheSizeKey] ?: 512 }.first()
         }
 
@@ -345,13 +344,15 @@ class App :
         return ImageLoader
             .Builder(this)
             .apply {
+                components {
+                    add(OkHttpNetworkFetcherFactory(callFactory = { SharedHttpPool.proxiedClient() }))
+                }
                 crossfade(true)
                 allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                // Memory cache for fast image loading (prevents network requests on recomposition)
                 memoryCache {
                     MemoryCache
                         .Builder()
-                        .maxSizePercent(context, 0.15)
+                        .maxSizePercent(context, 0.22)
                         .build()
                 }
                 if (cacheSize == 0) {

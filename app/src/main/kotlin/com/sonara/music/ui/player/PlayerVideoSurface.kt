@@ -112,7 +112,6 @@ import androidx.media3.extractor.mkv.MatroskaExtractor
 import androidx.media3.extractor.mp4.FragmentedMp4Extractor
 import androidx.media3.extractor.mp4.Mp4Extractor
 import com.metrolist.innertubex.extraction.ContentHints
-import com.sonara.innertube.YouTube
 import com.sonara.music.R
 import com.sonara.music.constants.VideoQuality
 import com.sonara.music.db.entities.SongEntity
@@ -133,6 +132,7 @@ import com.sonara.music.ui.component.glass.rememberRegaBackdropState
 import com.sonara.music.ui.theme.LocalRegaColors
 import com.sonara.music.utils.InnerTubeXPlayer
 import com.sonara.music.utils.InnerTubeXPlayer.resolveMaxHeight
+import com.sonara.music.utils.SharedHttpPool
 import com.sonara.music.utils.makeTimeString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -1142,45 +1142,7 @@ private fun createCompanionVideoPlayer(context: Context): ExoPlayer {
         }
 }
 
-private object VideoHttpClientHolder {
-    @Volatile
-    private var cachedProxy: java.net.Proxy? = null
-
-    @Volatile
-    private var cachedProxyAuth: String? = null
-
-    @Volatile
-    private var cachedClient: OkHttpClient? = null
-
-    @Synchronized
-    fun get(): OkHttpClient {
-        val currentProxy = YouTube.proxy
-        val currentAuth = YouTube.proxyAuth
-        val existing = cachedClient
-        if (existing != null && cachedProxy == currentProxy && cachedProxyAuth == currentAuth) {
-            return existing
-        }
-        val created =
-            OkHttpClient
-                .Builder()
-                .proxy(currentProxy)
-                .proxyAuthenticator { _, response ->
-                    YouTube.proxyAuth?.let { auth ->
-                        response.request
-                            .newBuilder()
-                            .header("Proxy-Authorization", auth)
-                            .build()
-                    } ?: response.request
-                }
-                .build()
-        cachedProxy = currentProxy
-        cachedProxyAuth = currentAuth
-        cachedClient = created
-        return created
-    }
-}
-
-private fun buildVideoOkHttpClient(): OkHttpClient = VideoHttpClientHolder.get()
+private fun buildVideoOkHttpClient(): OkHttpClient = SharedHttpPool.proxiedClient()
 
 internal fun applyAspectFitTransform(
     textureView: TextureView,
