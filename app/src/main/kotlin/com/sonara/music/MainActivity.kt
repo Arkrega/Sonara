@@ -210,6 +210,7 @@ import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.component.glass.regaBackdropSource
 import com.sonara.music.ui.component.glass.regaGlassSpecular
 import com.sonara.music.ui.component.glass.rememberRegaBackdropState
+import com.sonara.music.ui.component.glass.shouldUsePlayerModalBackdrop
 import com.sonara.music.ui.menu.YouTubeSongMenu
 import com.sonara.music.ui.player.BottomSheetPlayer
 import com.sonara.music.ui.player.FullscreenVideoPlayerOverlay
@@ -1231,6 +1232,7 @@ class MainActivity : FragmentActivity() {
                 val enableVideoCache by rememberPreference(EnableVideoCacheKey, defaultValue = true)
                 val maxVideoCacheSize by rememberPreference(MaxVideoCacheSizeKey, defaultValue = 512)
                 val appBackdropState = rememberRegaBackdropState(enabled = enableLiquidGlass)
+                val playerBackdropState = rememberRegaBackdropState(enabled = enableLiquidGlass)
                 val videoOverlayController = remember {
                     VideoOverlayController(
                         onEnterPip = { ratio -> enterVideoPipMode(ratio) },
@@ -1530,6 +1532,7 @@ class MainActivity : FragmentActivity() {
                                             state = playerBottomSheetState,
                                             navController = navController,
                                             pureBlack = pureBlack,
+                                            backdropState = playerBackdropState,
                                         )
                                     }
 
@@ -1593,6 +1596,7 @@ class MainActivity : FragmentActivity() {
                                             state = playerBottomSheetState,
                                             navController = navController,
                                             pureBlack = pureBlack,
+                                            backdropState = playerBackdropState,
                                         )
                                     }
                                 }
@@ -1734,15 +1738,26 @@ class MainActivity : FragmentActivity() {
                         }
                     }
 
-                    BottomSheetMenu(
-                        state = LocalMenuState.current,
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                    )
+                    val usePlayerModalBackdrop by remember(activePlayerConnection, playerBottomSheetState) {
+                        derivedStateOf {
+                            shouldUsePlayerModalBackdrop(
+                                hasActivePlayer = activePlayerConnection != null,
+                                playerSheetProgress = playerBottomSheetState.progress,
+                            )
+                        }
+                    }
+                    val modalBackdropState = if (usePlayerModalBackdrop) playerBackdropState else appBackdropState
+                    CompositionLocalProvider(LocalRegaBackdrop provides modalBackdropState) {
+                        BottomSheetMenu(
+                            state = LocalMenuState.current,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
 
-                    BottomSheetPage(
-                        state = LocalBottomSheetPageState.current,
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                    )
+                        BottomSheetPage(
+                            state = LocalBottomSheetPageState.current,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
+                    }
 
                     if (showAccountDialog) {
                         AccountSettingsDialog(

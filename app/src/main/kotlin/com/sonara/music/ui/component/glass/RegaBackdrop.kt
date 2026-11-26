@@ -82,3 +82,8 @@ fun rememberSonaraBackdropState(
 ): RegaBackdropState = rememberRegaBackdropState(enabled = enabled)
 
 fun Modifier.sonaraBackdropSource(state: RegaBackdropState?): Modifier = regaBackdropSource(state)
+
+fun shouldUsePlayerModalBackdrop(
+    hasActivePlayer: Boolean,
+    playerSheetProgress: Float,
+): Boolean = hasActivePlayer && playerSheetProgress > 0.05f

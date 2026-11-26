@@ -687,6 +687,7 @@ fun PlayerMenu(
                                     },
                                     onClick = {
                                         navController.navigate("equalizer")
+                                        playerBottomSheetState.collapseSoft()
                                         onDismiss()
                                     },
                                 ),

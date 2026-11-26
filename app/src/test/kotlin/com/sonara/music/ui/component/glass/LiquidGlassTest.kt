@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.sonara.music.constants.LiquidGlassPreset
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -117,5 +118,14 @@ class LiquidGlassTest {
             assertTrue(crystalTint.alpha < balancedTint.alpha)
             assertTrue(balancedTint.alpha < frostedTint.alpha)
         }
+    }
+
+    @Test
+    fun `shouldUsePlayerModalBackdrop requires active player and expanded progress`() {
+        assertTrue(shouldUsePlayerModalBackdrop(hasActivePlayer = true, playerSheetProgress = 1.0f))
+        assertTrue(shouldUsePlayerModalBackdrop(hasActivePlayer = true, playerSheetProgress = 0.2f))
+        assertFalse(shouldUsePlayerModalBackdrop(hasActivePlayer = true, playerSheetProgress = 0.0f))
+        assertFalse(shouldUsePlayerModalBackdrop(hasActivePlayer = true, playerSheetProgress = 0.05f))
+        assertFalse(shouldUsePlayerModalBackdrop(hasActivePlayer = false, playerSheetProgress = 1.0f))
     }
 }

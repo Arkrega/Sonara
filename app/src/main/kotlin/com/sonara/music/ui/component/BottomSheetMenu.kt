@@ -26,6 +26,7 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState as rememberMaterialBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
@@ -44,6 +45,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
+import com.sonara.music.ui.component.glass.LocalRegaBackdrop
 import com.sonara.music.ui.component.glass.RegaGlassMaterial
 import com.sonara.music.ui.component.glass.RegaGlassStyle
 import com.sonara.music.ui.component.glass.RegaLiquidGlass
@@ -88,12 +90,21 @@ fun AnimatedBottomSheet(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var lastContent by remember { mutableStateOf(content) }
+    val currentBackdrop = LocalRegaBackdrop.current
+    var lastBackdrop by remember { mutableStateOf(currentBackdrop) }
+    val effectiveBackdrop = if (isVisible) currentBackdrop else lastBackdrop
     val regaColors = LocalRegaColors.current
     val liquidGlassEnabled = LocalLiquidGlassEnabled.current
 
     LaunchedEffect(content) {
         if (isVisible) {
             lastContent = content
+        }
+    }
+
+    LaunchedEffect(currentBackdrop, isVisible) {
+        if (isVisible) {
+            lastBackdrop = currentBackdrop
         }
     }
 
@@ -135,6 +146,7 @@ fun AnimatedBottomSheet(
                     elevation = 0.dp,
                 ),
                 contentAlignment = Alignment.TopStart,
+                backdropState = effectiveBackdrop,
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     dragHandle?.let { handle ->
@@ -145,7 +157,9 @@ fun AnimatedBottomSheet(
                             handle()
                         }
                     }
-                    lastContent()
+                    CompositionLocalProvider(LocalRegaBackdrop provides effectiveBackdrop) {
+                        lastContent()
+                    }
                 }
             }
         }

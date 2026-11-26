@@ -197,6 +197,7 @@ import com.sonara.music.ui.component.LocalMenuState
 import com.sonara.music.ui.component.glass.LiquidGlassVisualizer
 import com.sonara.music.ui.component.glass.LocalLiquidGlassEnabled
 import com.sonara.music.ui.component.glass.LocalRegaBackdrop
+import com.sonara.music.ui.component.glass.RegaBackdropState
 import com.sonara.music.ui.component.glass.RegaGlassMaterial
 import com.sonara.music.ui.component.glass.RegaGlassStyle
 import com.sonara.music.ui.component.glass.RegaGlassSurface
@@ -254,6 +255,7 @@ fun BottomSheetPlayer(
     navController: NavController,
     modifier: Modifier = Modifier,
     pureBlack: Boolean,
+    backdropState: RegaBackdropState = rememberRegaBackdropState(),
 ) {
     val context = LocalContext.current
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -885,7 +887,7 @@ fun BottomSheetPlayer(
         }
 
     val currentLyrics by playerConnection.currentLyrics.collectAsStateWithLifecycle(initialValue = null)
-    val playerBackdropState = rememberRegaBackdropState()
+    val playerBackdropState = backdropState
 
     val database = LocalDatabase.current
     var isFetchingLyrics by remember(mediaMetadata?.id) { mutableStateOf(false) }
