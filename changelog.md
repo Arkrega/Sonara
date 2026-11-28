@@ -1,3 +1,14 @@
+---v2.1.1
+# SONARA 2.1.1
+
+Liquid Glass backdrop fix for Now Playing menus and dialogs, smoother Equalizer transition, and modernized bilingual documentation
+
+## Highlights
+- Fixed a Liquid Glass backdrop bleed issue where opening the Now Playing three-dot menu (`PlayerMenu`), Speed/Pitch dialog (`RegaPlaybackSpeedDialog`), and player-launched sheets or dialogs showed the hidden Home screen behind Now Playing
+- Hoisted `playerBackdropState` between `MainActivity` and `BottomSheetPlayer` and latched the active modal backdrop during dismiss animations so player modals refract the active Now Playing backdrop cleanly
+- Added immediate soft player collapse when navigating to Equalizer from `PlayerMenu`
+- Updated `README.md` with animated Liquid Glass SVG headers and Indonesian-first bilingual documentation (`README.md` and `README.en.md`)
+
 ---v2.1.0
 # SONARA 2.1.0
 
