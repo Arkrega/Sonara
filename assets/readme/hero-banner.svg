@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" width="1200" height="340" role="img" aria-label="SONARA — Klien YouTube Music Android dengan Liquid Glass dan Native Rust DSP">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07080B"/>
+      <stop offset="50%" stop-color="#0F1326"/>
+      <stop offset="100%" stop-color="#07080B"/>
+    </linearGradient>
+    <radialGradient id="orbIndigo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#5E6AD2" stop-opacity="0.48"/>
+      <stop offset="60%" stop-color="#5E6AD2" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#5E6AD2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbCyan" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4EA7FC" stop-opacity="0.38"/>
+      <stop offset="60%" stop-color="#4EA7FC" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#4EA7FC" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glassCard" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="45%" stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#5E6AD2" stop-opacity="0.14"/>
+    </linearGradient>
+    <linearGradient id="glassRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="50%" stop-color="#8B96FF" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#4EA7FC" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="barGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#A7B5FF"/>
+      <stop offset="50%" stop-color="#5E6AD2"/>
+      <stop offset="100%" stop-color="#4EA7FC" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="shimmerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="60%" stop-color="#E6E9FF"/>
+      <stop offset="100%" stop-color="#9AC6FF"/>
+    </linearGradient>
+    <clipPath id="frameClip">
+      <rect x="8" y="8" width="1184" height="324" rx="28"/>
+    </clipPath>
+    <clipPath id="badgeClip">
+      <rect x="92" y="72" width="128" height="128" rx="30"/>
+    </clipPath>
+    <style>
+      .bar {
+        transform-box: fill-box;
+        transform-origin: center bottom;
+        animation: eqPulse 1.35s ease-in-out infinite;
+      }
+      .b1 { animation-delay: -0.10s; animation-duration: 1.25s; }
+      .b2 { animation-delay: -0.35s; animation-duration: 1.05s; }
+      .b3 { animation-delay: -0.60s; animation-duration: 1.40s; }
+      .b4 { animation-delay: -0.20s; animation-duration: 1.15s; }
+      .b5 { animation-delay: -0.85s; animation-duration: 0.95s; }
+      .b6 { animation-delay: -0.45s; animation-duration: 1.30s; }
+      .b7 { animation-delay: -0.70s; animation-duration: 1.10s; }
+      .b8 { animation-delay: -0.15s; animation-duration: 1.45s; }
+      .b9 { animation-delay: -0.50s; animation-duration: 1.00s; }
+      .b10 { animation-delay: -0.90s; animation-duration: 1.20s; }
+      .b11 { animation-delay: -0.30s; animation-duration: 1.35s; }
+      .b12 { animation-delay: -0.65s; animation-duration: 1.08s; }
+      @keyframes eqPulse {
+        0%, 100% { transform: scaleY(0.24); opacity: 0.58; }
+        50% { transform: scaleY(1.0); opacity: 1; }
+      }
+      .pillGlow {
+        animation: softGlow 4s ease-in-out infinite;
+      }
+      @keyframes softGlow {
+        0%, 100% { opacity: 0.85; }
+        50% { opacity: 1; }
+      }
+      .titleText {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-weight: 800;
+        letter-spacing: 12px;
+      }
+      .subText {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-weight: 500;
+      }
+      .pillText {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-weight: 600;
+      }
+    </style>
+  </defs>
+
+  <g clip-path="url(#frameClip)">
+    <rect x="8" y="8" width="1184" height="324" rx="28" fill="url(#bgGrad)"/>
+
+    <circle cx="240" cy="110" r="240" fill="url(#orbIndigo)">
+      <animate attributeName="cx" values="220;310;220" dur="11s" repeatCount="indefinite"/>
+      <animate attributeName="cy" values="105;155;105" dur="9s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="960" cy="210" r="260" fill="url(#orbCyan)">
+      <animate attributeName="cx" values="980;880;980" dur="13s" repeatCount="indefinite"/>
+      <animate attributeName="cy" values="215;140;215" dur="10s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="620" cy="40" r="180" fill="url(#orbIndigo)" opacity="0.55">
+      <animate attributeName="r" values="165;210;165" dur="8s" repeatCount="indefinite"/>
+    </circle>
+
+    <g opacity="0.08" stroke="#FFFFFF" stroke-width="1">
+      <line x1="8" y1="88" x2="1192" y2="88"/>
+      <line x1="8" y1="168" x2="1192" y2="168"/>
+      <line x1="8" y1="248" x2="1192" y2="248"/>
+    </g>
+
+    <rect x="92" y="72" width="128" height="128" rx="30" fill="url(#glassCard)" stroke="url(#glassRim)" stroke-width="1.5"/>
+    <g clip-path="url(#badgeClip)">
+      <rect x="-120" y="50" width="90" height="180" fill="url(#shimmerGrad)" transform="rotate(20 156 136)">
+        <animate attributeName="x" values="-40;280;280" dur="4.5s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+    <g transform="translate(106, 86) scale(0.5)">
+      <path d="M 156.00 40.00 C 100.00 40.00 46.00 52.00 46.00 90.00 C 46.00 122.00 72.00 134.00 136.00 108.00 L 106.00 96.00 C 80.00 84.00 80.00 64.00 110.00 62.00 L 138.00 62.00 Z" fill="#FFFFFF"/>
+      <path d="M 44.00 160.00 C 100.00 160.00 154.00 148.00 154.00 110.00 C 154.00 78.00 128.00 66.00 64.00 92.00 L 94.00 104.00 C 120.00 116.00 120.00 136.00 90.00 138.00 L 62.00 138.00 Z" fill="#A9B4FF"/>
+    </g>
+
+    <text x="252" y="132" fill="url(#titleGrad)" font-size="60" class="titleText">SONARA</text>
+    <text x="255" y="166" fill="#C2C8D8" font-size="19" class="subText">Klien YouTube Music Modern untuk Android · Liquid Glass &amp; Native Rust DSP</text>
+
+    <g class="pillGlow">
+      <rect x="255" y="186" width="150" height="30" rx="15" fill="#5E6AD2" fill-opacity="0.22" stroke="#8B96FF" stroke-opacity="0.55" stroke-width="1"/>
+      <text x="330" y="206" text-anchor="middle" fill="#E3E7FF" font-size="12.5" class="pillText">LIQUID GLASS UI</text>
+
+      <rect x="417" y="186" width="166" height="30" rx="15" fill="#4EA7FC" fill-opacity="0.18" stroke="#7FC2FF" stroke-opacity="0.50" stroke-width="1"/>
+      <text x="500" y="206" text-anchor="middle" fill="#DCF0FF" font-size="12.5" class="pillText">RUST ZERO-COPY DSP</text>
+
+      <rect x="595" y="186" width="142" height="30" rx="15" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="1"/>
+      <text x="666" y="206" text-anchor="middle" fill="#F0F3FA" font-size="12.5" class="pillText">~6.16 MB FOSS</text>
+
+      <rect x="749" y="186" width="156" height="30" rx="15" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="1"/>
+      <text x="827" y="206" text-anchor="middle" fill="#F0F3FA" font-size="12.5" class="pillText">24-BAND FFT LIVE</text>
+    </g>
+
+    <rect x="92" y="242" width="1016" height="58" rx="29" fill="url(#glassCard)" stroke="url(#glassRim)" stroke-width="1.2"/>
+
+    <g fill="url(#barGrad)">
+      <rect class="bar b1" x="148" y="254" width="18" height="34" rx="9"/>
+      <rect class="bar b2" x="186" y="250" width="18" height="38" rx="9"/>
+      <rect class="bar b3" x="224" y="248" width="18" height="40" rx="9"/>
+      <rect class="bar b4" x="262" y="252" width="18" height="36" rx="9"/>
+      <rect class="bar b5" x="300" y="248" width="18" height="40" rx="9"/>
+      <rect class="bar b6" x="338" y="250" width="18" height="38" rx="9"/>
+      <rect class="bar b7" x="376" y="253" width="18" height="35" rx="9"/>
+      <rect class="bar b8" x="414" y="248" width="18" height="40" rx="9"/>
+      <rect class="bar b9" x="452" y="251" width="18" height="37" rx="9"/>
+      <rect class="bar b10" x="490" y="248" width="18" height="40" rx="9"/>
+      <rect class="bar b11" x="528" y="252" width="18" height="36" rx="9"/>
+      <rect class="bar b12" x="566" y="248" width="18" height="40" rx="9"/>
+      <rect class="bar b1" x="604" y="250" width="18" height="38" rx="9"/>
+      <rect class="bar b4" x="642" y="248" width="18" height="40" rx="9"/>
+      <rect class="bar b2" x="680" y="252" width="18" height="36" rx="9"/>
+      <rect class="bar b6" x="718" y="249" width="18" height="39" rx="9"/>
+      <rect class="bar b9" x="756" y="253" width="18" height="35" rx="9"/>
+      <rect class="bar b3" x="794" y="248" width="18" height="40" rx="9"/>
+      <rect class="bar b7" x="832" y="251" width="18" height="37" rx="9"/>
+      <rect class="bar b5" x="870" y="248" width="18" height="40" rx="9"/>
+      <rect class="bar b10" x="908" y="252" width="18" height="36" rx="9"/>
+      <rect class="bar b8" x="946" y="250" width="18" height="38" rx="9"/>
+      <rect class="bar b12" x="984" y="253" width="18" height="35" rx="9"/>
+      <rect class="bar b11" x="1022" y="255" width="18" height="33" rx="9"/>
+    </g>
+  </g>
+
+  <rect x="8" y="8" width="1184" height="324" rx="28" fill="none" stroke="url(#glassRim)" stroke-width="1.5"/>
+</svg>

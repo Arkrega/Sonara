@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 250" width="1200" height="250" role="img" aria-label="Arsitektur Hybrid Kotlin dan Rust sonara-core">
+  <defs>
+    <linearGradient id="archBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090B10"/>
+      <stop offset="100%" stop-color="#101528"/>
+    </linearGradient>
+    <linearGradient id="nodeGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#5E6AD2" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="rustGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F77F4F" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#5E6AD2" stop-opacity="0.16"/>
+    </linearGradient>
+    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="#4EA7FC" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="rustRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF9C6E" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#8B96FF" stop-opacity="0.50"/>
+    </linearGradient>
+    <style>
+      .wire {
+        stroke-dasharray: 10 8;
+        animation: stream 1.4s linear infinite;
+      }
+      @keyframes stream {
+        from { stroke-dashoffset: 36; }
+        to { stroke-dashoffset: 0; }
+      }
+      .tHead {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-weight: 700;
+      }
+      .tSub {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-weight: 400;
+      }
+      .tMono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-weight: 600;
+      }
+    </style>
+  </defs>
+
+  <rect x="8" y="8" width="1184" height="234" rx="24" fill="url(#archBg)" stroke="url(#rimGrad)" stroke-width="1.2"/>
+
+  <text x="42" y="46" fill="#9AA4BF" font-size="13" letter-spacing="2" class="tMono">HYBRID KOTLIN + RUST AUDIO &amp; UI ENGINE</text>
+
+  <rect x="42" y="72" width="244" height="136" rx="20" fill="url(#nodeGlass)" stroke="url(#rimGrad)" stroke-width="1.2"/>
+  <text x="64" y="106" fill="#9AC6FF" font-size="12" class="tMono">01 · JETPACK COMPOSE</text>
+  <text x="64" y="134" fill="#FFFFFF" font-size="19" class="tHead">Liquid Glass UI</text>
+  <text x="64" y="160" fill="#B5BDCE" font-size="13" class="tSub">AGSL Optical Refraction</text>
+  <text x="64" y="182" fill="#B5BDCE" font-size="13" class="tSub">Crystal · Balanced · Frosted</text>
+
+  <line class="wire" x1="288" y1="140" x2="344" y2="140" stroke="#7A89FF" stroke-width="2.5" stroke-linecap="round"/>
+
+  <rect x="346" y="72" width="244" height="136" rx="20" fill="url(#nodeGlass)" stroke="url(#rimGrad)" stroke-width="1.2"/>
+  <text x="368" y="106" fill="#9AC6FF" font-size="12" class="tMono">02 · MEDIA3 + OKHTTP</text>
+  <text x="368" y="134" fill="#FFFFFF" font-size="19" class="tHead">SharedHttpPool</text>
+  <text x="368" y="160" fill="#B5BDCE" font-size="13" class="tSub">500ms Fast Start ExoPlayer</text>
+  <text x="368" y="182" fill="#B5BDCE" font-size="13" class="tSub">Smart Next-Track Pre-Cache</text>
+
+  <line class="wire" x1="592" y1="140" x2="648" y2="140" stroke="#FF9C6E" stroke-width="2.5" stroke-linecap="round"/>
+
+  <rect x="650" y="72" width="256" height="136" rx="20" fill="url(#rustGlass)" stroke="url(#rustRim)" stroke-width="1.5"/>
+  <text x="672" y="106" fill="#FFB38E" font-size="12" class="tMono">03 · RUST sonara-core</text>
+  <text x="672" y="134" fill="#FFFFFF" font-size="19" class="tHead">Zero-Copy JNI DSP</text>
+  <text x="672" y="160" fill="#E6D8D4" font-size="13" class="tSub">Biquad EQ · Gain · Reverb</text>
+  <text x="672" y="182" fill="#E6D8D4" font-size="13" class="tSub">24-Band FFT · Shazam Engine</text>
+
+  <line class="wire" x1="908" y1="140" x2="962" y2="140" stroke="#4EA7FC" stroke-width="2.5" stroke-linecap="round"/>
+
+  <rect x="964" y="72" width="194" height="136" rx="20" fill="url(#nodeGlass)" stroke="url(#rimGrad)" stroke-width="1.2"/>
+  <text x="984" y="106" fill="#7FC2FF" font-size="12" class="tMono">04 · REAL-TIME</text>
+  <text x="984" y="134" fill="#FFFFFF" font-size="19" class="tHead">Live Output</text>
+  <text x="984" y="160" fill="#B5BDCE" font-size="13" class="tSub">Zero-Mic Visualizer</text>
+  <text x="984" y="182" fill="#B5BDCE" font-size="13" class="tSub">~150 KB/ABI Native</text>
+</svg>
